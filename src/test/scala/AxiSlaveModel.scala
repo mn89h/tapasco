@@ -9,9 +9,9 @@ class AxiSlaveModelIO(addrWidth: Int, dataWidth: Int, idWidth: Int) extends Bund
   }
 }
 
-class AxiSlaveModel(addrWidth: Int, dataWidth: Int, idWidth: Int) extends Module {
+class AxiSlaveModel(addrWidth: Int, dataWidth: Int, idWidth: Int, size: Option[Int] = None) extends Module {
   val io = new AxiSlaveModelIO(addrWidth = addrWidth, dataWidth = dataWidth, idWidth = idWidth)
-  val mem = Mem(scala.math.pow(2, addrWidth).toInt, UInt(width = dataWidth))
+  val mem = Mem(size.getOrElse(scala.math.pow(2, addrWidth).toInt), UInt(width = dataWidth))
 
   val wa_valid = RegNext(io.saxi.writeAddr.valid)
   val wd_valid = RegNext(io.saxi.writeData.valid)
