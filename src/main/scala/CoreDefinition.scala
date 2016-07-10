@@ -1,0 +1,1 @@
+../../../packaging/CoreDefinition.scala

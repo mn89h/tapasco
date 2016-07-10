@@ -1,0 +1,7 @@
+*.log
+*.jou
+.Xil
+/target/
+/project/
+/test/
+/ip/
