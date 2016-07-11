@@ -33,7 +33,8 @@ class DataWidthConverter(
   }
 
   val ratio: Int = if (inWidth > outWidth) inWidth / outWidth else outWidth / inWidth
-  val d = Reg(UInt(width = inWidth))       // current value
+  val d_w = if (inWidth > outWidth) inWidth else outWidth // data register
+  val d = Reg(UInt(width = d_w))           // current value
   val d_hs = Reg(Bool())                   // handshake input
   val i = Reg(UInt(width = log2Up(ratio))) // current byte index
 
@@ -83,7 +84,30 @@ class DataWidthConverter(
       }
     }
   } else {
-    assert(Bool(false), "NOT IMPLEMENTED YET")
+    io.deq.bits  := d
+    io.deq.valid := d_hs
+    val out_ready = RegNext(io.deq.ready)
+    when (!d_hs && inq_ready && inq_valid) {
+      if (littleEndian) {
+        d := (d << UInt(inWidth)) | io.inq.bits
+        i := Mux(i === UInt(ratio - 1), UInt(0), i + UInt(1))
+        when (i === UInt(ratio - 1)) {
+          d_hs      := Bool(true)
+          inq_ready := Bool(false)
+        }
+      } else {
+        d := Cat(io.inq.bits, d) >> UInt(inWidth)
+        i := Mux(i === UInt(0), UInt(ratio - 1), i - UInt(1))
+        when (i === UInt(0)) {
+          d_hs      := Bool(true)
+          inq_ready := Bool(false)
+        }
+      }
+    }
+    when (d_hs && out_ready) {
+      d_hs := Bool(false)
+      d    := UInt(0)
+    }
   }
 }
 
