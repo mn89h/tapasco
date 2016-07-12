@@ -44,7 +44,7 @@ class DecoupledDataSourceSuite extends JUnitSuite {
       val width  = Seq(1, (scala.math.random * 64).toInt).max
       val repeat = scala.math.random > 0.5
       println("testing cnt = %d, width = %d, repeat = %b ...".format(cnt, width, repeat))
-      chiselMainTest(Array("--genHarness", "--backend", "c", "--vcd", "--targetDir", "test", "--compile", "--test"),
+      chiselMainTest(Array("--genHarness", "--backend", "c", "--vcd", "--targetDir", "test/DecoupledDataSourceSuite/checkRandomOutputs", "--compile", "--test"),
           () => Module(new DecoupledDataSource(UInt(width = width), cnt, i => UInt((scala.math.random * scala.math.pow(2, width)).toInt), repeat)))
         { m => new DecoupledDataSource_OutputCheck(m) }
     }
@@ -52,14 +52,14 @@ class DecoupledDataSourceSuite extends JUnitSuite {
 
   /** Performs test for 8bit wide sequential data with repeat. **/
   @Test def checkSequentialOutputsWithRepeat {
-    chiselMainTest(Array("--genHarness", "--backend", "c", "--vcd", "--targetDir", "test", "--compile", "--test"),
+    chiselMainTest(Array("--genHarness", "--backend", "c", "--vcd", "--targetDir", "test/DecoupledDataSourceSuite/checkSequentialOutputsWithRepeat", "--compile", "--test"),
       () => Module(new DecoupledDataSource(UInt(width = 8), 256, i => UInt(i), true)))
       { m => new DecoupledDataSource_OutputCheck(m) }
   }
 
   /** Performs test for 8bit wide sequential data without repeat. **/
   @Test def checkSequentialOutputsWithoutRepeat {
-    chiselMainTest(Array("--genHarness", "--backend", "c", "--vcd", "--targetDir", "test", "--compile", "--test"),
+    chiselMainTest(Array("--genHarness", "--backend", "c", "--vcd", "--targetDir", "test/DecoupledDataSourceSuite/checkSequentialOutputWithoutRepeat", "--compile", "--test"),
       () => Module(new DecoupledDataSource(UInt(width = 8), 256, i => UInt(i), false)))
       { m => new DecoupledDataSource_OutputCheck(m) }
   }

@@ -3,6 +3,7 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import org.junit.Assert._
 import scala.math._
+import java.nio.file.Paths
 
 /**
  * DataWidthConverterHarness: Attaches data source to DWC.
@@ -114,7 +115,11 @@ class DataWidthConverterSuite extends JUnitSuite {
   def resize(inWidth: Int, outWidth: Int, littleEndian: Boolean = true) = {
     println("testing conversion of %d bit to %d bit, %s ..."
         .format(inWidth, outWidth, if (littleEndian) "little-endian" else "big-endian"))
-    chiselMainTest(Array("--genHarness", "--backend", "c", "--vcd", "--targetDir", "test", "--compile", "--test"),
+    val dir = Paths.get("test")
+                   .resolve("DataWidthConverterSuite")
+                   .resolve("%dto%d%s".format(inWidth, outWidth, if (littleEndian) "le" else "be"))
+                   .toString
+    chiselMainTest(Array("--genHarness", "--backend", "c", "--vcd", "--targetDir", dir, "--compile", "--test"),
         () => Module(new DataWidthConverterHarness(inWidth, outWidth, littleEndian)))
       { m => new DataWidthConverter_OutputCheck(m) }
   }
