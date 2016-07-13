@@ -67,4 +67,50 @@ class AxiSlaveModel(addrWidth: Int, dataWidth: Int, idWidth: Int, size: Option[I
       wr_valid := Bool(false)
     }
   }
+
+  /** READ PROCESS **/
+  val ra       = Reg(UInt(width = addrWidth))
+  val l        = Reg(UInt(width = 8))
+  val ra_valid = RegNext(io.saxi.readAddr.valid)
+  val ra_addr  = RegNext(io.saxi.readAddr.bits.addr)
+  val ra_len   = RegNext(io.saxi.readAddr.bits.len)
+  val ra_size  = RegNext(io.saxi.readAddr.bits.size)
+  val ra_burst = RegNext(io.saxi.readAddr.bits.burst)
+
+  val rr_resp  = UInt(0, width = 2) // response: OKAY
+
+  val ra_hs    = Reg(Bool())
+  val ra_ready = !reset && !ra_hs
+
+
+  io.saxi.readAddr.ready := ra_ready
+
+  io.saxi.readData.valid := ra_hs
+  io.saxi.readData.bits.data := mem(if (dataWidth > 8) ra >> UInt(log2Up(dataWidth / 8)) else ra)
+  io.saxi.readData.bits.last := ra_hs && l === UInt(0)
+  io.saxi.readData.bits.resp := rr_resp
+
+  when (reset) {
+    ra        := UInt(0)
+    l         := UInt(1)
+    ra_valid  := Bool(false)
+    ra_addr   := UInt(0)
+    ra_len    := UInt("hFF")
+    ra_size   := UInt(0)
+    ra_burst  := UInt(0)
+    ra_hs     := Bool(false)
+  }
+  .otherwise {
+    when (!ra_hs && io.saxi.readAddr.ready && io.saxi.readAddr.valid) {
+      ra    := io.saxi.readAddr.bits.addr
+      ra_hs := Bool(true)
+      //l     := Mux(ra_len > UInt(0), ra_len - UInt(1), UInt(0))
+      l     := Mux(io.saxi.readAddr.bits.len > UInt(0), io.saxi.readAddr.bits.len - UInt(1), UInt(0))
+    }
+    when (ra_hs && io.saxi.readData.ready) {
+      l      := l - UInt(1)
+      ra     := ra + UInt(dataWidth / 8)
+      when (l === UInt(0)) { ra_hs := Bool(false) }
+    }
+  }
 }
