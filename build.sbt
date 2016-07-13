@@ -8,3 +8,7 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.6" %"test"
 
 libraryDependencies += "com.typesafe.play" %% "play-json" % "2.5.4"
 
+parallelExecution in Test := false
+
+testForkedParallel in Test := false
+
