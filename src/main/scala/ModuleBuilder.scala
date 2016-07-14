@@ -36,7 +36,7 @@ object ModuleBuilder {
           root = Paths.get(".").toAbsolutePath.resolve("ip").resolve("FifoAxiAdapterTest1").toString
         )
       ),
-      ( // generic adapter module
+      ( // generic adapter module FIFO -> AXI
         () => Module(new FifoAxiAdapter(addrWidth = 32,
                                         dataWidth = 64,
                                         idWidth = 1,
@@ -47,6 +47,19 @@ object ModuleBuilder {
           library = "chisel",
           version = "0.1",
           root = Paths.get(".").toAbsolutePath.resolve("ip").resolve("FifoAxiAdapter").toString
+        )
+      ),
+      ( // generic adapter module AXI -> FIFO
+        () => Module(new AxiFifoAdapter(fifoDepth = 4,
+                                        addrWidth = 32,
+                                        dataWidth = 32,
+                                        idWidth = 1)),
+        CoreDefinition(
+          name = "AxiFifoAdapter",
+          vendor = "esa.cs.tu-darmstadt.de",
+          library = "chisel",
+          version = "0.1",
+          root = Paths.get(".").toAbsolutePath.resolve("ip").resolve("AxiFifoAdapter").toString
         )
       )
     )
