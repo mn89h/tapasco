@@ -104,8 +104,7 @@ class AxiSlaveModel(addrWidth: Int, dataWidth: Int, idWidth: Int, size: Option[I
     when (!ra_hs && io.saxi.readAddr.ready && io.saxi.readAddr.valid) {
       ra    := io.saxi.readAddr.bits.addr
       ra_hs := Bool(true)
-      //l     := Mux(ra_len > UInt(0), ra_len - UInt(1), UInt(0))
-      l     := Mux(io.saxi.readAddr.bits.len > UInt(0), io.saxi.readAddr.bits.len - UInt(1), UInt(0))
+      l     := io.saxi.readAddr.bits.len
     }
     when (ra_hs && io.saxi.readData.ready) {
       l      := l - UInt(1)
