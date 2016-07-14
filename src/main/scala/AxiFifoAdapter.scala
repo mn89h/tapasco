@@ -55,7 +55,7 @@ class AxiFifoAdapter(
   io.maxi.readAddr.valid     := maxi_ravalid
 
   io.maxi.readAddr.bits.size := UInt(log2Up(dataWidth / 8 - 1))
-  io.maxi.readAddr.bits.len  := UInt(fifoDepth)
+  io.maxi.readAddr.bits.len  := UInt(fifoDepth - 1)
   io.maxi.readAddr.bits.burst:= UInt("b01") // INCR
   io.maxi.readAddr.bits.id   := UInt(0)
   io.maxi.readAddr.bits.lock := UInt(0)
