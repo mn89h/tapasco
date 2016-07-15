@@ -1,3 +1,4 @@
+package chisel.miscutils
 import Chisel._
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test

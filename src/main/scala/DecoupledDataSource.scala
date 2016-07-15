@@ -1,3 +1,4 @@
+package chisel.miscutils
 import Chisel._
 
 /**
