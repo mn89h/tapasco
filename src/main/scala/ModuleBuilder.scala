@@ -1,3 +1,6 @@
+package chisel.axiutils
+import chisel.packaging.CoreDefinition
+import chisel.miscutils.DecoupledDataSource
 import scala.sys.process._
 import java.nio.file.Paths
 import Chisel._

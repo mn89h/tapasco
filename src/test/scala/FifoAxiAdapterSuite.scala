@@ -1,4 +1,6 @@
 import Chisel._
+import chisel.axiutils.FifoAxiAdapter
+import chisel.miscutils.DecoupledDataSource
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import org.junit.Assert._
