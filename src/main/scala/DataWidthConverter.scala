@@ -34,80 +34,67 @@ class DataWidthConverter(
   }
 
   val ratio: Int = if (inWidth > outWidth) inWidth / outWidth else outWidth / inWidth
-  val d_w = if (inWidth > outWidth) inWidth else outWidth // data register
-  val d = Reg(UInt(width = d_w))           // current value
-  val d_hs = Reg(Bool())                   // handshake input
-  val i = Reg(UInt(width = log2Up(ratio))) // current byte index
+  val d_w = if (inWidth > outWidth) inWidth else outWidth // data register width
 
-  val inq_ready = Reg(Bool())              // input data ready
-  val inq_valid = RegNext(io.inq.valid)    // input data valid?
-  val deq_ready = RegNext(io.deq.ready)    // output data ready?
-  val deq_valid = Reg(Bool())              // output data valid
+  if (inWidth > outWidth)
+    downsize()
+  else
+    upsize()
 
-  inq_ready := !reset && !d_hs
-  deq_valid := !reset && d_hs
-  
-  io.inq.ready := inq_ready
-  io.deq.valid := deq_valid
+  private def upsize() = {
+    val i = Reg(UInt(width = log2Up(ratio + 1)))
+    val d = Reg(UInt(width = outWidth))
+    val c = Reg(init = Bool(true))
 
-  when (reset) {
-    d         := UInt(0)
-    d_hs      := Bool(false)
-    i         := UInt(if (littleEndian) 0 else ratio - 1)
-    inq_ready := Bool(false)
-    deq_valid := Bool(false)
+    io.inq.ready := !reset && (i =/= UInt(0) || io.deq.ready)
+    io.deq.bits  := d
+    io.deq.valid := !reset && (i === UInt(0) && c)
+
+    when (reset) {
+      i := UInt(ratio)
+      d := UInt(0)
+    }
+    .otherwise {
+      when (io.inq.ready && io.inq.valid) {
+        c := Bool(true)
+        if (littleEndian)
+          d := Cat(io.inq.bits, d) >> UInt(inWidth)
+        else
+          d := (d << UInt(inWidth)) | io.inq.bits
+        i := Mux(i === UInt(0), UInt(ratio - 1), i - UInt(1))
+      }
+      when (io.deq.valid && io.deq.ready) { c := Bool(false) }
+    }
   }
 
-  if (inWidth > outWidth) {
-    val outFifo = Module(new Queue(UInt(width = outWidth), ratio))
-    outFifo.io.deq       <> io.deq
-    outFifo.io.enq.bits  := d(i * UInt(outWidth) + UInt(outWidth), i * UInt(outWidth))
-    outFifo.io.enq.valid := d_hs
-    val out_ready = RegNext(outFifo.io.enq.ready)
+  private def downsize() = {
+    val i = Reg(UInt(width = log2Up(ratio)))
+    val d = Reg(UInt(width = inWidth))
 
-    when (reset) {}
+    io.inq.ready := !reset && i === UInt(0)
+
+    if (littleEndian)
+      io.deq.bits := d(outWidth - 1, 0)
+    else
+      io.deq.bits := d(inWidth - 1, inWidth - outWidth)
+    io.deq.valid := !reset && RegNext(i > UInt(0) || io.inq.valid)
+
+    when (reset) {
+      i := UInt(0)
+      d := UInt(0)
+    }
     .otherwise {
-      when (inq_ready && inq_valid) {
+      when (i > UInt(0) && io.deq.ready) {
+        if (littleEndian)
+          d := d >> UInt(outWidth)
+        else
+          d := d << UInt(outWidth)
+        i := i - UInt(1)
+      }
+      when (i === UInt(0) && io.inq.valid) {
         d := io.inq.bits
-        d_hs := Bool(true)
-        inq_ready := Bool(false)
+        i := UInt(ratio - 1)
       }
-      when (d_hs) {
-        when (out_ready) {
-          if (littleEndian) {
-            i := Mux(i === UInt(ratio - 1), UInt(0), i + UInt(1))
-            when (i === UInt(ratio - 1)) { d_hs := Bool(false) }
-          } else {
-            i := Mux(i === UInt(0), UInt(ratio - 1), i - UInt(1))
-            when (i === UInt(0)) { d_hs := Bool(false) }
-          }
-        }
-      }
-    }
-  } else {
-    io.deq.bits  := d
-    io.deq.valid := d_hs
-    val out_ready = RegNext(io.deq.ready)
-    when (!d_hs && inq_ready && inq_valid) {
-      if (littleEndian) {
-        d := (d << UInt(inWidth)) | io.inq.bits
-        i := Mux(i === UInt(ratio - 1), UInt(0), i + UInt(1))
-        when (i === UInt(ratio - 1)) {
-          d_hs      := Bool(true)
-          inq_ready := Bool(false)
-        }
-      } else {
-        d := Cat(io.inq.bits, d) >> UInt(inWidth)
-        i := Mux(i === UInt(0), UInt(ratio - 1), i - UInt(1))
-        when (i === UInt(0)) {
-          d_hs      := Bool(true)
-          inq_ready := Bool(false)
-        }
-      }
-    }
-    when (d_hs && out_ready) {
-      d_hs := Bool(false)
-      d    := UInt(0)
     }
   }
 }
