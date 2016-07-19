@@ -1,3 +1,4 @@
+package chisel.axiutils
 import Chisel._
 import AXIDefs._
 
