@@ -25,7 +25,7 @@ class DecoupledDataSource[T <: Data](gen: T, val size : Int, data: (Int) => T, v
   val i   = Reg(UInt(width = log2Up(if (repeat) size else size + 1))) // index
   val rom = Vec.tabulate(size)(n => ds(n)) // ROM with data
   io.out.bits  := rom(i) // current index data
-  io.out.valid := i < UInt(size) // valid until exceeded
+  io.out.valid := !reset && i < UInt(size) // valid until exceeded
   when (reset) {
     i := UInt(0)
   }
