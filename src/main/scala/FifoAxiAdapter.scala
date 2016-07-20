@@ -15,9 +15,12 @@ class FifoAxiAdapter(addrWidth: Int,
                      stride: Int = 1) extends Module {
   require (log2Up(size) <= addrWidth, "addrWidth (%d) must be large enough to address all %d element, at least %d bits".format(addrWidth, size, log2Up(size)))
 
+  println ("FifoAxiAdapter: size = %d, stride = %d, address bits = %d, data bits = %d"
+           .format(size, stride, addrWidth, dataWidth))
+
   val io = new FifoAxiAdapterIO(addrWidth, dataWidth, idWidth)
   val wdata_valid = /*RegNext(*/io.inq.valid/*)*/
-  val offs = Reg(UInt(width = log2Up(size)))
+  val offs = Reg(UInt(width = log2Up(size * (dataWidth / 8))))
   val addr = RegNext(io.base) + offs
   val data = io.inq.bits
 
@@ -32,7 +35,7 @@ class FifoAxiAdapter(addrWidth: Int,
   io.maxi.writeAddr.valid      := !reset && wdata_valid && !addr_hs
   io.maxi.writeAddr.bits.addr  := addr
 
-  io.maxi.writeAddr.bits.size  := UInt(2) // one word (4 byte)
+  io.maxi.writeAddr.bits.size  := UInt(log2Up(dataWidth / 8)) // full word
   io.maxi.writeAddr.bits.len   := UInt(0) // single word len
   io.maxi.writeAddr.bits.burst := UInt(0) // no burst
   io.maxi.writeAddr.bits.id    := UInt(0) // id=0
