@@ -66,6 +66,13 @@ class AxiFifoAdapter(
 
   io.maxi.readData.ready     := maxi_rready
 
+  // true, if buffers will be empty next cycle
+  val switch_a = fifo_a.io.deq.ready && fifo_a.io.count <= UInt(1)
+  val switch_b = fifo_b.io.deq.ready && fifo_b.io.count <= UInt(1)
+  // true, if buffer fill should start next cycle
+  val fill_a = fifo_a.io.count === UInt(0) || switch_a
+  val fill_b = fifo_b.io.count === UInt(0) || switch_b
+
   when (reset) {
     fifo_sel          := Bool(false)
     axi_state         := axi_wait
@@ -81,18 +88,26 @@ class AxiFifoAdapter(
       }
       // when read data is valid, enq fifo is ready and last is set
       when (maxi_rready && maxi_rvalid && maxi_rlast) {
-        // go to wait state
-        axi_state     := axi_wait
-        maxi_raddr_hs := Bool(false)
+        maxi_raddr_hs := Bool(false) // re-enable address handshake
+
+        // check if we can stay in fetch mode and flip buffers
+        when (Mux(!fifo_sel, switch_a, switch_b)) {
+          // just flip buffers
+          fifo_sel      := !fifo_sel
+        }
+        .otherwise {
+          // go to wait state
+          axi_state     := axi_wait
+        }
       }
     }
     .otherwise { // wait-for-consumption state 
       // check fill state of deq FIFO: if empty, flip FIFOs
-      when (Mux(!fifo_sel, !fifo_a.io.deq.valid, !fifo_b.io.deq.valid)) {
+      when (Mux(!fifo_sel, switch_a, switch_b)) {
         fifo_sel      := !fifo_sel
       }
       // check fill state of other FIFO
-      when (Mux( fifo_sel, !fifo_a.io.deq.valid, !fifo_b.io.deq.valid)) {
+      when (Mux(!fifo_sel, fill_b, fill_a)) {
         // if empty, start fetch
         axi_state     := axi_fetch
       }
