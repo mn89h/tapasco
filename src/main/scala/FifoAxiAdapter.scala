@@ -48,18 +48,6 @@ class FifoAxiAdapter(addrWidth: Int,
 
   io.maxi.writeResp.ready      := Bool(true)
 
-  io.maxi.readData.ready       := Bool(false)
-  io.maxi.readAddr.valid       := Bool(false)
-  io.maxi.readAddr.bits.addr   := UInt(2) // one word (4 byte)
-  io.maxi.readAddr.bits.size   := UInt(0) // one word
-  io.maxi.readAddr.bits.len    := UInt(0) // single word len
-  io.maxi.readAddr.bits.burst  := UInt(0) // no burst
-  io.maxi.readAddr.bits.id     := UInt(0) // id=0
-  io.maxi.readAddr.bits.lock   := UInt(0) // no lock
-  io.maxi.readAddr.bits.cache  := UInt(2) // no cache, modifiable
-  io.maxi.readAddr.bits.prot   := UInt(0) // no prot
-  io.maxi.readAddr.bits.qos    := UInt(0) // no qos
-
   io.inq.ready := addr_hs && data_hs && resp_hs
 
   when (reset) {
