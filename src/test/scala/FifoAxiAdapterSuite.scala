@@ -10,7 +10,7 @@ class FifoAxiAdapterModule1(dataWidth : Int, size: Int) extends Module {
   val datasrc = Module (new DecoupledDataSource(UInt(width = dataWidth), size = 256, n => UInt(n), false))
   val fad = Module (new FifoAxiAdapter(addrWidth = log2Up(size),
       dataWidth = dataWidth, idWidth = 1, size = size))
-  val saxi = Module (new AxiSlaveModel(addrWidth = log2Up(size),
+  val saxi = Module (new AxiSlaveModel(addrWidth = Some(log2Up(size * (dataWidth / 8))),
       dataWidth = dataWidth, idWidth = 1))
 
   fad.io.base := UInt(0)
@@ -36,15 +36,17 @@ class FifoAxiAdapterModule1Test(fad: FifoAxiAdapterModule1) extends Tester(fad, 
     if (cc % 1000 == 0) println("clock cycle: " + cc)
   }
 
+  def toBinaryString(v: BigInt) =
+      "b%%%ds".format(fad.saxi.dataWidth).format(v.toString(2)).replace(' ', '0')
+
   reset(10)
   while (peek(fad.datasrc.io.out.valid) != 0) step(1)
   step(10) // settle
 
   // check
-  var errors: List[String] = List()
   for (i <- 0 until 256) {
-    if (peekAt(fad.saxi.mem, i) != i)
-      errors = "Mem[%03d] = %d (expected: %d)".format(i, peekAt(fad.saxi.mem, i), i) :: errors
+    val v = peekAt(fad.saxi.mem, i)
+    expect(peekAt(fad.saxi.mem, i) == i, "Mem[%03d] = %d (%s), expected: %d (%s)"
+        .format(i, v, toBinaryString(v), i, toBinaryString(i)))
   }
-  assertTrue (("mem does not match, errors: " :: errors).mkString(NL), errors.length == 0)
 }
