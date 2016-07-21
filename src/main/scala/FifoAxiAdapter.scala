@@ -46,7 +46,7 @@ class FifoAxiAdapter(addrWidth: Int,
 
   io.maxi.writeData.bits.data  := data
   io.maxi.writeData.bits.last  := Bool(true)
-  io.maxi.writeData.bits.strb  := UInt("b1111")
+  io.maxi.writeData.bits.strb  := UInt("b" + ("1" * (dataWidth / 8)))
   io.maxi.writeData.valid      := !reset && wdata_valid && !data_hs
 
   io.maxi.writeResp.ready      := Bool(true)
