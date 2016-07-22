@@ -4,10 +4,6 @@ import AXIDefs._
 
 class AxiSlaveModelIO(addrWidth: Int, dataWidth: Int, idWidth: Int) extends Bundle {
   val saxi = new AXIMasterIF(addrWidth, dataWidth, idWidth).flip()
-  val mem  = new Bundle {
-    val d = UInt(OUTPUT, width = dataWidth)
-    val addr = UInt(INPUT, width = addrWidth)
-  }
 }
 
 class AxiSlaveModel(val addrWidth: Option[Int],
@@ -26,10 +22,10 @@ class AxiSlaveModel(val addrWidth: Option[Int],
 
   /** WRITE PROCESS **/
   val wa_valid = RegNext(io.saxi.writeAddr.valid)
-  val wd_valid = RegNext(io.saxi.writeData.valid)
+  val wd_valid = (io.saxi.writeData.valid)
   val wr_ready = RegNext(io.saxi.writeResp.ready)
   val wa_addr  = RegNext(io.saxi.writeAddr.bits.addr)
-  val wd_data  = RegNext(io.saxi.writeData.bits.data)
+  val wd_data  = (io.saxi.writeData.bits.data)
   val wa_len   = RegNext(io.saxi.writeAddr.bits.len)
   val wa_size  = RegNext(io.saxi.writeAddr.bits.size)
   val wa_burst = RegNext(io.saxi.writeAddr.bits.burst)
@@ -44,15 +40,11 @@ class AxiSlaveModel(val addrWidth: Option[Int],
   val wr_hs = Reg(Bool()) // response handshake complete?
   val wr_valid = Reg(Bool()) // response valid
 
-  val raddr = RegNext(io.mem.addr)
-
   io.saxi.writeAddr.ready     := !wa_hs
-  io.saxi.writeData.ready     :=  wa_hs
+  io.saxi.writeData.ready     :=  wa_hs && !wr_valid
   io.saxi.writeResp.bits.resp := wr
   io.saxi.writeResp.bits.id   := UInt(0)
-  io.saxi.writeResp.valid     := wr_valid
-
-  io.mem.d                    := mem(raddr)
+  io.saxi.writeResp.valid     :=  wa_hs && wr_valid
 
   when (reset) {
     wa       := UInt(0)
@@ -62,19 +54,19 @@ class AxiSlaveModel(val addrWidth: Option[Int],
     wa_hs    := Bool(false)
     wd_hs    := Bool(false)
     wr_hs    := Bool(false)
-    raddr    := UInt(0)
   }
   .otherwise {
     when (!wa_hs && wa_valid) {
       wa     := wa_addr
       wl     := wa_len
       wa_hs  := Bool(true)
-      assert (wa_size === UInt(log2Up(dataWidth / 8)), "wa_size is not supported".format(wa_size))
+      assert (wa_size === UInt(if (dataWidth > 8) log2Up(dataWidth / 8) else 0), "wa_size is not supported".format(wa_size))
       assert (wa_burst < UInt(2), "wa_burst type (b%s) not supported".format(wa_burst))
     }
-    when (wa_hs && wd_valid) {
+    when (wa_hs && wd_valid && !wr_valid) {
       mem(if (dataWidth > 8) wa >> UInt(log2Up(dataWidth / 8)) else wa) := wd_data
-      when (wl === UInt(0)) { wr_valid := Bool(true) }
+      printf("writing data 0x%x to address 0x%x\n", wd_data, wa)
+      when (io.saxi.writeData.bits.last || wl === UInt(0)) { wr_valid := Bool(true) }
       .otherwise {
         wl := wl - UInt(1)
         // increase address in INCR bursts

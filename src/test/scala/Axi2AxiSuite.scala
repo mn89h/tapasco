@@ -34,10 +34,10 @@ class Axi2AxiModule(val dataWidth: Int,
       repeat = false))
 
   val fad = Module(new FifoAxiAdapter(
+      fifoDepth = sz,
       addrWidth = aw,
       dataWidth = dataWidth,
-      idWidth = 1,
-      size = sz))
+      burstSize = Some(fifoDepth)))
 
   val saxi = Module(new AxiSlaveModel(
       addrWidth = addrWidth,
@@ -53,7 +53,7 @@ class Axi2AxiModule(val dataWidth: Int,
 
   val base = UInt(0, width = aw)
 
-  fad.io.inq <> dsrc.io.out
+  fad.io.enq <> dsrc.io.out
   saxi.io.saxi.writeAddr <> fad.io.maxi.writeAddr
   saxi.io.saxi.writeData <> fad.io.maxi.writeData
   saxi.io.saxi.writeResp <> fad.io.maxi.writeResp

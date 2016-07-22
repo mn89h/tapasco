@@ -8,13 +8,15 @@ import org.junit.Assert._
 class FifoAxiAdapterModule1(dataWidth : Int, size: Int) extends Module {
   val io = new Bundle
   val datasrc = Module (new DecoupledDataSource(UInt(width = dataWidth), size = 256, n => UInt(n), false))
-  val fad = Module (new FifoAxiAdapter(addrWidth = log2Up(size),
-      dataWidth = dataWidth, idWidth = 1, size = size))
+  val fad = Module (new FifoAxiAdapter(fifoDepth = size,
+                                       addrWidth = log2Up(size),
+                                       dataWidth = dataWidth,
+                                       burstSize = Some(16)))
   val saxi = Module (new AxiSlaveModel(addrWidth = Some(log2Up(size * (dataWidth / 8))),
       dataWidth = dataWidth, idWidth = 1))
 
   fad.io.base := UInt(0)
-  fad.io.inq  <> datasrc.io.out
+  fad.io.enq  <> datasrc.io.out
   fad.io.maxi <> saxi.io.saxi
 }
 
@@ -25,7 +27,7 @@ class FifoAxiAdapterSuite extends JUnitSuite {
   }
 }
 
-class FifoAxiAdapterModule1Test(fad: FifoAxiAdapterModule1) extends Tester(fad, false) {
+class FifoAxiAdapterModule1Test(fad: FifoAxiAdapterModule1) extends Tester(fad, isTrace = true) {
   import scala.util.Properties.{lineSeparator => NL}
   private var cc = 0
 
@@ -40,7 +42,7 @@ class FifoAxiAdapterModule1Test(fad: FifoAxiAdapterModule1) extends Tester(fad, 
       "b%%%ds".format(fad.saxi.dataWidth).format(v.toString(2)).replace(' ', '0')
 
   reset(10)
-  while (peek(fad.datasrc.io.out.valid) != 0) step(1)
+  while (peek(fad.datasrc.io.out.valid) != 0 || peek(fad.fad.fifo.io.count) > 0) step(1)
   step(10) // settle
 
   // check

@@ -1,5 +1,5 @@
 package chisel.axiutils
-import chisel.packaging.CoreDefinition
+import chisel.packaging.{CoreDefinition, ModuleBuilder}
 import chisel.miscutils.DecoupledDataSource
 import scala.sys.process._
 import java.nio.file.Paths
@@ -15,19 +15,20 @@ class FifoAxiAdapterTest1(dataWidth : Int, size: Int) extends Module {
 
   val datasrc = Module (new DecoupledDataSource(UInt(width = dataWidth),
       size = 256, n => UInt(n), false))
-  val fad = Module (new FifoAxiAdapter(addrWidth = addrWidth,
-      dataWidth = dataWidth, idWidth = 1, size = size))
+  val fad = Module (new FifoAxiAdapter(fifoDepth = size,
+                                       addrWidth = addrWidth,
+                                       dataWidth = dataWidth,
+                                       burstSize = Some(16)))
 
   io.maxi.renameSignals()
   io.base.setName("base")
 
   fad.io.base := io.base
-  fad.io.inq  <> datasrc.io.out
+  fad.io.enq  <> datasrc.io.out
   fad.io.maxi <> io.maxi
 }
 
-object ModuleBuilder {
-  val chiselArgs = Array("--backend", "v", "--compile")
+object AxiModuleBuilder extends ModuleBuilder {
   val modules: List[(() => Module, CoreDefinition)] = List(
       ( // test module with fixed data
         () => Module(new FifoAxiAdapterTest1(dataWidth = 32, 256)),
@@ -40,10 +41,9 @@ object ModuleBuilder {
         )
       ),
       ( // generic adapter module FIFO -> AXI
-        () => Module(new FifoAxiAdapter(addrWidth = 32,
-                                        dataWidth = 64,
-                                        idWidth = 1,
-                                        size = scala.math.pow(2, 24).toInt)),
+        () => Module(new FifoAxiAdapter(fifoDepth = 8,
+                                        addrWidth = 32,
+                                        dataWidth = 64)),
         CoreDefinition(
           name = "FifoAxiAdapter",
           vendor = "esa.cs.tu-darmstadt.de",
@@ -55,8 +55,7 @@ object ModuleBuilder {
       ( // generic adapter module AXI -> FIFO
         () => Module(new AxiFifoAdapter(fifoDepth = 4,
                                         addrWidth = 32,
-                                        dataWidth = 32,
-                                        idWidth = 1)),
+                                        dataWidth = 32)),
         CoreDefinition(
           name = "AxiFifoAdapter",
           vendor = "esa.cs.tu-darmstadt.de",
@@ -66,13 +65,4 @@ object ModuleBuilder {
         )
       )
     )
-
-  def main(args: Array[String]) {
-    modules foreach { m =>
-      chiselMain(chiselArgs ++ Array("--targetDir", m._2.root), m._1)
-      val json = "%s/%s.json".format(m._2.root, m._2.name)
-      m._2.write(json)
-      "packaging/package.py %s".format(json) !
-    }
-  }
 }
