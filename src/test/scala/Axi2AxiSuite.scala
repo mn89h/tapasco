@@ -25,6 +25,7 @@ class Axi2AxiModule(val dataWidth: Int,
   val sz = size.getOrElse(pow(2, addrWidth.get).toInt)
   val aw = addrWidth.getOrElse(log2Up(sz * (dataWidth / 8)))
   println ("Axi2AxiModule: address bits = %d, size = %d".format(aw, sz))
+  val cfg = AxiSlaveModelConfiguration(addrWidth = Some(aw), dataWidth = dataWidth, size = size)
 
   val dsrc = Module(new DecoupledDataSource(
       gen = UInt(width = dataWidth),
@@ -39,11 +40,7 @@ class Axi2AxiModule(val dataWidth: Int,
       dataWidth = dataWidth,
       burstSize = Some(fifoDepth)))
 
-  val saxi = Module(new AxiSlaveModel(
-      addrWidth = addrWidth,
-      dataWidth = dataWidth,
-      idWidth = 1,
-      size = size))
+  val saxi = Module(new AxiSlaveModel(cfg))
 
   val afa = Module(new AxiFifoAdapter(
       addrWidth = aw,
@@ -59,7 +56,7 @@ class Axi2AxiModule(val dataWidth: Int,
   saxi.io.saxi.writeResp <> fad.io.maxi.writeResp
   saxi.io.saxi.readAddr  <> afa.io.maxi.readAddr
   saxi.io.saxi.readData  <> afa.io.maxi.readData
-  afa.reset := dsrc.io.out.valid
+  afa.reset := dsrc.io.out.valid || fad.fifo.io.count > UInt(0)
   fad.io.base := base
   afa.io.base := base
   io.deq <> afa.io.deq
@@ -88,7 +85,6 @@ class Axi2AxiTester(m: Axi2AxiModule) extends Tester(m) {
   }
 
   reset (10)
-  while (peek(m.afa.reset) != 0) step (1)
   poke(m.io.deq.ready, true)
   for (i <- 0 until m.sz) {
     while (peek(m.afa.io.deq.valid) == 0) step (1)

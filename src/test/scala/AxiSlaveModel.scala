@@ -2,23 +2,17 @@ package chisel.axiutils
 import Chisel._
 import AXIDefs._
 
-class AxiSlaveModelIO(addrWidth: Int, dataWidth: Int, idWidth: Int) extends Bundle {
-  val saxi = new AXIMasterIF(addrWidth, dataWidth, idWidth).flip()
+class AxiSlaveModelIO(val cfg: AxiSlaveModelConfiguration) extends Bundle {
+  val saxi = new AXIMasterIF(cfg.addrWidth, cfg.dataWidth, cfg.idWidth).flip()
 }
 
-class AxiSlaveModel(val addrWidth: Option[Int],
-                    val dataWidth: Int,
-                    val idWidth: Int = 1,
-                    val size: Option[Int] = None) extends Module {
-  require (idWidth == 1, "only idWidth = 1 supported at the moment")
-  require (!size.isEmpty || !addrWidth.isEmpty, "specify size or addrWidth, or both")
+class AxiSlaveModel(val cfg: AxiSlaveModelConfiguration) extends Module {
+  val aw = cfg.addrWidth
+  val sz = cfg.size
+  println ("AxiSlaveModel: %s".format(cfg.toString))
 
-  val aw = addrWidth.getOrElse(scala.math.pow(2, size.get * (dataWidth / 8)).toInt)
-  val sz = size.getOrElse(scala.math.pow(2, addrWidth.get).toInt)
-  println ("AxiSlaveModel: address bits = %d, size = %d".format(aw, sz))
-
-  val io = new AxiSlaveModelIO(addrWidth = aw, dataWidth = dataWidth, idWidth = idWidth)
-  val mem = Mem(sz, UInt(width = dataWidth))
+  val io = new AxiSlaveModelIO(cfg)
+  val mem = Mem(sz, UInt(width = cfg.dataWidth))
 
   /** WRITE PROCESS **/
   val wa_valid = RegNext(io.saxi.writeAddr.valid)
@@ -31,7 +25,7 @@ class AxiSlaveModel(val addrWidth: Option[Int],
   val wa_burst = RegNext(io.saxi.writeAddr.bits.burst)
 
   val wa = Reg(UInt(width = aw))
-  val wd = Reg(UInt(width = dataWidth))
+  val wd = Reg(UInt(width = cfg.dataWidth))
   val wr = Reg(UInt(width = 2))
   val wl = Reg(io.saxi.writeAddr.bits.len.cloneType())
 
@@ -39,9 +33,10 @@ class AxiSlaveModel(val addrWidth: Option[Int],
   val wd_hs = Reg(Bool()) // data handshake complete?
   val wr_hs = Reg(Bool()) // response handshake complete?
   val wr_valid = Reg(Bool()) // response valid
+  val wr_wait = Reg(UInt(width = log2Up(cfg.writeDelay + 1)))
 
   io.saxi.writeAddr.ready     := !wa_hs
-  io.saxi.writeData.ready     :=  wa_hs && !wr_valid
+  io.saxi.writeData.ready     :=  wa_hs && !wr_valid && wr_wait === UInt(0)
   io.saxi.writeResp.bits.resp := wr
   io.saxi.writeResp.bits.id   := UInt(0)
   io.saxi.writeResp.valid     :=  wa_hs && wr_valid
@@ -54,29 +49,34 @@ class AxiSlaveModel(val addrWidth: Option[Int],
     wa_hs    := Bool(false)
     wd_hs    := Bool(false)
     wr_hs    := Bool(false)
+    wr_wait  := UInt(0)
   }
   .otherwise {
     when (!wa_hs && wa_valid) {
       wa     := wa_addr
       wl     := wa_len
       wa_hs  := Bool(true)
-      assert (wa_size === UInt(if (dataWidth > 8) log2Up(dataWidth / 8) else 0), "wa_size is not supported".format(wa_size))
+      assert (wa_size === UInt(if (cfg.dataWidth > 8) log2Up(cfg.dataWidth / 8) else 0), "wa_size is not supported".format(wa_size))
       assert (wa_burst < UInt(2), "wa_burst type (b%s) not supported".format(wa_burst))
+      if (cfg.writeDelay > 0) wr_wait := UInt(cfg.writeDelay)
     }
-    when (wa_hs && wd_valid && !wr_valid) {
-      mem(if (dataWidth > 8) wa >> UInt(log2Up(dataWidth / 8)) else wa) := wd_data
-      printf("writing data 0x%x to address 0x%x\n", wd_data, wa)
-      when (io.saxi.writeData.bits.last || wl === UInt(0)) { wr_valid := Bool(true) }
-      .otherwise {
-        wl := wl - UInt(1)
-        // increase address in INCR bursts
-        when (wa_burst === UInt("b01")) { wa := wa + UInt(dataWidth / 8) }
+    when (wa_hs && wr_wait > UInt(0)) { wr_wait := wr_wait - UInt(1) }
+    when (wa_hs && wr_wait === UInt(0)) {
+      when (wa_hs && wd_valid && !wr_valid) {
+        mem(if (cfg.dataWidth > 8) wa >> UInt(log2Up(cfg.dataWidth / 8)) else wa) := wd_data
+        printf("writing data 0x%x to address 0x%x\n", wd_data, wa)
+        when (io.saxi.writeData.bits.last || wl === UInt(0)) { wr_valid := Bool(true) }
+        .otherwise {
+          wl := wl - UInt(1)
+          // increase address in INCR bursts
+          when (wa_burst === UInt("b01")) { wa := wa + UInt(cfg.dataWidth / 8) }
+        }
       }
-    }
-    when (wa_hs && wr_valid && wr_ready) {
-      wa_hs    := Bool(false)
-      wd_hs    := Bool(false)
-      wr_valid := Bool(false)
+      when (wa_hs && wr_valid && wr_ready) {
+        wa_hs    := Bool(false)
+        wd_hs    := Bool(false)
+        wr_valid := Bool(false)
+      }
     }
   }
 
@@ -91,14 +91,16 @@ class AxiSlaveModel(val addrWidth: Option[Int],
 
   val rr_resp  = UInt(0, width = 2) // response: OKAY
 
+  val rr_wait  = Reg(UInt(width = log2Up(cfg.readDelay + 1)))
   val ra_hs    = Reg(Bool())
   val ra_ready = !reset && !ra_hs
 
-
   io.saxi.readAddr.ready := ra_ready
 
-  io.saxi.readData.valid := ra_hs
-  io.saxi.readData.bits.data := mem(if (dataWidth > 8) ra >> UInt(log2Up(dataWidth / 8)) else ra)
+  val rd_valid = ra_hs && rr_wait === UInt(0)
+
+  io.saxi.readData.valid := rd_valid
+  io.saxi.readData.bits.data := mem(if (cfg.dataWidth > 8) ra >> UInt(log2Up(cfg.dataWidth / 8)) else ra)
   io.saxi.readData.bits.last := ra_hs && l === UInt(0)
   io.saxi.readData.bits.resp := rr_resp
 
@@ -111,16 +113,19 @@ class AxiSlaveModel(val addrWidth: Option[Int],
     ra_size   := UInt(0)
     ra_burst  := UInt(0)
     ra_hs     := Bool(false)
+    rr_wait   := UInt(0)
   }
   .otherwise {
     when (!ra_hs && io.saxi.readAddr.ready && io.saxi.readAddr.valid) {
       ra    := io.saxi.readAddr.bits.addr
       ra_hs := Bool(true)
       l     := io.saxi.readAddr.bits.len
+      if (cfg.readDelay > 0) rr_wait := UInt(cfg.readDelay)
     }
-    when (ra_hs && io.saxi.readData.ready) {
+    when (ra_hs && rr_wait > UInt(0)) { rr_wait := rr_wait - UInt(1) }
+    when (rd_valid && io.saxi.readData.ready) {
       l      := l - UInt(1)
-      ra     := ra + UInt(dataWidth / 8)
+      ra     := ra + UInt(cfg.dataWidth / 8)
       when (l === UInt(0)) { ra_hs := Bool(false) }
     }
   }

@@ -5,15 +5,15 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import org.junit.Assert._
 
-class FifoAxiAdapterModule1(dataWidth : Int, size: Int) extends Module {
+class FifoAxiAdapterModule1(val dataWidth : Int, size: Int) extends Module {
   val io = new Bundle
+  val cfg = AxiSlaveModelConfiguration(dataWidth = dataWidth, size = Some(size))
   val datasrc = Module (new DecoupledDataSource(UInt(width = dataWidth), size = 256, n => UInt(n), false))
   val fad = Module (new FifoAxiAdapter(fifoDepth = size,
                                        addrWidth = log2Up(size),
                                        dataWidth = dataWidth,
                                        burstSize = Some(16)))
-  val saxi = Module (new AxiSlaveModel(addrWidth = Some(log2Up(size * (dataWidth / 8))),
-      dataWidth = dataWidth, idWidth = 1))
+  val saxi = Module (new AxiSlaveModel(cfg))
 
   fad.io.base := UInt(0)
   fad.io.enq  <> datasrc.io.out
@@ -22,7 +22,7 @@ class FifoAxiAdapterModule1(dataWidth : Int, size: Int) extends Module {
 
 class FifoAxiAdapterSuite extends JUnitSuite {
   @Test def test1 {
-    chiselMainTest(Array("--genHarness", "--backend", "c", "--vcd", "--targetDir", "test", "--compile", "--test"),
+    chiselMainTest(Array("--genHarness", "--backend", "c", "--vcd", "--targetDir", "test/fad", "--compile", "--test"),
         () => Module(new FifoAxiAdapterModule1(dataWidth = 8, size = 256))) { m => new FifoAxiAdapterModule1Test(m) }
   }
 }
@@ -39,7 +39,7 @@ class FifoAxiAdapterModule1Test(fad: FifoAxiAdapterModule1) extends Tester(fad, 
   }
 
   def toBinaryString(v: BigInt) =
-      "b%%%ds".format(fad.saxi.dataWidth).format(v.toString(2)).replace(' ', '0')
+      "b%%%ds".format(fad.dataWidth).format(v.toString(2)).replace(' ', '0')
 
   reset(10)
   while (peek(fad.datasrc.io.out.valid) != 0 || peek(fad.fad.fifo.io.count) > 0) step(1)
