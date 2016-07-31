@@ -2,116 +2,87 @@ package chisel.axiutils
 import Chisel._
 import AXIDefs._
 
-class AxiFifoAdapter(
-    fifoDepth: Int,
-    addrWidth: Int,
-    dataWidth: Int,
-    idWidth  : Int = 1
-  ) extends Module {
+class AxiFifoAdapterIO(addrWidth: Int, dataWidth: Int, idWidth: Int) extends Bundle {
+  val maxi = new AXIMasterIF(addrWidth, dataWidth, idWidth)
+  val deq = Decoupled(UInt(width = dataWidth))
+  val base = UInt(INPUT, width = addrWidth)
+}
 
-  require (fifoDepth > 0, "FIFO depth (%d) must be > 0".format(fifoDepth))
-  require (fifoDepth <= 256, "FIFO depth (%d) must be <= 256".format(fifoDepth))
-  require (addrWidth > 0 && addrWidth <= 64, "AXI address width (%d) must 0 < width <= 64".format(addrWidth))
-  require (dataWidth >= 8 && dataWidth <= 256, "AXI data width (%d) must be 8 <= width <= 256".format(dataWidth))
-  require ((for (i <- 1 to 7) yield scala.math.pow(2, i).toInt).contains(dataWidth), "AXI data width (%d) must be a power of 2".format(dataWidth))
-  require ((idWidth > 0), "AXI id width (%d) must be > 0".format(idWidth))
+class AxiFifoAdapter(fifoDepth: Int,
+                     addrWidth: Int,
+                     dataWidth: Int,
+                     idWidth: Int = 1,
+                     burstSize: Option[Int] = None,
+                     size: Option[Int] = None) extends Module {
 
-  val io = new Bundle {
-    val maxi = new AXIMasterIF(addrWidthBits = addrWidth, dataWidthBits = dataWidth, idBits = idWidth)
-    val deq  = Decoupled(UInt(width = dataWidth))
-    val base = UInt(INPUT, width = addrWidth)
-    maxi.renameSignals()
-    base.setName("base")
-  }
+  val bsz = burstSize.getOrElse(fifoDepth)
 
-  val axi_fetch :: axi_wait :: Nil = Enum(UInt(), 2)
-  val axi_state        = Reg(init = axi_wait)
+  require (size.map(s => log2Up(s) <= addrWidth).getOrElse(true),
+           "addrWidth (%d) must be large enough to address all %d element, at least %d bits"
+           .format(addrWidth, size.get, log2Up(size.get)))
+  require (size.isEmpty,
+           "size parameter is not implemented")
+  require (bsz > 0 && bsz <= fifoDepth && bsz <= 256,
+           "burst size (%d) must be 0 < bsz <= FIFO depth (%d) <= 256"
+           .format(bsz, fifoDepth))
 
-  val fifo_a           = Module(new Queue(UInt(width = dataWidth), fifoDepth))
-  val fifo_b           = Module(new Queue(UInt(width = dataWidth), fifoDepth))
-  val fifo_sel         = Reg(Bool())
+  println ("AxiFifoAdapter: fifoDepth = %d, address bits = %d, data bits = %d, id bits = %d%s%s"
+           .format(fifoDepth, addrWidth, dataWidth, idWidth,
+                   burstSize.map(", burst size = %d".format(_)).getOrElse(""),
+                   size.map(", size = %d".format(_)).getOrElse("")))
 
-  io.deq.valid        := Mux(!fifo_sel, fifo_a.io.deq.valid, fifo_b.io.deq.valid)
-  io.deq.bits         := Mux(!fifo_sel, fifo_a.io.deq.bits, fifo_b.io.deq.bits)
-  fifo_a.io.deq.ready := !fifo_sel && io.deq.ready
-  fifo_b.io.deq.ready :=  fifo_sel && io.deq.ready
+  val io = new AxiFifoAdapterIO(addrWidth, dataWidth, idWidth)
 
-  val maxi_rdata       = (io.maxi.readData.bits.data)
-  val maxi_rlast       = (io.maxi.readData.bits.last)
-  val maxi_rvalid      = (io.maxi.readData.valid)
-  val maxi_rready      = (Mux(fifo_sel, fifo_a.io.enq.ready, fifo_b.io.enq.ready))
+  val fifo = Module(new Queue(UInt(width = dataWidth), fifoDepth))
+  val axi_read :: axi_wait :: Nil = Enum(UInt(), 2)
+  val state = Reg(init = axi_wait)
+  val len = Reg(UInt(width = log2Up(bsz)))
+  val maxi_rlast = io.maxi.readData.bits.last
+  val maxi_raddr = Reg(init = io.base)
+  val maxi_ravalid = !reset
+  val maxi_raready = io.maxi.readAddr.ready
+  val maxi_rready = state === axi_read && fifo.io.enq.ready
+  val maxi_rvalid = state === axi_read && io.maxi.readData.valid
 
-  fifo_a.io.enq.bits  := (maxi_rdata)
-  fifo_a.io.enq.valid :=  fifo_sel && maxi_rready && maxi_rvalid
+  io.deq                       <> fifo.io.deq
+  fifo.io.enq.bits             := io.maxi.readData.bits.data
+  io.maxi.readData.ready       := maxi_rready
+  io.maxi.readAddr.valid       := maxi_ravalid
+  fifo.io.enq.valid            := state === axi_read && maxi_rready && io.maxi.readData.valid
 
-  fifo_b.io.enq.bits  := (maxi_rdata)
-  fifo_b.io.enq.valid := !fifo_sel && maxi_rready && maxi_rvalid
+  // AXI boilerplate
+  io.maxi.readAddr.bits.addr   := maxi_raddr
+  io.maxi.readAddr.bits.size   := UInt(if (dataWidth > 8) log2Up(dataWidth / 8) else 0)
+  io.maxi.readAddr.bits.len    := UInt(bsz - 1)
+  io.maxi.readAddr.bits.burst  := UInt("b01") // INCR
+  io.maxi.readAddr.bits.id     := UInt(0)
+  io.maxi.readAddr.bits.lock   := UInt(0)
+  io.maxi.readAddr.bits.cache  := UInt("b1111") // bufferable, write-back RW allocate
+  io.maxi.readAddr.bits.prot   := UInt(0)
+  io.maxi.readAddr.bits.qos    := UInt(0)
 
-  val maxi_raddr       = Reg(init = io.base)
-  val maxi_raddr_hs    = Reg(Bool())
-  val maxi_ravalid     = axi_state === axi_fetch && !maxi_raddr_hs
-  val maxi_raready     = (io.maxi.readAddr.ready)
-
-  io.maxi.readAddr.bits.addr := maxi_raddr
-  io.maxi.readAddr.valid     := maxi_ravalid
-
-  io.maxi.readAddr.bits.size := UInt(log2Up(dataWidth / 8 - 1))
-  io.maxi.readAddr.bits.len  := UInt(fifoDepth - 1)
-  io.maxi.readAddr.bits.burst:= UInt("b01") // INCR
-  io.maxi.readAddr.bits.id   := UInt(0)
-  io.maxi.readAddr.bits.lock := UInt(0)
-  io.maxi.readAddr.bits.cache:= UInt("b1110") // write-through, RW alloc
-  io.maxi.readAddr.bits.prot := UInt(0)
-  io.maxi.readAddr.bits.qos  := UInt(0)
-
-  io.maxi.readData.ready     := maxi_rready
-
-  // true, if buffers will be empty next cycle
-  val switch_a = fifo_a.io.deq.ready && fifo_a.io.count === UInt(1)
-  val switch_b = fifo_b.io.deq.ready && fifo_b.io.count === UInt(1)
-  // true, if buffer fill should start next cycle
-  val fill_a = fifo_a.io.count === UInt(0) || switch_a
-  val fill_b = fifo_b.io.count === UInt(0) || switch_b
+  // write channel tie-offs
+  io.maxi.writeAddr.valid      := Bool(false)
+  io.maxi.writeData.valid      := Bool(false)
+  io.maxi.writeResp.ready      := Bool(false)
 
   when (reset) {
-    fifo_sel          := Bool(false)
-    axi_state         := axi_wait
-    maxi_raddr        := UInt(0)
-    maxi_raddr_hs     := Bool(false)
+    state := axi_wait
+    len   := UInt(bsz - 1)
   }
   .otherwise {
-    when (axi_state === axi_fetch) {  // fetch data state
-      // handshake current address
-      when (maxi_raready && maxi_ravalid) {
-        maxi_raddr_hs := Bool(true)
-        maxi_raddr    := maxi_raddr + UInt((dataWidth * fifoDepth) / 8)
-      }
-      // when read data is valid, enq fifo is ready and last is set
-      when (maxi_rready && maxi_rvalid && maxi_rlast) {
-        maxi_raddr_hs := Bool(false) // re-enable address handshake
-
-        // check if we can stay in fetch mode and flip buffers
-        when (Mux(!fifo_sel, fill_a, fill_b)) {
-          // just flip buffers
-          fifo_sel      := !fifo_sel
-        }
-        .otherwise {
-          // go to wait state
-          axi_state     := axi_wait
-        }
-      }
+    when (state === axi_wait && fifo.io.count <= UInt(bsz - fifoDepth)) { state := axi_read }
+    when (maxi_ravalid && maxi_raready) {
+      maxi_raddr := maxi_raddr + UInt(bsz * (dataWidth / 8))
     }
-    .otherwise { // wait-for-consumption state 
-      // check fill state of deq FIFO: if empty, flip FIFOs
-      when (Mux(!fifo_sel, fill_a, fill_b)) {
-        fifo_sel      := !fifo_sel
-      }
-      // check fill state of other FIFO
-      when (Mux(!fifo_sel, fill_b, fill_a)) {
-        // if empty, start fetch
-        axi_state     := axi_fetch
+    when (state === axi_read) {
+      when (maxi_rready && maxi_rvalid) {
+        when (maxi_rlast) {
+          state := Mux(fifo.io.count <= UInt(bsz - fifoDepth), state, axi_wait)
+          len := UInt(bsz - 1)
+        }
+        .otherwise { len := len - UInt(1) }
       }
     }
   }
 }
-
