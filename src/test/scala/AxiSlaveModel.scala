@@ -15,10 +15,10 @@ class AxiSlaveModel(val cfg: AxiSlaveModelConfiguration) extends Module {
   val mem = Mem(sz, UInt(width = cfg.dataWidth))
 
   /** WRITE PROCESS **/
-  val wa_valid = RegNext(io.saxi.writeAddr.valid)
+  val wa_valid = (io.saxi.writeAddr.valid)
   val wd_valid = (io.saxi.writeData.valid)
   val wr_ready = RegNext(io.saxi.writeResp.ready)
-  val wa_addr  = RegNext(io.saxi.writeAddr.bits.addr)
+  val wa_addr  = (io.saxi.writeAddr.bits.addr)
   val wd_data  = (io.saxi.writeData.bits.data)
   val wa_len   = RegNext(io.saxi.writeAddr.bits.len)
   val wa_size  = RegNext(io.saxi.writeAddr.bits.size)
