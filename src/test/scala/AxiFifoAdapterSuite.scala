@@ -63,9 +63,11 @@ class AxiFifoAdapterModule1Test(m: AxiFifoAdapterModule1) extends Tester(m, fals
       println("#%d: 0x%x (0b%s)".format(i, v, v.toString(2)))
     })
   
-  val errors = (for (i <- 0 until res.length if res(i) != peekAt(m.saxi.mem, i))
-    yield "Mem[%03d] = %d (expected %d)".format(i, res(i), peekAt(m.saxi.mem, i))).toList
-  assertTrue (("mem does not match, errors: " :: errors).mkString(NL), errors.length == 0)
+  for (i <- 0 until res.length if res(i) != peekAt(m.saxi.mem, i)) {
+    val msg = "Mem[%03d] = %d (expected %d)".format(i, res(i), peekAt(m.saxi.mem, i))
+    println(msg)
+    expect(res(i) == peekAt(m.saxi.mem, i), msg)
+  }
 }
 
 class AxiFifoAdapterSuite extends JUnitSuite {
