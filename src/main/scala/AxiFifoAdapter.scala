@@ -39,16 +39,16 @@ class AxiFifoAdapter(fifoDepth: Int,
   val len = Reg(UInt(width = log2Up(bsz)))
   val maxi_rlast = io.maxi.readData.bits.last
   val maxi_raddr = Reg(init = io.base)
-  val maxi_ravalid = !reset
+  val maxi_ravalid = !reset && state === axi_read
   val maxi_raready = io.maxi.readAddr.ready
-  val maxi_rready = state === axi_read && fifo.io.enq.ready
+  val maxi_rready = !reset && state === axi_read && fifo.io.enq.ready
   val maxi_rvalid = state === axi_read && io.maxi.readData.valid
 
   io.deq                       <> fifo.io.deq
   fifo.io.enq.bits             := io.maxi.readData.bits.data
   io.maxi.readData.ready       := maxi_rready
   io.maxi.readAddr.valid       := maxi_ravalid
-  fifo.io.enq.valid            := state === axi_read && maxi_rready && io.maxi.readData.valid
+  fifo.io.enq.valid            := io.maxi.readData.valid
 
   // AXI boilerplate
   io.maxi.readAddr.bits.addr   := maxi_raddr
@@ -67,18 +67,19 @@ class AxiFifoAdapter(fifoDepth: Int,
   io.maxi.writeResp.ready      := Bool(false)
 
   when (reset) {
-    state := axi_wait
-    len   := UInt(bsz - 1)
+    state       := axi_wait
+    len         := UInt(bsz - 1)
+    maxi_raddr  := io.base
   }
   .otherwise {
-    when (state === axi_wait && fifo.io.count <= UInt(bsz - fifoDepth)) { state := axi_read }
-    when (maxi_ravalid && maxi_raready) {
-      maxi_raddr := maxi_raddr + UInt(bsz * (dataWidth / 8))
-    }
+    when (state === axi_wait && fifo.io.count <= UInt(fifoDepth - bsz)) { state := axi_read }
     when (state === axi_read) {
+      when (maxi_ravalid && maxi_raready) {
+        maxi_raddr := maxi_raddr + UInt(bsz * (dataWidth / 8))
+      }
       when (maxi_rready && maxi_rvalid) {
         when (maxi_rlast) {
-          state := Mux(fifo.io.count <= UInt(bsz - fifoDepth), state, axi_wait)
+          state := Mux(fifo.io.count <= UInt(fifoDepth - bsz), state, axi_wait)
           len := UInt(bsz - 1)
         }
         .otherwise { len := len - UInt(1) }
