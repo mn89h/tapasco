@@ -37,9 +37,11 @@ class AxiFifoAdapter(fifoDepth: Int,
   val axi_read :: axi_wait :: Nil = Enum(UInt(), 2)
   val state = Reg(init = axi_wait)
   val len = Reg(UInt(width = log2Up(bsz)))
+  val ra_hs = Reg(Bool())
+
   val maxi_rlast = io.maxi.readData.bits.last
   val maxi_raddr = Reg(init = io.base)
-  val maxi_ravalid = !reset && state === axi_read
+  val maxi_ravalid = !reset && state === axi_read && !ra_hs
   val maxi_raready = io.maxi.readAddr.ready
   val maxi_rready = !reset && state === axi_read && fifo.io.enq.ready
   val maxi_rvalid = state === axi_read && io.maxi.readData.valid
@@ -70,17 +72,20 @@ class AxiFifoAdapter(fifoDepth: Int,
     state       := axi_wait
     len         := UInt(bsz - 1)
     maxi_raddr  := io.base
+    ra_hs       := Bool(false)
   }
   .otherwise {
     when (state === axi_wait && fifo.io.count <= UInt(fifoDepth - bsz)) { state := axi_read }
     when (state === axi_read) {
       when (maxi_ravalid && maxi_raready) {
         maxi_raddr := maxi_raddr + UInt(bsz * (dataWidth / 8))
+        ra_hs := Bool(true)
       }
       when (maxi_rready && maxi_rvalid) {
         when (maxi_rlast) {
           state := Mux(fifo.io.count <= UInt(fifoDepth - bsz), state, axi_wait)
           len := UInt(bsz - 1)
+          ra_hs := Bool(false)
         }
         .otherwise { len := len - UInt(1) }
       }

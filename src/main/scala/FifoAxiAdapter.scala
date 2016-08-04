@@ -39,7 +39,7 @@ class FifoAxiAdapter(fifoDepth: Int,
   val len = Reg(UInt(width = log2Up(bsz)))
   val maxi_wlast = state === axi_write && len === UInt(0)
   val maxi_waddr = Reg(init = io.base)
-  val maxi_wavalid = !reset
+  val maxi_wavalid = !reset && fifo.io.count >= UInt(bsz)
   val maxi_waready = io.maxi.writeAddr.ready
   val maxi_wready = state === axi_write && io.maxi.writeData.ready
   val maxi_wvalid = state === axi_write && fifo.io.deq.valid
