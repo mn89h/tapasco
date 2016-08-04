@@ -44,11 +44,10 @@ class DataWidthConverter(
   private def upsize() = {
     val i = Reg(UInt(width = log2Up(ratio + 1)))
     val d = Reg(UInt(width = outWidth))
-    val c = Reg(init = Bool(true))
 
-    io.inq.ready := !reset && (i =/= UInt(0) || io.deq.ready)
+    io.inq.ready := !reset && i =/= UInt(0)
     io.deq.bits  := d
-    io.deq.valid := !reset && (i === UInt(0) && c)
+    io.deq.valid := !reset && i === UInt(0)
 
     when (reset) {
       i := UInt(ratio)
@@ -56,28 +55,28 @@ class DataWidthConverter(
     }
     .otherwise {
       when (io.inq.ready && io.inq.valid) {
-        c := Bool(true)
         if (littleEndian)
           d := Cat(io.inq.bits, d) >> UInt(inWidth)
         else
           d := (d << UInt(inWidth)) | io.inq.bits
-        i := Mux(i === UInt(0), UInt(ratio - 1), i - UInt(1))
+        i := i - UInt(1)
       }
-      when (io.deq.valid && io.deq.ready) { c := Bool(false) }
+      when (io.deq.valid && io.deq.ready) {
+        i := UInt(ratio)
+      }
     }
   }
 
   private def downsize() = {
-    val i = Reg(UInt(width = log2Up(ratio)))
+    val i = Reg(UInt(width = log2Up(ratio + 1)))
     val d = Reg(UInt(width = inWidth))
 
-    io.inq.ready := !reset && i === UInt(0)
-
+    io.inq.ready := !reset && (i === UInt(0) || (i === UInt(1) && io.deq.ready))
     if (littleEndian)
       io.deq.bits := d(outWidth - 1, 0)
     else
       io.deq.bits := d(inWidth - 1, inWidth - outWidth)
-    io.deq.valid := !reset && RegNext(i > UInt(0) || io.inq.valid)
+    io.deq.valid := !reset && i > UInt(0)
 
     when (reset) {
       i := UInt(0)
@@ -91,9 +90,9 @@ class DataWidthConverter(
           d := d << UInt(outWidth)
         i := i - UInt(1)
       }
-      when (i === UInt(0) && io.inq.valid) {
+      when (io.inq.ready && io.inq.valid) {
         d := io.inq.bits
-        i := UInt(ratio - 1)
+        i := UInt(ratio)
       }
     }
   }

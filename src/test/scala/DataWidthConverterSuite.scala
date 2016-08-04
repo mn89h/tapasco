@@ -6,6 +6,53 @@ import org.junit.Assert._
 import scala.math._
 import java.nio.file.Paths
 
+class SlowQueue(width: Int, delay: Int = 10) extends Module {
+  val io = new Bundle {
+    val enq = Decoupled(UInt(width = width)).flip
+    val deq = Decoupled(UInt(width = width))
+  }
+
+  val waiting :: ready :: Nil = Enum(UInt(), 2)
+  val state = Reg(init = ready)
+
+  val wr = Reg(UInt(width = log2Up(delay)))
+
+  io.deq.bits  := io.enq.bits
+  io.enq.ready := io.deq.ready && state === ready
+  io.deq.valid := io.enq.valid && state === ready
+
+  when (reset) {
+    state := ready
+  }
+  .otherwise {
+    when (state === ready && io.enq.ready && io.deq.valid) {
+      state := waiting
+      wr    := UInt(delay - 1)
+    }
+    when (state === waiting) {
+      wr := wr - UInt(1)
+      when (wr === UInt(0)) { state := ready }
+    }
+  }
+}
+
+class DataWidthConverterHarness(inWidth: Int, outWidth: Int, littleEndian: Boolean) extends Module {
+  val io = new Bundle
+  val dwc  = Module(new DataWidthConverter(inWidth, outWidth, littleEndian))
+  val dsrc = Module(new DecoupledDataSource(UInt(width = inWidth),
+                                            Seq(Seq(pow(2, inWidth).toLong, dwc.ratio).max, 10000.toLong).min.toInt,
+                                            //n => UInt(n % pow(2, inWidth).toInt + 1, width = inWidth),
+                                            n => UInt((scala.math.random * pow(2, inWidth)).toLong, width = inWidth),
+                                            repeat = false))
+  val dwc2 = Module(new DataWidthConverter(outWidth, inWidth, littleEndian))
+  val slq  = Module(new SlowQueue(outWidth, 7))
+
+  dwc.io.inq       <> dsrc.io.out
+  slq.io.enq       <> dwc.io.deq
+  dwc2.io.inq      <> slq.io.deq
+  dwc2.io.deq.ready := Bool(true)
+}
+
 /**
  * DataWidthConverterHarness: Correctness test harness.
  * A DecoupledDataSource with random data is connected to a pair
@@ -13,13 +60,13 @@ import java.nio.file.Paths
  * must behave exactly like a delay on the input stream (where
  * the length of the delay is 2 * in/out-width-ratio).
  **/
-class DataWidthConverterHarness(inWidth: Int, outWidth: Int, littleEndian: Boolean) extends Module {
+class DataWidthConverterHarness2(inWidth: Int, outWidth: Int, littleEndian: Boolean) extends Module {
   val io = new Bundle
   val dwc  = Module(new DataWidthConverter(inWidth, outWidth, littleEndian))
   val dsrc = Module(new DecoupledDataSource(UInt(width = inWidth),
-                                            Seq(Seq(pow(2, inWidth).toInt, dwc.ratio).max, 10000).min,
+                                            Seq(Seq(pow(2, inWidth).toLong, dwc.ratio).max, 10000.toLong).min.toInt,
                                             //n => UInt(n % pow(2, inWidth).toInt + 1, width = inWidth),
-                                            n => UInt((scala.math.random * pow(2, inWidth)).toInt, width = inWidth),
+                                            n => UInt((scala.math.random * pow(2, inWidth)).toLong, width = inWidth),
                                             repeat = false))
   val dwc2 = Module(new DataWidthConverter(outWidth, inWidth, littleEndian))
   dwc.io.inq       <> dsrc.io.out
