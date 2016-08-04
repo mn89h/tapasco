@@ -41,7 +41,7 @@ object AxiSlaveModelConfiguration {
    * @param writeDelay simulated delay between write address handshake and data (default: 0).
    **/
   def apply(addrWidth: Option[Int] = None, dataWidth: Int, idWidth: Int = 1,
-      size: Option[Int] = None, readDelay: Int = 100, writeDelay: Int = 600) = {
+      size: Option[Int] = None, readDelay: Int = 30, writeDelay: Int = 120) = {
     require (!size.isEmpty || !addrWidth.isEmpty, "specify size or addrWidth, or both")
     val sz: Int = size.getOrElse(scala.math.pow(2, addrWidth.get).toInt)
     val aw: Int = addrWidth.getOrElse(log2Up(size.get * dataWidth / 8).toInt)
