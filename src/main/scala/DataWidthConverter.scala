@@ -45,7 +45,7 @@ class DataWidthConverter(
     val i = Reg(UInt(width = log2Up(ratio + 1)))
     val d = Reg(UInt(width = outWidth))
 
-    io.inq.ready := !reset && i =/= UInt(0)
+    io.inq.ready := !reset && (i =/= UInt(0) || (io.inq.valid && io.deq.ready))
     io.deq.bits  := d
     io.deq.valid := !reset && i === UInt(0)
 
@@ -62,7 +62,7 @@ class DataWidthConverter(
         i := i - UInt(1)
       }
       when (io.deq.valid && io.deq.ready) {
-        i := UInt(ratio)
+        i := Mux(io.inq.valid, UInt(ratio - 1), UInt(ratio))
       }
     }
   }
