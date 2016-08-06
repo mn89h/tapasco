@@ -20,6 +20,11 @@ class DecoupledDataSourceIO[T <: Data](gen: T) extends Bundle {
 		 consumed.
  **/
 class DecoupledDataSource[T <: Data](gen: T, val size : Int, data: (Int) => T, val repeat: Boolean = true) extends Module {
+
+  println ("DecoupledDataSource: size = %d, repeat = %s".format(size, if (repeat) "true" else "false"))
+  println("  width = %d".format(log2Up(if (repeat) size else size + 1)))
+
+
   val ds  = for (i <- 0 until size) yield data(i) // evaluate data to array
   val io  = new DecoupledDataSourceIO(gen) // interface
   val i   = Reg(UInt(width = log2Up(if (repeat) size else size + 1))) // index
@@ -31,7 +36,7 @@ class DecoupledDataSource[T <: Data](gen: T, val size : Int, data: (Int) => T, v
   }
   .otherwise {
     if (repeat)
-      when (io.out.ready && io.out.valid) { i := Mux(i < UInt(size - 1), i + UInt(1), UInt(0)) }
+      when (io.out.ready && io.out.valid) { i := i + UInt(1) }
     else
       when (io.out.ready && io.out.valid && i < UInt(size)) { i := i + UInt(1) }
   }

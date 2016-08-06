@@ -6,10 +6,11 @@ import org.junit.Assert._
 import scala.math._
 import java.nio.file.Paths
 
-class SlowQueue(width: Int, delay: Int = 10) extends Module {
+class SlowQueue(width: Int, val delay: Int = 10) extends Module {
   val io = new Bundle {
     val enq = Decoupled(UInt(width = width)).flip
     val deq = Decoupled(UInt(width = width))
+    val dly = UInt(INPUT, width = log2Up(delay))
   }
 
   val waiting :: ready :: Nil = Enum(UInt(), 2)
@@ -27,7 +28,7 @@ class SlowQueue(width: Int, delay: Int = 10) extends Module {
   .otherwise {
     when (state === ready && io.enq.ready && io.deq.valid) {
       state := waiting
-      wr    := UInt(delay - 1)
+      wr    := io.dly
     }
     when (state === waiting) {
       wr := wr - UInt(1)
@@ -36,32 +37,17 @@ class SlowQueue(width: Int, delay: Int = 10) extends Module {
   }
 }
 
-class DataWidthConverterHarness(inWidth: Int, outWidth: Int, littleEndian: Boolean) extends Module {
-  val io = new Bundle
-  val dwc  = Module(new DataWidthConverter(inWidth, outWidth, littleEndian))
-  val dsrc = Module(new DecoupledDataSource(UInt(width = inWidth),
-                                            Seq(Seq(pow(2, inWidth).toLong, dwc.ratio).max, 10000.toLong).min.toInt,
-                                            //n => UInt(n % pow(2, inWidth).toInt + 1, width = inWidth),
-                                            n => UInt((scala.math.random * pow(2, inWidth)).toLong, width = inWidth),
-                                            repeat = false))
-  val dwc2 = Module(new DataWidthConverter(outWidth, inWidth, littleEndian))
-  val slq  = Module(new SlowQueue(outWidth, 7))
-
-  dwc.io.inq       <> dsrc.io.out
-  slq.io.enq       <> dwc.io.deq
-  dwc2.io.inq      <> slq.io.deq
-  dwc2.io.deq.ready := Bool(true)
-}
-
 /**
  * DataWidthConverterHarness: Correctness test harness.
  * A DecoupledDataSource with random data is connected to a pair
  * of data width converters with inverted params. This circuit
  * must behave exactly like a delay on the input stream (where
  * the length of the delay is 2 * in/out-width-ratio).
+ * There's a slow queue in-between to simulate receivers with
+ * varying speed of consumption.
  **/
-class DataWidthConverterHarness2(inWidth: Int, outWidth: Int, littleEndian: Boolean) extends Module {
-  val io = new Bundle
+class DataWidthConverterHarness(inWidth: Int, outWidth: Int, littleEndian: Boolean, delay: Int = 10) extends Module {
+  val io = new Bundle { val dly = UInt(INPUT, width = log2Up(delay)) }
   val dwc  = Module(new DataWidthConverter(inWidth, outWidth, littleEndian))
   val dsrc = Module(new DecoupledDataSource(UInt(width = inWidth),
                                             Seq(Seq(pow(2, inWidth).toLong, dwc.ratio).max, 10000.toLong).min.toInt,
@@ -69,9 +55,13 @@ class DataWidthConverterHarness2(inWidth: Int, outWidth: Int, littleEndian: Bool
                                             n => UInt((scala.math.random * pow(2, inWidth)).toLong, width = inWidth),
                                             repeat = false))
   val dwc2 = Module(new DataWidthConverter(outWidth, inWidth, littleEndian))
+  val slq  = Module(new SlowQueue(outWidth, delay))
+
   dwc.io.inq       <> dsrc.io.out
-  dwc2.io.inq      <> dwc.io.deq
-  dwc2.io.deq.ready := !reset
+  slq.io.enq       <> dwc.io.deq
+  slq.io.dly       := io.dly
+  dwc2.io.inq      <> slq.io.deq
+  dwc2.io.deq.ready := Bool(true)
 }
 
 /**
@@ -82,7 +72,7 @@ class DataWidthConverterHarness2(inWidth: Int, outWidth: Int, littleEndian: Bool
  * mismatches are reported accordingly.
  * Does NOT check timing, only correctness of the output values.
  **/
-class DataWidthConverter_OutputCheck[T <: UInt](m: DataWidthConverterHarness) extends Tester(m, false) {
+class DataWidthConverterCorrectnessTester[T <: UInt](m: DataWidthConverterHarness) extends Tester(m, false) {
   import scala.util.Properties.{lineSeparator => NL}
 
   // returns binary string for Int, e.g., 0011 for 3, width 4
@@ -92,6 +82,8 @@ class DataWidthConverter_OutputCheck[T <: UInt](m: DataWidthConverterHarness) ex
   /** Performs data correctness check. **/
   def check() = {
     var i = 0
+    var delay = m.slq.delay - 1
+    poke (m.slq.io.dly, delay)
     var expecteds: List[BigInt] = List()
     def running = peek(m.dsrc.io.out.valid) > 0 ||
                   peek(m.dwc.io.inq.valid) > 0 ||
@@ -108,6 +100,10 @@ class DataWidthConverter_OutputCheck[T <: UInt](m: DataWidthConverterHarness) ex
 
       // check output element: must match head of expecteds
       if (peek(m.dwc2.io.deq.valid) > 0 && peek(m.dwc2.io.deq.ready) > 0) {
+        // update delay (decreasing with each output)
+        delay = if (delay == 0) m.slq.delay - 1 else delay - 1
+        poke(m.io.dly, delay)
+        // check output
         val v = peek(m.dwc2.io.deq.bits)
         if (expecteds.isEmpty) {
           val errmsg = "received value output value %d (%s), but none expected yet".format(
@@ -139,69 +135,6 @@ class DataWidthConverter_OutputCheck[T <: UInt](m: DataWidthConverterHarness) ex
   step (20) // settle output
 }
 
-
-/**
- * Checks timing assumptions:
- * Cores must be capable of handling a continuous stream of data, i.e.,
- * output stream must always be continuous, if the input stream is.
- * This class checks this assumption by stepping through two data elems
- * in a continuous fashion, then inserts a short pause and repeats.
- * Does NOT check validity of the data, see other checks above.
- **/
-class DataWidthConverter_DataMustBeAvailableImmediately(m: DataWidthConverter) extends Tester(m, true) {
-  val v = new java.math.BigInteger("1" * m.inWidth, 2)
-  reset (10)
-  expect(peek(m.io.inq.ready) != 0, "must be ready immediately after reset")
-  for (_ <- 0 to 1) {
-  poke(m.io.inq.bits, v)
-  poke(m.io.inq.valid, true)
-  poke(m.io.deq.ready, true)
-  if (m.inWidth > m.outWidth) {
-    for (i <- 1 to m.ratio) {
-      step (1)
-      expect(peek(m.io.deq.valid) != 0, "nibble #%d must be ready after one cycle".format(i))
-      if (i != m.ratio)
-        expect (peek(m.io.inq.ready) == 0, "input cannot be ready at nibble #%d".format(i))
-    }
-    expect(peek(m.io.inq.ready) != 0, "must be ready immediately after first word was consumed")
-    poke(m.io.inq.bits, 0)
-    for (i <- 1 to m.ratio) {
-      step (1)
-      expect(peek(m.io.deq.valid) != 0, "nibble #%d must be ready after one cycle".format(i))
-      if (i != m.ratio)
-        expect (peek(m.io.inq.ready) == 0, "input cannot be ready at nibble #%d".format(i))
-    }
-    poke(m.io.inq.valid, false)
-    expect(peek(m.io.inq.ready) != 0, "must be ready immediately after first word was consumed")
-    step(1)
-    expect(peek(m.io.deq.valid) == 0, "second word must be consumed after one cycle")
-  } else {
-    for (i <- 1 to m.ratio) {
-      step(1)
-      expect(peek(m.io.inq.ready) != 0, "word #%d must be consumed after one cycle".format(i))
-      if (i != m.ratio)
-        expect(peek(m.io.deq.valid) == 0, "output cannot be ready at word #%d".format(i))
-    }
-    expect(peek(m.io.deq.valid) != 0, "output must be valid with last word")
-    expect(peek(m.io.inq.ready) != 0, "input must be ready, when output is dequeued immediately")
-    poke(m.io.inq.bits, 0)
-    for (i <- 1 to m.ratio) {
-      step(1)
-      expect(peek(m.io.inq.ready) != 0, "word #%d must be consumed after one cycle".format(i))
-      if (i != m.ratio)
-        expect(peek(m.io.deq.valid) == 0, "output cannot be ready at word #%d".format(i))
-    }
-    expect(peek(m.io.deq.valid) != 0, "output must be valid with last word")
-    expect(peek(m.io.inq.ready) != 0, "input must be ready, when output is dequeued immediately")
-    poke(m.io.inq.valid, false)
-    step(1)
-    expect(peek(m.io.deq.valid) == 0, "output is invalid immediately after last was consumed")
-  }
-  step (5)
-  }
-}
-
-
 /** Unit test for DataWidthConverter hardware. **/
 class DataWidthConverterSuite extends JUnitSuite {
   def resize(inWidth: Int, outWidth: Int, littleEndian: Boolean = true) = {
@@ -213,28 +146,15 @@ class DataWidthConverterSuite extends JUnitSuite {
                    .toString
     chiselMainTest(Array("--genHarness", "--backend", "c", "--vcd", "--targetDir", dir, "--compile", "--test"),
         () => Module(new DataWidthConverterHarness(inWidth, outWidth, littleEndian)))
-      { m => new DataWidthConverter_OutputCheck(m) }
-  }
-
-  def dataMustBeAvailableImmediately(inWidth: Int, outWidth: Int, littleEndian: Boolean = true) = {
-    val endian = if (littleEndian) "le" else "be"
-    println ("testing immediate data availability (%d -> %d, %s) ...".format(inWidth, outWidth, endian))
-    val dir = Paths.get("test")
-                   .resolve("DataWidthConverterSuite")
-                   .resolve("%dto%d%s_data".format(inWidth, outWidth, endian))
-                   .toString
-    chiselMainTest(Array("--genHarness", "--backend", "c", "--vcd", "--targetDir", dir, "--compile", "--test"),
-        () => Module(new DataWidthConverter(inWidth, outWidth, littleEndian)))
-      { m => new DataWidthConverter_DataMustBeAvailableImmediately(m) }
+      { m => new DataWidthConverterCorrectnessTester(m) }
   }
 
   // simple test group, can be used for waveform analysis
-  /*@Test def data16to4le   { dataMustBeAvailableImmediately(16,  4, true) }
-  @Test def data4to16le   { dataMustBeAvailableImmediately(4,  16, true) }
-  @Test def check16to4le  { resize(16,  4, true) }
+  /*@Test def check16to4le  { resize(16,  4, true) }
   @Test def check4to16le  { resize(4,  16, true) }
   @Test def check16to4be  { resize(16,  4, false) }
-  @Test def check4to16be  { resize(4,  16, false) }*/
+  @Test def check4to16be  { resize(4,  16, false) }
+  @Test def check64to32be  { resize(64,  32, false) }*/
 
   // downsizing tests
   @Test def check2to1le   { resize(2,   1, true) }
@@ -267,20 +187,4 @@ class DataWidthConverterSuite extends JUnitSuite {
   @Test def check8to64be  { resize(8,  64, false) }
   @Test def check32ot64le { resize(32, 64, true) }
   @Test def check32to64be { resize(32, 64, false) }
-
-  // timing behavior checks
-  @Test def data2to1le   { dataMustBeAvailableImmediately(2,   1, true) }
-  @Test def data2to1be   { dataMustBeAvailableImmediately(2,   1, false) }
-  @Test def data8to1le   { dataMustBeAvailableImmediately(8,   1, true) }
-  @Test def data8to1be   { dataMustBeAvailableImmediately(8,   1, false) }
-  @Test def data16to4le  { dataMustBeAvailableImmediately(16,  4, true) }
-  @Test def data16to4be  { dataMustBeAvailableImmediately(16,  4, false) }
-  @Test def data16to8le  { dataMustBeAvailableImmediately(16,  8, true) }
-  @Test def data16to8be  { dataMustBeAvailableImmediately(16,  8, false) }
-  @Test def data32to8le  { dataMustBeAvailableImmediately(32,  8, true) }
-  @Test def data32to8be  { dataMustBeAvailableImmediately(32,  8, false) }
-  @Test def data64ot8le  { dataMustBeAvailableImmediately(64,  8, true) }
-  @Test def data64to8be  { dataMustBeAvailableImmediately(64,  8, false) }
-  @Test def data64ot32le { dataMustBeAvailableImmediately(64, 32, true) }
-  @Test def data64to32be { dataMustBeAvailableImmediately(64, 32, false) }
 }
