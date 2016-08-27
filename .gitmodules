@@ -1,6 +1,0 @@
-[submodule "packaging"]
-	path = packaging
-	url = https://bitbucket.org/jkorinth/chisel-packaging.git
-[submodule "miscutils"]
-	path = miscutils
-	url = https://bitbucket.org/jkorinth/chisel-miscutils.git
