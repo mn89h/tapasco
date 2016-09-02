@@ -6,7 +6,7 @@ import Chisel._
  * @param addrWidth address bits for AXI4 interface.
  * @param dataWidth word width for AXI4 interface.
  * @param idWidth id bits for AXI4 interface.
- * @param size size of memory to model (in bytes).
+ * @param size size of memory to model (in dataWidth-sized elements).
  * @param readDelay simulated delay between read address handshake and data.
  * @param writeDelay simulated delay between write address handshake and data.
  **/

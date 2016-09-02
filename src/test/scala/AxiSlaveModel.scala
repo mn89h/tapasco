@@ -35,6 +35,42 @@ class AxiSlaveModel(val cfg: AxiSlaveModelConfiguration) extends Module {
   val wr_valid = Reg(Bool()) // response valid
   val wr_wait = Reg(UInt(width = log2Up(cfg.writeDelay + 1)))
 
+  /**
+   * Returns data at address (dataWidth bits).
+   * @param address AXI address (byte granularity).
+   * @param t Tester instance.
+   * @return value of internal memory (cfg.dataWidth bit wide).
+   **/
+  def at(address: Int)(implicit t: Tester[_]): BigInt  = {
+    val idx = address / (cfg.dataWidth / 8)
+    require (idx >= 0 && idx < cfg.size,
+             "AxiSlaveModel: read at invalid index %d (max: %d) for address 0x%x"
+             .format(idx, cfg.size - 1, address))
+    t.peekAt(mem, address / (cfg.dataWidth / 8))
+  }
+
+  /**
+   * Returns data at word index (dataWidth bits).
+   * @param index Index into internal memory (cfg.dataWidth sized words).
+   * @param t Tester instance.
+   * @return value of internal memory (cfg.dataWidth bit wide)
+   **/
+  def apply(index: Int)(implicit t: Tester[_]): BigInt = {
+    require (index >= 0 && index < cfg.size,
+             "AxiSlaveModel: read at invalid index %d (max: %d)"
+             .format(index, cfg.size - 1))
+    t.peekAt(mem, index)
+  }
+
+  /**
+   * Set data at address (dataWidth bits).
+   * @param address AXI address (byte granularity, will be aligned automatically).
+   * @param value Word value to set (always full word, cfg.dataWidth bits).
+   * @param t Tester instance.
+   **/
+  def set(address: Int, value: BigInt)(implicit t: Tester[_]) =
+    t.pokeAt(mem, value, address / (cfg.dataWidth / 8))
+
   io.saxi.writeAddr.ready     := !wa_hs
   io.saxi.writeData.ready     :=  wa_hs && !wr_valid && wr_wait === UInt(0)
   io.saxi.writeResp.bits.resp := wr
@@ -63,8 +99,9 @@ class AxiSlaveModel(val cfg: AxiSlaveModelConfiguration) extends Module {
     when (wa_hs && wr_wait > UInt(0)) { wr_wait := wr_wait - UInt(1) }
     when (wa_hs && wr_wait === UInt(0)) {
       when (wa_hs && wd_valid && !wr_valid) {
-        mem(if (cfg.dataWidth > 8) wa >> UInt(log2Up(cfg.dataWidth / 8)) else wa) := wd_data
-        printf("writing data 0x%x to address 0x%x\n", wd_data, wa)
+        val shifted_addr   = if (cfg.dataWidth > 8) wa >> UInt(log2Up(cfg.dataWidth / 8)) else wa
+        mem(shifted_addr) := wd_data
+        printf("writing data 0x%x to address 0x%x (0x%x)\n", wd_data, wa, shifted_addr)
         when (io.saxi.writeData.bits.last || wl === UInt(0)) { wr_valid := Bool(true) }
         .otherwise {
           wl := wl - UInt(1)
@@ -116,6 +153,11 @@ class AxiSlaveModel(val cfg: AxiSlaveModelConfiguration) extends Module {
     rr_wait   := UInt(0)
   }
   .otherwise {
+    when(io.saxi.readData.ready && io.saxi.readData.valid) {
+      printf("reading data 0x%x from address 0x%x",
+          io.saxi.readData.bits.data,
+          if (cfg.dataWidth > 8) ra >> UInt(log2Up(cfg.dataWidth / 8)) else ra)
+    }
     when (!ra_hs && io.saxi.readAddr.ready && io.saxi.readAddr.valid) {
       ra    := io.saxi.readAddr.bits.addr
       ra_hs := Bool(true)
