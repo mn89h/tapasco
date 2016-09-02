@@ -20,8 +20,6 @@ class FifoAxiAdapter(fifoDepth: Int,
   require (size.map(s => log2Up(s) <= addrWidth).getOrElse(true),
            "addrWidth (%d) must be large enough to address all %d element, at least %d bits"
            .format(addrWidth, size.get, log2Up(size.get)))
-  require (size.isEmpty,
-           "size parameter is not implemented")
   require (bsz > 0 && bsz <= fifoDepth && bsz <= 256,
            "burst size (%d) must be 0 < bsz <= FIFO depth (%d) <= 256"
            .format(bsz, fifoDepth))
@@ -74,9 +72,14 @@ class FifoAxiAdapter(fifoDepth: Int,
   }
   .otherwise {
     when (state === axi_wait && fifo.io.count >= UInt(bsz)) { state := axi_write }
-      when (maxi_wavalid && maxi_waready) {
-        maxi_waddr := maxi_waddr + UInt(bsz * (dataWidth / 8))
-      }
+    when (maxi_wavalid && maxi_waready) {
+      val addr_off  = UInt(bsz * (dataWidth / 8))
+      val next_addr = maxi_waddr + addr_off
+      if (size.isEmpty)
+        maxi_waddr := next_addr
+      else
+        maxi_waddr := Mux(next_addr >= io.base + UInt(size.get), io.base, next_addr)
+    }
     when (state === axi_write) {
       when (maxi_wready && maxi_wvalid) {
         when (maxi_wlast) {
