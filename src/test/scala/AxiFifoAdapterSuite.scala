@@ -14,7 +14,7 @@ class AxiFifoAdapterModule1(
   val addrWidth = log2Up(dataWidth * fifoDepth * blockSize / 8)
   val cfg = AxiSlaveModelConfiguration(addrWidth = Some(addrWidth), dataWidth = dataWidth)
   val io = new Bundle
-  val afa = Module (new AxiFifoAdapter(addrWidth = addrWidth,
+  val afa = Module (AxiFifoAdapter(addrWidth = addrWidth,
       dataWidth = dataWidth, idWidth = 1, fifoDepth = fifoDepth))
   val saxi = Module (new AxiSlaveModel(cfg))
   val dqr = Reg(init = Bool(true))

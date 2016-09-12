@@ -1,5 +1,6 @@
 package chisel.axiutils
 import chisel.packaging.{CoreDefinition, ModuleBuilder}
+import chisel.packaging.CoreDefinition.root
 import chisel.miscutils.DecoupledDataSource
 import scala.sys.process._
 import java.nio.file.Paths
@@ -53,9 +54,9 @@ object AxiModuleBuilder extends ModuleBuilder {
         )
       ),
       ( // generic adapter module AXI -> FIFO
-        () => Module(new AxiFifoAdapter(fifoDepth = 4,
-                                        addrWidth = 32,
-                                        dataWidth = 32)),
+        () => Module(AxiFifoAdapter(fifoDepth = 4,
+                                    addrWidth = 32,
+                                    dataWidth = 32)),
         CoreDefinition(
           name = "AxiFifoAdapter",
           vendor = "esa.cs.tu-darmstadt.de",

@@ -42,7 +42,7 @@ class Axi2AxiModule(val dataWidth: Int,
 
   val saxi = Module(new AxiSlaveModel(cfg))
 
-  val afa = Module(new AxiFifoAdapter(
+  val afa = Module(AxiFifoAdapter(
       addrWidth = aw,
       dataWidth = dataWidth,
       idWidth = 1,
