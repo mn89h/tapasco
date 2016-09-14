@@ -68,8 +68,11 @@ class AxiSlaveModel(val cfg: AxiSlaveModelConfiguration) extends Module {
    * @param value Word value to set (always full word, cfg.dataWidth bits).
    * @param t Tester instance.
    **/
-  def set(address: Int, value: BigInt)(implicit t: Tester[_]) =
-    t.pokeAt(mem, value, address / (cfg.dataWidth / 8))
+  def set(address: Int, value: BigInt)(implicit t: Tester[_]) = {
+    val idx = address / (cfg.dataWidth / 8)
+    printf("AxiSlaveModel: set data at 0x%x (idx: %d) to 0x%x".format(address, value, idx))
+    t.pokeAt(mem, value, idx)
+  }
 
   io.saxi.writeAddr.ready     := !wa_hs
   io.saxi.writeData.ready     :=  wa_hs && !wr_valid && wr_wait === UInt(0)
@@ -154,7 +157,7 @@ class AxiSlaveModel(val cfg: AxiSlaveModelConfiguration) extends Module {
   }
   .otherwise {
     when(io.saxi.readData.ready && io.saxi.readData.valid) {
-      printf("reading data 0x%x from address 0x%x",
+      printf("reading data 0x%x from address 0x%x\n",
           io.saxi.readData.bits.data,
           if (cfg.dataWidth > 8) ra >> UInt(log2Up(cfg.dataWidth / 8)) else ra)
     }
@@ -169,6 +172,44 @@ class AxiSlaveModel(val cfg: AxiSlaveModelConfiguration) extends Module {
       l      := l - UInt(1)
       ra     := ra + UInt(cfg.dataWidth / 8)
       when (l === UInt(0)) { ra_hs := Bool(false) }
+    }
+  }
+}
+
+/** AxiSlaveModel companion object with diverse helpers. **/
+object AxiSlaveModel {
+  import scala.util.Properties.{lineSeparator => NL}
+  /**
+   * Fills the given AXI memory model with linear data:
+   * Data is filled with increasing integers of bitWidth size.
+   * @param m AxiSlaveModel to fill.
+   * @param bitWidth Number of bits per element.
+   * @param tester Tester instance for memory poking (implicit).
+   **/
+  def fillWithLinearSeq(m: AxiSlaveModel, bitWidth: Int)(implicit tester: Tester[_]) = {
+    import scala.math.{log, pow}
+    require (m.cfg.dataWidth % bitWidth == 0,
+             "bitWidth (%d) must be evenly divisible by data width (%d)"
+             .format(bitWidth, m.cfg.dataWidth))
+    val maxData: Int = pow(2, bitWidth).toInt
+    val maxAddr: Int = pow(2, m.cfg.addrWidth).toInt
+    val size: Int = m.cfg.size //.getOrElse(maxAddr / (m.cfg.dataWidth / 8))
+    def makeNumber(i: Int): Int = {
+      /*printf("fillWithLinearSeq::makeNumber: i = %d, maxData = 0x%x -> 0x%x%s"
+             .format(i, maxData, i % maxData, NL))*/
+      i % maxData
+    }
+
+    printf("fillWithLinearSeq: size = %d words, %d bits, bitWidth: %d%s"
+           .format(size, m.cfg.dataWidth, bitWidth, NL))
+    
+    var word: BigInt = 0
+    for (i <- 0 until size; val addr = i * (m.cfg.dataWidth / 8)) {
+      for (j <- 0 until m.cfg.dataWidth / bitWidth)
+        word = (word << bitWidth) | makeNumber(i * (m.cfg.dataWidth / bitWidth) + j)
+      printf("fillWithLinearSeq: address = 0x%x, word = 0x%x%s".format(addr, word, NL))
+      m.set(addr, word)
+      word = 0
     }
   }
 }
