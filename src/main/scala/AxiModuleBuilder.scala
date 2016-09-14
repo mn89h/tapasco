@@ -64,6 +64,25 @@ object AxiModuleBuilder extends ModuleBuilder {
           version = "0.1",
           root = Paths.get(".").toAbsolutePath.resolve("ip").resolve("AxiFifoAdapter").toString
         )
+      ),
+      ( // AXI-based sliding window
+        () => Module(new AxiSlidingWindow(AxiSlidingWindowConfiguration(
+            gen = UInt(width = 8),
+            width = 8,
+            depth = 3,
+            afa = AxiFifoAdapterConfiguration(
+                axi = AxiConfiguration(addrWidth = 32, dataWidth = 64, idWidth = 1),
+                fifoDepth = 32,
+                burstSize = Some(16)
+              )
+          ))),
+        CoreDefinition(
+          name = "AxiSlidingWindow3x8",
+          vendor = "esa.cs.tu-darmstadt.de",
+          library = "chisel",
+          version = "0.1",
+          root = root("AxiSlidingWindow")
+        )
       )
     )
 }
