@@ -33,7 +33,7 @@ class AxiSlidingWindowIO[T <: Data](cfg: AxiSlidingWindowConfiguration[T]) exten
     data.ready.setName("DATA_READY")
     data.valid.setName("DATA_VALID")
     for (i <- 0 until cfg.depth) data.bits(i).setName("DATA_%02d".format(i))
-    maxi.renameSignals()
+    maxi.renameSignals(None, None)
   }
 }
 

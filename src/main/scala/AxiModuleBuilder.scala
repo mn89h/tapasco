@@ -21,7 +21,7 @@ class FifoAxiAdapterTest1(dataWidth : Int, size: Int) extends Module {
                                        dataWidth = dataWidth,
                                        burstSize = Some(16)))
 
-  io.maxi.renameSignals()
+  io.maxi.renameSignals(None, None)
   io.base.setName("base")
 
   fad.io.base := io.base
