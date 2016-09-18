@@ -30,6 +30,8 @@ class FifoAxiAdapterTest1(dataWidth : Int, size: Int) extends Module {
 }
 
 object AxiModuleBuilder extends ModuleBuilder {
+  implicit val axi = AxiConfiguration(addrWidth = 32, dataWidth = 64, idWidth = 1)
+
   val modules: List[(() => Module, CoreDefinition)] = List(
       ( // test module with fixed data
         () => Module(new FifoAxiAdapterTest1(dataWidth = 32, 256)),
@@ -82,6 +84,16 @@ object AxiModuleBuilder extends ModuleBuilder {
           library = "chisel",
           version = "0.1",
           root = root("AxiSlidingWindow")
+        )
+      ),
+      ( // AXI Crossbar
+        () => Module(new AxiMux(8)),
+        CoreDefinition(
+          name = "AxiMux",
+          vendor = "esa.cs.tu-darmstadt.de",
+          library = "chisel",
+          version = "0.1",
+          root = root("AxiMux")
         )
       )
     )
