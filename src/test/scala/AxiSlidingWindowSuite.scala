@@ -47,7 +47,7 @@ class AxiSlidingWindowTester[T <: Data](m: AxiSlidingWindowTestModule[T], isTrac
   // check all sliding windows within size of memory slave (no border handling)
   for (i <- 0 until totalSteps if noErrors) {
     val expected = (0 until m.asw.cfg.depth) map (i => (i + start) % maxData)
-    val found = (0 until m.asw.cfg.depth) map (i => peek(m.asw.io.data.bits)(i))
+    val found = (0 until m.asw.cfg.depth) map (i => peek(m.asw.io.data.bits)(m.asw.cfg.depth - i - 1))
     noErrors = expected.equals(found)
     if (!noErrors)
       println("Mismatch at step #%d: expected %s, found %s".format(start, expected.toString, found.toString))

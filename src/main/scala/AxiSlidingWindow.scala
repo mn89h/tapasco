@@ -87,9 +87,9 @@ class AxiSlidingWindow[T <: Data](val cfg: AxiSlidingWindowConfiguration[T]) ext
 
     // shift data on handshake
     when (data_in.ready && data_in.valid) {
-      mem(0) := data_in.bits
-      for (i <- 1 until cfg.depth)
-        mem(i) := mem(i - 1)
+      mem(cfg.depth - 1) := data_in.bits
+      for (i <- 0 until cfg.depth - 1)
+        mem(i) := mem(i + 1)
 
       when (state === init) {
         cnt := cnt + UInt(1)
