@@ -1,4 +1,5 @@
 package chisel.axiutils
+import chisel.axiutils.registers._
 import chisel.packaging.{CoreDefinition, ModuleBuilder}
 import chisel.packaging.CoreDefinition.root
 import chisel.miscutils.DecoupledDataSource
@@ -94,6 +95,32 @@ object AxiModuleBuilder extends ModuleBuilder {
           library = "chisel",
           version = "0.1",
           root = root("AxiMux")
+        )
+      ),
+      ( // AXI Register File
+        () => Module(
+          new Axi4LiteRegisterFile(new Axi4LiteRegisterFileConfiguration(
+            width = 32,
+            regs = Map(0  -> new ConstantRegister(value = BigInt("10101010", 16)),
+                       4  -> new ConstantRegister(value = BigInt("20202020", 16)),
+                       8  -> new ConstantRegister(value = BigInt("30303030", 16)),
+                       16 -> new ConstantRegister(value = BigInt("40404040", 16), bitfield = Map(
+                         "Byte #3" -> BitRange(31, 24),
+                         "Byte #2" -> BitRange(23, 16),
+                         "Byte #1" -> BitRange(15, 8),
+                         "Byte #0" -> BitRange(7, 0)
+                       )))
+          ))
+        ),
+        CoreDefinition.withActions(
+          name = "Axi4LiteRegisterFile",
+          vendor = "esa.cs.tu-darmstadt.de",
+          library = "chisel",
+          version = "0.1",
+          root = root("Axi4LiteRegisterFile"),
+          postBuildActions = Seq(_ match {
+            case m: Axi4LiteRegisterFile => m.dumpAddressMap(root("Axi4LiteRegisterFile"))
+          })
         )
       )
     )
