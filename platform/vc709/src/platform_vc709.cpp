@@ -46,9 +46,6 @@ using namespace tapasco::platform;
 
 static const char *dma_dev_path[4] = {
 	"/dev/FFLINK_DMA_DEVICE_0",
-	"/dev/FFLINK_DMA_DEVICE_1",
-	"/dev/FFLINK_DMA_DEVICE_2",
-	"/dev/FFLINK_DMA_DEVICE_3"
 };
 
 static const char *user_dev_path = "/dev/FFLINK_USER_DEVICE_0";

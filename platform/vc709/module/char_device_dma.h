@@ -99,18 +99,12 @@ struct priv_data_struct {
 	dma_addr_t dma_handle_h2l;
 	dma_addr_t dma_handle_l2h;
 
-	void * mem_addr_l2h;
-	void * mem_addr_h2l;
-
 	void * device_base_addr;
 	void * ctrl_base_addr;
 
 	wait_queue_head_t rw_wait_queue;
 	bool condition_rw;
 	struct mutex rw_mutex;
-
-	unsigned int cache_lsize;
-	unsigned int cache_mask;
 };
 
 /******************************************************************************/
@@ -119,12 +113,9 @@ struct priv_data_struct {
 static int dma_open(struct inode *, struct file *);
 static int dma_close(struct inode *, struct file *);
 static long dma_ioctl(struct file *, unsigned int, unsigned long);
-static ssize_t dma_read(struct file *, char __user *, size_t count, loff_t *);
-static ssize_t dma_write(struct file *, const char __user *, size_t count, loff_t *);
 
 /******************************************************************************/
 /* helper functions called for sys-calls */
-static unsigned int dma_cache_fit(unsigned int btt);
 static int dma_alloc_pbufs(void** p, dma_addr_t *handle, gfp_t zone, int direction);
 static void dma_free_pbufs(void *p, dma_addr_t handle, int direction);
 static void transmit_to_user(void *, void *, dma_addr_t, int);
