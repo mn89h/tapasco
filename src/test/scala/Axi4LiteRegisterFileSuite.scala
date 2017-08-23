@@ -1,9 +1,9 @@
 package chisel.axiutils.registers
-import chisel.axiutils.{AxiConfiguration, Axi4LiteProgrammableMaster, MasterAction}
-import org.scalatest.junit.JUnitSuite
-import org.scalatest.Assertions._
-import org.junit.Test
-import Chisel._
+import  chisel.axiutils.{Axi4LiteProgrammableMaster, MasterAction}
+import  chisel3._
+import  chisel3.util._
+import  chisel3.iotesters.{ChiselFlatSpec, Driver, PeekPokeTester}
+import  chisel.axi._
 
 /**
  * Harness for Axi4LiteRegisterFile:
@@ -16,20 +16,23 @@ import Chisel._
  * @param regs register map for register file
  * @param actions master actions to perform
  **/
-class RegFileTest(
-  val size: Int,
-  val off: Int,
-  regs: Map[Int, ControlRegister],
-  actions: Seq[MasterAction]
-)(implicit axi: AxiConfiguration) extends Module {
-  val io = new Bundle { val out = Decoupled(UInt(width = axi.dataWidth)); val finished = Bool(OUTPUT) }
-  val cfg = new Axi4LiteRegisterFileConfiguration(width = axi.dataWidth, regs = regs)
+class RegFileTest(val size: Int, val off: Int, regs: Map[Int, ControlRegister], actions: Seq[MasterAction])
+                 (implicit axi: Axi4Lite.Configuration) extends Module {
+  val io = IO(new Bundle {
+    val out = Decoupled(UInt(axi.dataWidth))
+    val finished = Output(Bool())
+    val rresp = Output(UInt(2.W))
+    val wresp = Output(UInt(2.W))
+  })
+  val cfg = new Axi4LiteRegisterFileConfiguration(regs = regs)
   val saxi = Module(new Axi4LiteRegisterFile(cfg))
   val m = Module(new Axi4LiteProgrammableMaster(actions))
   m.io.maxi <> saxi.io.saxi
-  io.out <> m.io.out
-  io.finished := m.io.finished
-  m.io.w_resp.ready := Bool(true)
+  io.out    <> m.io.out
+  io.finished       := m.io.finished
+  m.io.w_resp.ready := true.B
+  io.rresp          := m.io.maxi.readData.bits.resp
+  io.wresp          := m.io.maxi.writeResp.bits
 }
 
 /**
@@ -37,7 +40,7 @@ class RegFileTest(
  * @param m configured RegFileTest module
  * @param isTrace turns on debug output (default: true)
  **/
-class ReadTester(m: RegFileTest, isTrace: Boolean = true) extends Tester(m, isTrace) {
+class ReadTester(m: RegFileTest) extends PeekPokeTester(m) {
   reset(10)
   poke(m.io.out.ready, true)
   var steps = m.size * 10 // no more than 10 clock cycles per read
@@ -49,7 +52,7 @@ class ReadTester(m: RegFileTest, isTrace: Boolean = true) extends Tester(m, isTr
     }
     val v = peek(m.io.out.bits)
     val e = BigInt("%02x".format(i) * 4, 16)
-    val resp = peek(m.m.io.maxi.readData.bits.resp)
+    val resp = peek(m.io.rresp)
     expect (resp == 0, "read #%d: resp is 0x%x (%d), should be 0 (OKAY)".format(i, resp, resp))
     expect(v == e, "at action #%d, expected: 0x%x (%d) but found %x (%d)".format(i, e, e, v, v))
     step(1)
@@ -62,7 +65,7 @@ class ReadTester(m: RegFileTest, isTrace: Boolean = true) extends Tester(m, isTr
  * @param m configured RegFileTest module
  * @param isTrace turns on debug output (default: true)
  **/
-class WriteTester(m: RegFileTest, isTrace: Boolean = true) extends Tester(m, isTrace) {
+class WriteTester(m: RegFileTest) extends PeekPokeTester(m) {
   reset(10)
   poke(m.io.out.ready, true)
   println("running for a total of %d steps max ...".format(m.size * 20))
@@ -86,7 +89,7 @@ class WriteTester(m: RegFileTest, isTrace: Boolean = true) extends Tester(m, isT
  * @param reads number of invalid reads to perform
  * @param isTrace turns on debug output (default: true)
  **/
-class InvalidReadTester(m: RegFileTest, reads: Int, isTrace: Boolean = true) extends Tester(m, isTrace) {
+class InvalidReadTester(m: RegFileTest, reads: Int) extends PeekPokeTester(m) {
   reset(10)
   println("performing %d invalid reads ...")
   var steps = reads * 10
@@ -108,16 +111,16 @@ class InvalidReadTester(m: RegFileTest, reads: Int, isTrace: Boolean = true) ext
  * @param writes number of invalid writes to perform
  * @param isTrace turns on debug output (default: true)
  **/
-class InvalidWriteTester(m: RegFileTest, writes: Int, isTrace: Boolean = true) extends Tester(m, isTrace) {
+class InvalidWriteTester(m: RegFileTest, writes: Int) extends PeekPokeTester(m) {
   reset(10)
-    println("performing %d invalid writes ...".format(writes))
+  println("performing %d invalid writes ...".format(writes))
   var steps = writes * 10
   for (i <- 1 until writes + 1 if steps > 0) {
     while (steps > 0 && peek(m.m.io.w_resp.valid) == 0) {
       steps -= 1
       step(1)
     }
-    val resp = peek(m.m.io.w_resp.bits)
+    val resp = peek(m.io.wresp)
     expect(resp == 2, "write #%d: resp is 0x%x (%d), should be 2 (SLVERR)".format(i, resp, resp))
     step(1)
   }
@@ -125,33 +128,33 @@ class InvalidWriteTester(m: RegFileTest, writes: Int, isTrace: Boolean = true) e
 }
 
 /** Unit test suite for Axi4LiteRegisterFile module. **/
-class Axi4LiteRegisterFileSuite extends JUnitSuite {
+class Axi4LiteRegisterFileSuite extends ChiselFlatSpec {
   // basic Chisel arguments
-  val chiselArgs = Array("--backend", "c", "--compile", "--genHarness", "--test", "--vcd")
+  val chiselArgs = Array("--fint-write-vcd")
   // implicit AXI configuration
-  implicit val axi = AxiConfiguration(dataWidth = 32, addrWidth = 32, idWidth = 1)
+  implicit val axi = Axi4Lite.Configuration(dataWidth = Axi4Lite.Width32, addrWidth = Axi4Lite.AddrWidth(32))
 
   /** Attempts to read from all registers. **/
   private def readTest(size: Int, off: Int) =  {
-    val args = chiselArgs ++ Array("--targetDir", "test/Axi4RegisterFileSuite/read/size_%d_off_%d".format(size, off))
+    val args = chiselArgs ++ Array("--target-dir", "test/Axi4RegisterFileSuite/read/size_%d_off_%d".format(size, off))
     // fill constant registers with pattern
     val regs = (for (i <- 1 until size + 1) yield
       off * i -> new ConstantRegister(value = BigInt("%02x".format(i) * 4, 16))
-    ) toMap
+    ).toMap
     // read each of the registers in sequence
     val actions = for (i <- 1 until size + 1) yield MasterAction(true, off * i, None)
     // run test
-    chiselMainTest(args, () => Module(new RegFileTest(size, off, regs, actions)))
-      { m => new ReadTester(m, true) }
+    Driver.execute(args, () => new RegFileTest(size, off, regs, actions))
+      { m => new ReadTester(m) }
   }
 
   /** Attempts to write to all registers. **/
   private def writeTest(size: Int, off: Int) =  {
-    val args = chiselArgs ++ Array("--targetDir", "test/Axi4RegisterFileSuite/write/size_%d_off_%d".format(size, off))
+    val args = chiselArgs ++ Array("--target-dir", "test/Axi4RegisterFileSuite/write/size_%d_off_%d".format(size, off))
     // fill constant registers with pattern
     val regs = (for (i <- 1 until size + 1) yield
       off * i -> new Register(width = axi.dataWidth)
-    ) toMap
+    ).toMap
     // read each of the registers in sequence
     val actions = (for (i <- 1 until size + 1) yield Seq(
       // first write the register
@@ -160,47 +163,47 @@ class Axi4LiteRegisterFileSuite extends JUnitSuite {
       MasterAction(true, off * i, None)
     )) reduce (_++_)
     // run test
-    chiselMainTest(args, () => Module(new RegFileTest(size, off, regs, actions)))
-      { m => new WriteTester(m, true) }
+    Driver.execute(args, () => new RegFileTest(size, off, regs, actions))
+      { m => new WriteTester(m) }
   }
 
   /** Attempts to perform invalid reads and checks return code. **/
   private def invalidReads(reads: Int) = {
-    val args = chiselArgs ++ Array("--targetDir", "test/Axi4RegisterFileSuite/invalidReads/%d".format(reads))
+    val args = chiselArgs ++ Array("--target-dir", "test/Axi4RegisterFileSuite/invalidReads/%d".format(reads))
     // only zero is valid register
     val regs = Map( 0 -> new ConstantRegister(value = 0) )
     // read from increasing addresses (all above 0 are invalid)
     val actions = for (i <- 1 until reads + 1) yield MasterAction(true, i * (axi.dataWidth / 8), None)
     // run test
-    chiselMainTest(args, () => Module(new RegFileTest(1, 4, regs, actions)))
-      { m => new InvalidReadTester(m, reads, true) }
+    Driver.execute(args, () => new RegFileTest(1, 4, regs, actions))
+      { m => new InvalidReadTester(m, reads) }
   }
 
   /** Attempts to perform invalid writes and checks return code. **/
   private def invalidWrites(writes: Int) = {
-    val args = chiselArgs ++ Array("--targetDir", "test/Axi4RegisterFileSuite/invalidWrites/%d".format(writes))
+    val args = chiselArgs ++ Array("--target-dir", "test/Axi4RegisterFileSuite/invalidWrites/%d".format(writes))
     // only zero is valid register
     val regs = Map( 0 -> new ConstantRegister(value = 0) )
     // write from increasing addresses (all above 0 are invalid)
     val actions = for (i <- 1 until writes + 1) yield MasterAction(false, i * (axi.dataWidth / 8), Some(42))
     // run test
-    chiselMainTest(args, () => Module(new RegFileTest(1, 4, regs, actions)))
-      { m => new InvalidWriteTester(m, writes, true) }
+    Driver.execute(args, () => new RegFileTest(1, 4, regs, actions))
+      { m => new InvalidWriteTester(m, writes) }
   }
 
   /* READ TESTS */
-  @Test def read_255_4 { readTest(255, 4) }
-  @Test def read_16_16 { readTest(16, 16) }
-  @Test def read_4_4 { readTest(4, 4) }
-  @Test def read_7_13 { readTest(7, 13) }
+  "read_255_4" should "be ok" in { readTest(255, 4) }
+  "read_16_16" should "be ok" in { readTest(16, 16) }
+  "read_4_4" should "be ok" in   { readTest(4, 4) }
+  "read_7_13" should "be ok" in  { readTest(7, 13) }
 
   /* WRITE TESTS */
-  @Test def write_255_4 { writeTest(255,   4) }
-  @Test def write_16_16 { writeTest( 16,  16) }
-  @Test def write_4_4   { writeTest(  4,   4) }
-  @Test def write_7_13  { writeTest(  7,  13) }
+  "write_255_4" should "be ok" in { writeTest(255,   4) }
+  "write_16_16" should "be ok" in { writeTest( 16,  16) }
+  "write_4_4" should "be ok" in   { writeTest(  4,   4) }
+  "write_7_13" should "be ok" in  { writeTest(  7,  13) }
 
   /* INVALID R/W TESTS */
-  @Test def invalidReads_16  { invalidReads(16) }
-  @Test def invalidWrites_16 { invalidWrites(16) }
+  "invalidReads_16" should "be ok" in  { invalidReads(16) }
+  "invalidWrites_16" should "be ok" in { invalidWrites(16) }
 }

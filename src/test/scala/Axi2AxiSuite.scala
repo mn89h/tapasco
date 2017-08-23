@@ -1,54 +1,43 @@
 package chisel.axiutils
-import Chisel._
-import org.scalatest.junit.JUnitSuite
-import org.junit.Test
-import org.junit.Assert._
-import chisel.miscutils.DecoupledDataSource
-import scala.math.{random, pow}
+import  chisel3._
+import  chisel3.util._
+import  chisel3.iotesters.{ChiselFlatSpec, Driver, PeekPokeTester}
+import  chisel.axi._
+import  org.scalatest.junit.JUnitSuite
+import  chisel.miscutils.DecoupledDataSource
+import  scala.math.{random, pow}
 
 /**
  * Composite test module:
  * Uses FifoAxiAdapter to fill AxiSlaveModel; then reads data from
  * AxiSlaveModel via AxiFifoAdapter.
  **/
-class Axi2AxiModule(val dataWidth: Int,
-                    val fifoDepth: Int = 16,
-                    val size: Option[Int],
-                    val addrWidth: Option[Int]) extends Module {
+class Axi2AxiModule(val fifoDepth: Int = 16, val size: Option[Int])
+                   (implicit axi: Axi4.Configuration) extends Module {
 
-  require (!size.isEmpty || !addrWidth.isEmpty, "specify either size, or addrWidth, or both")
+  require (size.isEmpty || log2Ceil(size.get) <= axi.addrWidth,
+           "size (%d) elements cannot be addressed by %d address bits".format(size.get, axi.addrWidth))
 
-  val io = new Bundle {
-    val deq = Decoupled(UInt(width = dataWidth))
-  }
+  val io = IO(new Bundle {
+    val deq = Decoupled(UInt(axi.dataWidth))
+  })
 
-  val sz = size.getOrElse(pow(2, addrWidth.get).toInt)
-  val aw = addrWidth.getOrElse(log2Up(sz * (dataWidth / 8)))
+  val sz = size.getOrElse(pow(2, axi.addrWidth.toDouble).toInt)
+  val aw = Seq(axi.addrWidth:Int, log2Ceil(sz * (axi.dataWidth / 8))).min
   println ("Axi2AxiModule: address bits = %d, size = %d".format(aw, sz))
-  val cfg = AxiSlaveModelConfiguration(addrWidth = Some(aw), dataWidth = dataWidth, size = size)
+  val cfg = AxiSlaveModelConfiguration()
 
   val dsrc = Module(new DecoupledDataSource(
-      gen = UInt(width = dataWidth),
+      gen = UInt(axi.dataWidth),
       size = sz, 
-      //data = n => UInt((random * pow(2, dataWidth)).toInt),
-      data = n => UInt(n % pow(2, dataWidth).toInt),
+      //data = n => UInt((random * pow(2, axi.dataWidth)).toInt),
+      data = n => (n % pow(2, axi.dataWidth:Int).toInt).U,
       repeat = false))
 
-  val fad = Module(new FifoAxiAdapter(
-      fifoDepth = sz,
-      addrWidth = aw,
-      dataWidth = dataWidth,
-      burstSize = Some(fifoDepth)))
-
+  val fad  = Module(new FifoAxiAdapter(fifoDepth = sz, burstSize = Some(fifoDepth)))
   val saxi = Module(new AxiSlaveModel(cfg))
-
-  val afa = Module(AxiFifoAdapter(
-      addrWidth = aw,
-      dataWidth = dataWidth,
-      idWidth = 1,
-      fifoDepth = fifoDepth))
-
-  val base = UInt(0, width = aw)
+  val afa  = Module(AxiFifoAdapter(fifoDepth = fifoDepth))
+  val base = 0.U(aw.W)
 
   fad.io.enq <> dsrc.io.out
   saxi.io.saxi.writeAddr <> fad.io.maxi.writeAddr
@@ -56,7 +45,7 @@ class Axi2AxiModule(val dataWidth: Int,
   saxi.io.saxi.writeResp <> fad.io.maxi.writeResp
   saxi.io.saxi.readAddr  <> afa.io.maxi.readAddr
   saxi.io.saxi.readData  <> afa.io.maxi.readData
-  afa.reset := dsrc.io.out.valid || fad.fifo.io.count > UInt(0)
+  afa.reset := dsrc.io.out.valid || fad.fifo.io.count > 0.U
   fad.io.base := base
   afa.io.base := base
   io.deq <> afa.io.deq
@@ -68,9 +57,10 @@ class Axi2AxiModule(val dataWidth: Int,
  * via AxiFifoAdapter and compared.
  * Does NOT perform any timing checks, only correctness.
  **/
-class Axi2AxiTester(m: Axi2AxiModule) extends Tester(m) {
+class Axi2AxiTester(m: Axi2AxiModule)
+                   (implicit axi: Axi4.Configuration) extends PeekPokeTester(m) {
   def toBinaryString(v: BigInt): String =
-    "b%%%ds".format(m.dataWidth).format(v.toString(2)).replace(' ', '0')
+    "b%%%ds".format(axi.dataWidth).format(v.toString(2)).replace(' ', '0')
   private val O = 10000
   private var cc = 0
   private var ccc = O
@@ -87,9 +77,9 @@ class Axi2AxiTester(m: Axi2AxiModule) extends Tester(m) {
   reset (10)
   poke(m.io.deq.ready, true)
   for (i <- 0 until m.sz) {
-    while (peek(m.afa.io.deq.valid) == 0) step (1)
-    val v = peek(m.afa.io.deq.bits)
-    val e = peek(m.dsrc.ds(i))
+    while (peek(m.io.deq.valid) == 0) step (1)
+    val v = peek(m.io.deq.bits)
+    val e = m.dsrc.data(i)
     expect (v == e, "mem[%08d] = %d (%s), expected: %d (%s)"
             .format(i, v, toBinaryString(v), e, toBinaryString(e)))
     step(1) // advance sim
@@ -98,21 +88,22 @@ class Axi2AxiTester(m: Axi2AxiModule) extends Tester(m) {
 }
 
 /** Test suite using both AxiFifoAdapter and FifoAxiAdapter. **/
-class Axi2AxiSuite extends JUnitSuite {
+class Axi2AxiSuite extends ChiselFlatSpec {
+  import java.nio.file._
+
   def run(size: Int, fifoDepth: Int, addrWidth: Int, dataWidth: Int) {
-    val dir = java.nio.file.Paths.get("test").resolve("s%d_aw%d_dw%d".format(size, addrWidth, dataWidth)).toString
-    val args = Array("--backend", "c", "--compile", "--test", "--vcd", "--genHarness", "--targetDir", dir)
-    chiselMainTest(args, () => Module(new Axi2AxiModule(
-        fifoDepth = fifoDepth,
-        dataWidth = dataWidth,
-        size = Some(size),
-        addrWidth = Some(addrWidth))))
+    implicit val axi = Axi4.Configuration(addrWidth = AddrWidth(addrWidth), dataWidth = DataWidth(dataWidth))
+    val dir = Paths.get("test")
+      .resolve("s%d_aw%d_dw%d".format(size, addrWidth, axi.dataWidth))
+      .toString
+    Driver.execute(Array("--fint-write-vcd", "--target-dir", dir),
+                   () => new Axi2AxiModule(fifoDepth = fifoDepth,
+                                           size = Some(size)))
       { m => new Axi2AxiTester(m) }
   }
 
-  @Test def run8bit()  { run (size = 256, fifoDepth = 4, addrWidth = 32, dataWidth = 8) }
-  @Test def run16bit() { run (size = 256, fifoDepth = 8, addrWidth = 32, dataWidth = 16) }
-  @Test def run32bit() { run (size = 256, fifoDepth = 8, addrWidth = 32, dataWidth = 32) }
-  @Test def run64bit() { run (size = 1024, fifoDepth = 256, addrWidth = 32, dataWidth = 64) }
+  "run8bit" should "be ok" in  { run (size = 256, fifoDepth = 4, addrWidth = 32, dataWidth = 8) }
+  "run16bit" should "be ok" in { run (size = 256, fifoDepth = 8, addrWidth = 32, dataWidth = 16) }
+  "run32bit" should "be ok" in { run (size = 256, fifoDepth = 8, addrWidth = 32, dataWidth = 32) }
+  "run64bit" should "be ok" in { run (size = 1024, fifoDepth = 256, addrWidth = 32, dataWidth = 64) }
 }
-

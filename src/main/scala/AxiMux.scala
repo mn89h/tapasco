@@ -1,21 +1,22 @@
 package chisel.axiutils
-import AXIDefs._
-import Chisel._
+import  chisel3._
+import  chisel3.util._
+import  chisel.axi.Axi4._
 
 /**
  * I/O Bundle for AXI mux.
  * @param n Number of slave interfaces.
  * @param axi Implicit AXI interface configuration.
  **/
-class AxiMuxIO(n: Int)(implicit axi: AxiConfiguration) extends Bundle {
-  val saxi = (Vec.fill(n) { new AXIMasterIF(axi.addrWidth, axi.dataWidth, axi.idWidth) }).flip
-  val maxi = new AXIMasterIF(axi.addrWidth, axi.dataWidth, axi.idWidth)
+class AxiMuxIO(n: Int)(implicit axi: Configuration) extends Bundle {
+  val saxi = Vec(n, Slave(axi))
+  val maxi = Master(axi)
 
-  def renameSignals() = {
+  /*jdef renameSignals() = {
     for (i <- 0 until n)
       saxi(i).renameSignals(Some("S%02d_".format(i)), None)
     maxi.renameSignals(None, None)
-  }
+  }*/
 }
 
 /**
@@ -23,34 +24,34 @@ class AxiMuxIO(n: Int)(implicit axi: AxiConfiguration) extends Bundle {
  * @param n Number of slave interfaces.
  * @param axi Implicit AXI interface configuration.
  **/
-class AxiMux(n: Int)(implicit axi: AxiConfiguration) extends Module {
-  val io = new AxiMuxIO(n)
-  io.renameSignals()
+class AxiMux(n: Int)(implicit axi: Configuration) extends Module {
+  val io = IO(new AxiMuxIO(n))
+  //io.renameSignals()
 
-  val waiting :: in_burst :: Nil = Enum(UInt(), 2)
+  val waiting :: in_burst :: Nil = Enum(2)
 
-  val r_curr = Reg(UInt(width = log2Up(n)))
-  val w_curr = Reg(UInt(width = log2Up(n)))
-  val r_state = Reg(init = waiting)
-  val w_state = Reg(init = waiting)
+  val r_curr = Reg(UInt(log2Ceil(n).W))
+  val w_curr = Reg(UInt(log2Ceil(n).W))
+  val r_state = RegInit(waiting)
+  val w_state = RegInit(waiting)
 
-  def next_r() = r_curr := Mux(r_curr === UInt(n - 1), UInt(0), r_curr + UInt(1))
-  def next_w() = w_curr := Mux(w_curr === UInt(n - 1), UInt(0), w_curr + UInt(1))
+  def next_r() = r_curr := Mux(r_curr === (n - 1).U, 0.U, r_curr + 1.U)
+  def next_w() = w_curr := Mux(w_curr === (n - 1).U, 0.U, w_curr + 1.U)
 
   /* tie-offs / wire defaults for connected slaves */
   for (s <- io.saxi) {
     /* READ ADDR */
-    s.readAddr.ready     := Bool(false)
+    s.readAddr.ready     := false.B
     /* READ DATA */
-    s.readData.valid     := Bool(false)
-    s.readData.bits.data := UInt(0)
-    s.readData.bits.id   := UInt(0)
-    s.readData.bits.last := Bool(false)
-    s.readData.bits.resp := UInt(0)
+    s.readData.valid     := false.B
+    s.readData.bits.data := 0.U
+    s.readData.bits.id   := 0.U
+    s.readData.bits.last := false.B
+    s.readData.bits.resp := 0.U
     /* WRITE ADDR */
-    s.writeAddr.ready    := Bool(false)
+    s.writeAddr.ready    := false.B
     /* WRITE DATA */
-    s.writeData.ready    := Bool(false)
+    s.writeData.ready    := false.B
   }
 
   /* wiring for currently selected slaves */
@@ -75,8 +76,8 @@ class AxiMux(n: Int)(implicit axi: AxiConfiguration) extends Module {
   io.maxi.writeData.bits          := io.saxi(w_curr).writeData.bits
 
   when (reset) {
-    r_curr := UInt(0)
-    w_curr := UInt(0)
+    r_curr := 0.U
+    w_curr := 0.U
   }
   .otherwise {
     when (r_state === waiting) {

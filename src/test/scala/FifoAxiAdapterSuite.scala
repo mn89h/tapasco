@@ -1,33 +1,38 @@
 package chisel.axiutils
-import Chisel._
-import chisel.miscutils.DecoupledDataSource
-import org.scalatest.junit.JUnitSuite
-import org.junit.Test
-import org.junit.Assert._
+import  chisel3._
+import  chisel3.util._
+import  chisel3.iotesters.{ChiselFlatSpec, Driver, PeekPokeTester}
+import  chisel.miscutils.DecoupledDataSource
+import  chisel.axi._
 
-class FifoAxiAdapterModule1(val dataWidth : Int, size: Int) extends Module {
-  val io = new Bundle
-  val cfg = AxiSlaveModelConfiguration(dataWidth = dataWidth, size = Some(size))
-  val datasrc = Module (new DecoupledDataSource(UInt(width = dataWidth), size = 256, n => UInt(n), false))
-  val fad = Module (new FifoAxiAdapter(fifoDepth = size,
-                                       addrWidth = log2Up(size),
-                                       dataWidth = dataWidth,
-                                       burstSize = Some(16)))
+class FifoAxiAdapterModule1(size: Int)(implicit val axi: Axi4.Configuration) extends Module {
+  val io = IO(new Bundle {
+    val datasrc_out_valid = Output(Bool())
+    val fifo_count        = Output(UInt(log2Ceil(size).W))
+  })
+  val cfg = AxiSlaveModelConfiguration(size = Some(size))
+  val datasrc = Module (new DecoupledDataSource(UInt(axi.dataWidth), size = 256, n => n.U, false))
+  val naxi = Axi4.Configuration(AddrWidth(log2Ceil(size)), DataWidth(axi.dataWidth))
+  val fad = Module (new FifoAxiAdapter(fifoDepth = size, burstSize = Some(16))(naxi))
   val saxi = Module (new AxiSlaveModel(cfg))
 
-  fad.io.base := UInt(0)
-  fad.io.enq  <> datasrc.io.out
-  fad.io.maxi <> saxi.io.saxi
+  fad.io.base          := 0.U
+  fad.io.enq           <> datasrc.io.out
+  fad.io.maxi          <> saxi.io.saxi
+  io.datasrc_out_valid := datasrc.io.out.valid
+  io.fifo_count        := fad.io.count
 }
 
-class FifoAxiAdapterSuite extends JUnitSuite {
-  @Test def test1 {
-    chiselMainTest(Array("--genHarness", "--backend", "c", "--vcd", "--targetDir", "test/fad", "--compile", "--test"),
-        () => Module(new FifoAxiAdapterModule1(dataWidth = 8, size = 256))) { m => new FifoAxiAdapterModule1Test(m) }
+class FifoAxiAdapterSuite extends ChiselFlatSpec {
+  "test1" should "be ok" in {
+    implicit val axi = Axi4.Configuration(AddrWidth(8), DataWidth(8))
+    Driver.execute(Array("--fint-write-vcd", "--target-dir", "test/fad"),
+        () => new FifoAxiAdapterModule1(size = 256))
+      { m => new FifoAxiAdapterModule1Test(m) }
   }
 }
 
-class FifoAxiAdapterModule1Test(fad: FifoAxiAdapterModule1) extends Tester(fad, isTrace = true) {
+class FifoAxiAdapterModule1Test(fad: FifoAxiAdapterModule1) extends PeekPokeTester(fad) {
   import scala.util.Properties.{lineSeparator => NL}
   private var cc = 0
 
@@ -39,10 +44,10 @@ class FifoAxiAdapterModule1Test(fad: FifoAxiAdapterModule1) extends Tester(fad, 
   }
 
   def toBinaryString(v: BigInt) =
-      "b%%%ds".format(fad.dataWidth).format(v.toString(2)).replace(' ', '0')
+      "b%%%ds".format(fad.axi.dataWidth:Int).format(v.toString(2)).replace(' ', '0')
 
   reset(10)
-  while (peek(fad.datasrc.io.out.valid) != 0 || peek(fad.fad.fifo.io.count) > 0) step(1)
+  while (peek(fad.io.datasrc_out_valid) != 0 || peek(fad.io.fifo_count) > 0) step(1)
   step(10) // settle
 
   // check

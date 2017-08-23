@@ -1,31 +1,34 @@
 package chisel.axiutils
-import Chisel._
-import org.scalatest.junit.JUnitSuite
-import org.junit.Test
-import org.junit.Assert._
-import java.nio.file.Paths
+import  chisel3._
+import  chisel3.util._
+import  chisel3.iotesters.{ChiselFlatSpec, Driver, PeekPokeTester}
+import  java.nio.file.Paths
+import  chisel.axi._
 
-class AxiFifoAdapterModule1(
-    val dataWidth: Int,
-    val fifoDepth: Int,
-    val blockSize: Int
-  ) extends Module {
-
-  val addrWidth = log2Up(dataWidth * fifoDepth * blockSize / 8)
-  val cfg = AxiSlaveModelConfiguration(addrWidth = Some(addrWidth), dataWidth = dataWidth)
-  val io = new Bundle
-  val afa = Module (AxiFifoAdapter(addrWidth = addrWidth,
-      dataWidth = dataWidth, idWidth = 1, fifoDepth = fifoDepth))
+class AxiFifoAdapterModule1(val fifoDepth: Int, val blockSize: Int)
+                           (implicit axi: Axi4.Configuration) extends Module {
+  val addrWidth = log2Ceil(axi.dataWidth * fifoDepth * blockSize / 8)
+  val cfg = AxiSlaveModelConfiguration(size = Some(Math.pow(2, addrWidth:Int).toInt))
+  val io = IO(new Bundle {
+    val dqr = Output(Bool())
+    val afa_deq_valid = Output(Bool())
+    val afa_deq_bits  = Output(UInt(axi.dataWidth))
+  })
+  val afa  = Module (AxiFifoAdapter(fifoDepth = fifoDepth))
   val saxi = Module (new AxiSlaveModel(cfg))
-  val dqr = Reg(init = Bool(true))
+  val dqr  = RegInit(true.B)
 
-  afa.io.base      := UInt(0)
-  //afa.io.deq.ready := Bool(true)
+  afa.io.base      := 0.U
+  //afa.io.deq.ready := true.B
   afa.io.deq.ready := dqr
   afa.io.maxi      <> saxi.io.saxi
+  dqr              := io.dqr
+  io.afa_deq_valid := afa.io.deq.valid
+  io.afa_deq_bits  := afa.io.deq.bits
 }
 
-class AxiFifoAdapterModule1Test(m: AxiFifoAdapterModule1) extends Tester(m, false) {
+class AxiFifoAdapterModule1Test(m: AxiFifoAdapterModule1)
+                               (implicit axi: Axi4.Configuration) extends PeekPokeTester(m) {
   import scala.util.Properties.{lineSeparator => NL}
   private var _cc = 0
 
@@ -39,20 +42,20 @@ class AxiFifoAdapterModule1Test(m: AxiFifoAdapterModule1) extends Tester(m, fals
   // setup data
   println("prepping %d (%d x %d) mem elements ...".format(m.fifoDepth * m.blockSize, m.fifoDepth, m.blockSize))
   for (i <- 0 until m.fifoDepth * m.blockSize)
-    pokeAt(m.saxi.mem, i % scala.math.pow(2, m.dataWidth).toInt, i)
+    pokeAt(m.saxi.mem, i % scala.math.pow(2, axi.dataWidth:Int).toInt, i)
 
   var res: List[BigInt] = List()
   var cc: Int = m.fifoDepth * m.blockSize * 10 // upper bound on cycles
 
   reset(10)
-  poke(m.dqr, true)
+  poke(m.io.dqr, true)
   while (cc > 0 && res.length < m.fifoDepth * m.blockSize) {
-    if (peek(m.afa.io.deq.valid) != 0) {
-      val v = peek(m.afa.io.deq.bits)
+    if (peek(m.io.afa_deq_valid) != 0) {
+      val v: BigInt = peek(m.io.afa_deq_bits)
       res ++= List(v)
-      poke(m.dqr, false)
+      poke(m.io.dqr, false)
       step(res.length % 20)
-      poke(m.dqr, true)
+      poke(m.io.dqr, true)
     }
     step(1)
     cc -= 1
@@ -70,20 +73,22 @@ class AxiFifoAdapterModule1Test(m: AxiFifoAdapterModule1) extends Tester(m, fals
   }
 }
 
-class AxiFifoAdapterSuite extends JUnitSuite {
+class AxiFifoAdapterSuite extends ChiselFlatSpec {
   def runTest(dataWidth: Int, fifoDepth: Int, blockSize: Int) {
     val dir = Paths.get("test").resolve("dw%d_fd%d_bs%d".format(dataWidth, fifoDepth, blockSize)).toString
-    chiselMainTest(Array("--genHarness", "--backend", "c", "--vcd", "--targetDir", dir, "--compile", "--test"),
-        () => Module(new AxiFifoAdapterModule1(dataWidth = dataWidth, fifoDepth = fifoDepth, blockSize = blockSize))) { m => new AxiFifoAdapterModule1Test(m) }
+    implicit val axi = Axi4.Configuration(dataWidth = DataWidth(dataWidth), addrWidth = AddrWidth(32))
+    Driver.execute(Array("--fint-write-vcd", "--target-dir", dir),
+                   () => new AxiFifoAdapterModule1(fifoDepth = fifoDepth, blockSize = blockSize))
+      { m => new AxiFifoAdapterModule1Test(m) }
   }
 
-  @Test def checkDw32Fd1Bs256     { runTest(dataWidth = 32,  fifoDepth = 1,   blockSize = 256/1) }
-  @Test def checkDw32Fd8Bs32      { runTest(dataWidth = 32,  fifoDepth = 8,   blockSize = 256/8) }
-  @Test def checkDw8Fd8Bs32       { runTest(dataWidth = 8,   fifoDepth = 8,   blockSize = 256/8) }
-  @Test def checkDw8Fd2Bs128      { runTest(dataWidth = 8,   fifoDepth = 2,   blockSize = 256/2) }
-  @Test def checkDw64Fd16Bs512    { runTest(dataWidth = 64,  fifoDepth = 16,  blockSize = 512) }
-  @Test def checkDw128Fd128Bs1024 { runTest(dataWidth = 128, fifoDepth = 128, blockSize = 1024/128) }
+  "checkDw32Fd1Bs256" should "be ok" in     { runTest(dataWidth = 32,  fifoDepth = 1,   blockSize = 256/1) }
+  "checkDw32Fd8Bs32" should "be ok" in      { runTest(dataWidth = 32,  fifoDepth = 8,   blockSize = 256/8) }
+  "checkDw8Fd8Bs32" should "be ok" in       { runTest(dataWidth = 8,   fifoDepth = 8,   blockSize = 256/8) }
+  "checkDw8Fd2Bs128" should "be ok" in      { runTest(dataWidth = 8,   fifoDepth = 2,   blockSize = 256/2) }
+  "checkDw64Fd16Bs512" should "be ok" in    { runTest(dataWidth = 64,  fifoDepth = 16,  blockSize = 512) }
+  "checkDw128Fd128Bs1024" should "be ok" in { runTest(dataWidth = 128, fifoDepth = 128, blockSize = 1024/128) }
   // FIXME seems to work, but too slow
-  // @Test def checkDw8Fd1080Bs480   { runTest(dataWidth = 8,   fifoDepth = 256, blockSize = 480*4) }
+  // "checkDw8Fd1080Bs480" should "be ok" in   { runTest(dataWidth = 8,   fifoDepth = 256, blockSize = 480*4) }
 }
 

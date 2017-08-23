@@ -21,8 +21,9 @@ libraryDependencies ++= (Seq("chisel3","chisel-iotesters").map {
   dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) })
 
 libraryDependencies ++= Seq(
+  "com.novocode" % "junit-interface" % "0.11" % "test",
   "org.scalatest" %% "scalatest" % "2.2.6" % "test",
-   "com.typesafe.play" %% "play-json" % "2.4.8"
+  "com.typesafe.play" %% "play-json" % "2.4.8"
 )
 
 // no parallel testing
@@ -31,6 +32,7 @@ parallelExecution in Test := false
 
 testForkedParallel in Test := false
 
+scalacOptions ++= Seq("-language:implicitConversions", "-language:reflectiveCalls", "-deprecation", "-feature")
 
 // project structure
 
