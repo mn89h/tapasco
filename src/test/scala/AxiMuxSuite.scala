@@ -14,7 +14,7 @@ class AxiMuxReadTestModule(val n: Int)(implicit axi: Axi4.Configuration) extends
   val io = IO(new Bundle {
     val afa_deq_ready = Output(UInt(n.W))
     val afa_deq_valid = Output(UInt(n.W))
-    val afa_deq_bits  = Vector(Output(UInt(axi.dataWidth)))
+    val afa_deq_bits  = Input(Vec(n, UInt(axi.dataWidth)))
   })
   val mux = Module(new AxiMux(n))
   private val asmcfg = AxiSlaveModelConfiguration(size = Some(n * 128))

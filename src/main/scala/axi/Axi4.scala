@@ -98,34 +98,6 @@ object Axi4 {
     }
   }
 
-  class Protection extends Bundle {
-    val prot = UInt(3.W)
-  }
-
-  object Protection {
-    sealed trait Flag extends Function[Int, Int]  { def apply(i: Int): Int }
-    object Flag {
-      final case object NON_PRIVILEGED extends Flag { def apply(i: Int): Int = i & ~(1 << 0) }
-      final case object PRIVILEGED extends Flag     { def apply(i: Int): Int = i |  (1 << 0) }
-      final case object SECURE extends Flag         { def apply(i: Int): Int = i & ~(1 << 1) }
-      final case object NON_SECURE extends Flag     { def apply(i: Int): Int = i |  (1 << 1) }
-      final case object DATA extends Flag           { def apply(i: Int): Int = i & ~(1 << 2) }
-      final case object INSTRUCTION extends Flag    { def apply(i: Int): Int = i |  (1 << 2) }
-    }
-    def apply(fs: Flag*): Int = (fs fold (identity[Int] _)) (_ andThen _) (0)
-  }
-
-  class Strobe(implicit cfg: Configuration) extends Bundle {
-    val strb = UInt((cfg.dataWidth / 8).W)
-
-    override def cloneType = { new Strobe()(cfg).asInstanceOf[this.type] }
-  }
-
-  object Strobe {
-    def apply(byteEnables: Int*): UInt = ((byteEnables map (i => (1 << i)) fold 0) (_ | _)).U
-  }
-
-
   class Address(implicit cfg: Configuration) extends Bundle {
     val id     = UInt(cfg.idWidth)
     val addr   = UInt(cfg.addrWidth)
@@ -155,7 +127,7 @@ object Axi4 {
     }
 
     class Write(implicit cfg: Configuration) extends DataChannel {
-      val strb  = new Strobe
+      val strb  = new Strobe(cfg.dataWidth)
 
       override def cloneType = { new Write()(cfg).asInstanceOf[this.type] }
     }
@@ -167,10 +139,6 @@ object Axi4 {
     val bresp = UInt(2.W)
 
     override def cloneType = { new WriteResponse()(cfg).asInstanceOf[this.type] }
-  }
-
-  object Response {
-    val okay :: exokay :: slverr :: decerr :: Nil = Enum(4)
   }
 
   class Master private (implicit cfg: Configuration) extends Bundle {

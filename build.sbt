@@ -4,9 +4,7 @@ organization := "esa.cs.tu-darmstadt.de"
 
 version := "0.4-SNAPSHOT"
 
-crossScalaVersions := Seq("2.10.3", "2.10.4", "2.11.0")
-
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.11"
 
 resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
@@ -25,12 +23,6 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.2.6" % "test",
   "com.typesafe.play" %% "play-json" % "2.4.8"
 )
-
-// no parallel testing
-
-parallelExecution in Test := false
-
-testForkedParallel in Test := false
 
 scalacOptions ++= Seq("-language:implicitConversions", "-language:reflectiveCalls", "-deprecation", "-feature")
 

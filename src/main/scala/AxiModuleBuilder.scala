@@ -34,7 +34,7 @@ object AxiModuleBuilder extends ModuleBuilder {
   implicit val axi = Axi4.Configuration(AddrWidth(32),
                                         DataWidth(64),
                                         IdWidth(1))
-  implicit val axilite = Axi4Lite.Configuration(Axi4Lite.AddrWidth(32),
+  implicit val axilite = Axi4Lite.Configuration(AddrWidth(32),
                                                 Axi4Lite.Width64)
 
   val modules: List[(() => Module, CoreDefinition)] = List(
@@ -113,15 +113,15 @@ object AxiModuleBuilder extends ModuleBuilder {
                        )))
           ))
         },
-        CoreDefinition.withActions(
+        CoreDefinition/*.withActions*/(
           name = "Axi4LiteRegisterFile",
           vendor = "esa.cs.tu-darmstadt.de",
           library = "chisel",
           version = "0.1",
-          root = root("Axi4LiteRegisterFile"),
+          root = root("Axi4LiteRegisterFile")/*,
           postBuildActions = Seq(_ match {
             case m: Axi4LiteRegisterFile => m.dumpAddressMap(root("Axi4LiteRegisterFile"))
-          })
+          })*/
         )
       )/*,
       ( // AXI4 Dummy

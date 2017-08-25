@@ -26,10 +26,25 @@ class FifoAxiAdapterModule1(size: Int)(implicit val axi: Axi4.Configuration) ext
 class FifoAxiAdapterSuite extends ChiselFlatSpec {
   "test1" should "be ok" in {
     implicit val axi = Axi4.Configuration(AddrWidth(8), DataWidth(8))
-    Driver.execute(Array("--fint-write-vcd", "--target-dir", "test/fad"),
-        () => new FifoAxiAdapterModule1(size = 256))
+    Driver.execute(Array("--fint-write-vcd", "--target-dir", "test/fad"), () => new FifoAxiAdapterModule1(size = 256))
       { m => new FifoAxiAdapterModule1Test(m) }
   }
+
+  /*"Poked data" should "be retrievable via peekAt" in {
+    implicit val axi = Axi4.Configuration(AddrWidth(8), DataWidth(8))
+    Driver.execute(Array("--is-verbose", "--fint-write-vcd", "--target-dir", "test/pokedpeekat"),
+        () => new AxiSlaveModel(AxiSlaveModelConfiguration(size = Some(256))))
+      { m => new PeekPokeTester(m) {
+        reset(10)
+        for (i <- 0 until 256) pokeAt(m.mem, i, i.toChar)
+        step(100)
+        for (i <- 0 until 256) {
+          val v = peekAt(m.mem, i)
+          println(s"peekAt($i, mem) = $v")
+          expect(BigInt(i) == v, "Mem[%03d] = %d, expected: %d".format(i, v, i))
+        }
+      }}
+  }*/
 }
 
 class FifoAxiAdapterModule1Test(fad: FifoAxiAdapterModule1) extends PeekPokeTester(fad) {
@@ -49,11 +64,12 @@ class FifoAxiAdapterModule1Test(fad: FifoAxiAdapterModule1) extends PeekPokeTest
   reset(10)
   while (peek(fad.io.datasrc_out_valid) != 0 || peek(fad.io.fifo_count) > 0) step(1)
   step(10) // settle
+  println("--- done ---")
 
   // check
-  for (i <- 0 until 256) {
+  assert(0 until 256 map { i =>
     val v = peekAt(fad.saxi.mem, i)
-    expect(peekAt(fad.saxi.mem, i) == i, "Mem[%03d] = %d (%s), expected: %d (%s)"
-        .format(i, v, toBinaryString(v), i, toBinaryString(i)))
-  }
+    println("Mem[%03d] = %d (%s), expected: %d (%s)".format(i, v, toBinaryString(v), i, toBinaryString(i)))
+    v equals BigInt(i)
+  } reduce (_ && _))
 }

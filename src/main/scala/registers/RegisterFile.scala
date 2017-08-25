@@ -1,5 +1,5 @@
 package chisel.axiutils.registers
-import  chisel.axi.Axi4Lite._
+import  chisel.axi._, Axi4Lite._
 import  chisel.axiutils.registers._
 import  chisel3._
 import  chisel3.util._
@@ -10,11 +10,11 @@ import  scala.util.Properties.{lineSeparator => NL}
  *  @param width Register data width (in bits).
  *  @param regs Map from offsets in addrGranularity to register implementations.
  **/
-case class Axi4LiteRegisterFileConfiguration(addrGranularity: Int = 8, regs: Map[Int, ControlRegister])
+case class Axi4LiteRegisterFileConfiguration(addrGranularity: Int = 32, regs: Map[Int, ControlRegister])
                                             (implicit axi: Configuration) {
   /* internal helpers: */
   private def overlap(p: (BitRange, BitRange)) = p._1.overlapsWith(p._2)
-  private def makeRange(a: Int): BitRange = BitRange(a * addrGranularity + axi.dataWidth - 1, a * addrGranularity)
+  private def makeRange(a: Int): BitRange = BitRange(a * addrGranularity + axi.dataWidth.toInt - 1, a * addrGranularity)
   private lazy val m = regs.keys.toList.sorted map makeRange
   private lazy val o: Seq[Boolean] = (m.take(m.length - 1) zip m.tail) map overlap
 
@@ -24,7 +24,7 @@ case class Axi4LiteRegisterFileConfiguration(addrGranularity: Int = 8, regs: Map
 
   /** Minimum bit width of address lines. */
   lazy val minAddrWidth: AddrWidth =
-    AddrWidth(Seq(log2Ceil(regs.size * axi.dataWidth / addrGranularity), log2Ceil(regs.keys.max)).max)
+    AddrWidth(Seq(log2Ceil(regs.size * axi.dataWidth.toInt / addrGranularity), log2Ceil(regs.keys.max)).max)
 }
 
 /**

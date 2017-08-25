@@ -4,48 +4,15 @@ import  chisel3.util._
 import  chisel3.internal.firrtl.Width
 
 object Axi4Lite {
-  sealed trait WidthLike { def width: Int }
-  final case class AddrWidth(width: Int) extends WidthLike
   sealed trait DataWidth extends WidthLike
   final case object Width32 extends DataWidth { def width = 32 }
   final case object Width64 extends DataWidth { def width = 64 }
-  final case class IdWidth(width: Int) extends WidthLike
-  final case class UserWidth(width: Int) extends WidthLike
-  final case class RegionWidth(width: Int) extends WidthLike
 
-  implicit def fromWidthLikeToWidth(wl: WidthLike): Width = wl.width.W
-  implicit def fromWidthLikeToInt(wl: WidthLike): Int     = wl.width
 
   case class Configuration(addrWidth:   AddrWidth,
                            dataWidth:   DataWidth,
                            userWidth:   UserWidth   = UserWidth(0),
                            regionWidth: RegionWidth = RegionWidth(0))
-
-  class Protection extends Bundle {
-    val prot = UInt(3.W)
-  }
-
-  object Protection {
-    sealed trait Flag extends Function[Int, Int]  { def apply(i: Int): Int }
-    final case object NON_PRIVILEGED extends Flag { def apply(i: Int): Int = i & ~(1 << 0) }
-    final case object PRIVILEGED extends Flag     { def apply(i: Int): Int = i |  (1 << 0) }
-    final case object SECURE extends Flag         { def apply(i: Int): Int = i & ~(1 << 1) }
-    final case object NON_SECURE extends Flag     { def apply(i: Int): Int = i |  (1 << 1) }
-    final case object DATA extends Flag           { def apply(i: Int): Int = i & ~(1 << 2) }
-    final case object INSTRUCTION extends Flag    { def apply(i: Int): Int = i |  (1 << 2) }
-    def apply(fs: Flag*): Int = (fs fold (identity[Int] _)) (_ andThen _) (0)
-  }
-
-  class Strobe(implicit cfg: Configuration) extends Bundle {
-    val strb = UInt((cfg.dataWidth / 8).W)
-
-    override def cloneType = { new Strobe()(cfg).asInstanceOf[this.type] }
-  }
-
-  object Strobe {
-    def apply(byteEnables: Int*): UInt = ((byteEnables map (i => (1 << i)) fold 0) (_ | _)).U
-  }
-
 
   class Address(implicit cfg: Configuration) extends Bundle {
     val addr   = UInt(cfg.addrWidth)
@@ -69,7 +36,7 @@ object Axi4Lite {
     }
 
     class Write(implicit cfg: Configuration) extends DataChannel {
-      val strb  = new Strobe
+      val strb  = new Strobe(cfg.dataWidth)
 
       override def cloneType = { new Write()(cfg).asInstanceOf[this.type] }
     }
@@ -80,10 +47,6 @@ object Axi4Lite {
     val bresp = UInt(2.W)
 
     override def cloneType = { new WriteResponse()(cfg).asInstanceOf[this.type] }
-  }
-
-  object Response {
-    val okay :: exokay :: slverr :: decerr :: Nil = Enum(4)
   }
 
   class Master private (implicit cfg: Configuration) extends Bundle {

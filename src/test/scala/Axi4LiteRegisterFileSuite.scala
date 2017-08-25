@@ -132,7 +132,7 @@ class Axi4LiteRegisterFileSuite extends ChiselFlatSpec {
   // basic Chisel arguments
   val chiselArgs = Array("--fint-write-vcd")
   // implicit AXI configuration
-  implicit val axi = Axi4Lite.Configuration(dataWidth = Axi4Lite.Width32, addrWidth = Axi4Lite.AddrWidth(32))
+  implicit val axi = Axi4Lite.Configuration(dataWidth = Axi4Lite.Width32, addrWidth = AddrWidth(32))
 
   /** Attempts to read from all registers. **/
   private def readTest(size: Int, off: Int) =  {
