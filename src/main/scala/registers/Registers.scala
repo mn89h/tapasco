@@ -17,7 +17,7 @@ sealed abstract class ControlRegister(_name: Option[String], bitfield: BitfieldM
   def name: Option[String] = _name
 
   /** Description of the register. */
-  def description: String  = if (bitfield.size > 0) bf else _name.getOrElse("N/A")
+  def description: String  = if (bitfield.size > 0) bf else _name.getOrElse("Reserved")
 
   /** Access to named bit range. */
   def apply(s: String): Option[UInt] = read() map { v =>

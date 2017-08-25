@@ -142,11 +142,11 @@ object Axi4 {
   }
 
   class Master private (implicit cfg: Configuration) extends Bundle {
-    val writeAddr = Decoupled(new Address)
-    val writeData = Decoupled(new Data.Write)
-    val writeResp = Flipped(Decoupled(new WriteResponse))
-    val readAddr  = Decoupled(new Address)
-    val readData  = Flipped(Decoupled(new Data.Read))
+    val writeAddr = Irrevocable(new Address)
+    val writeData = Irrevocable(new Data.Write)
+    val writeResp = Flipped(Irrevocable(new WriteResponse))
+    val readAddr  = Irrevocable(new Address)
+    val readData  = Flipped(Irrevocable(new Data.Read))
 
     override def cloneType = { new Master()(cfg).asInstanceOf[this.type] }
   }

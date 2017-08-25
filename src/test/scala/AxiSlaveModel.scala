@@ -1,12 +1,25 @@
 package chisel.axiutils
-import  chisel3._
-import  chisel3.util._
+import  chisel3._, chisel3.util._
 import  chisel3.iotesters.{PeekPokeTester}
 import  chisel.axi._
 
+class DebugIO(implicit axi: Axi4.Configuration) extends Bundle {
+  val ra   = Input(UInt(axi.addrWidth))
+  val r    = Input(Bool())
+  val dout = Output(UInt(axi.dataWidth))
+  val wa   = Input(UInt(axi.addrWidth))
+  val w    = Input(Bool())
+  val din  = Input(UInt(axi.dataWidth))
+
+  override def cloneType = { new DebugIO()(axi).asInstanceOf[this.type] }
+}
+
 class AxiSlaveModelIO(val cfg: AxiSlaveModelConfiguration)
                      (implicit axi: Axi4.Configuration) extends Bundle {
-  val saxi = Axi4.Slave(axi)
+  val saxi  = Axi4.Slave(axi)
+  val debug = new DebugIO
+
+  override def cloneType = { new AxiSlaveModelIO(cfg)(axi).asInstanceOf[this.type] }
 }
 
 class AxiSlaveModel(val cfg: AxiSlaveModelConfiguration)
@@ -15,7 +28,21 @@ class AxiSlaveModel(val cfg: AxiSlaveModelConfiguration)
   println ("AxiSlaveModel: %s".format(cfg.toString))
 
   val io = IO(new AxiSlaveModelIO(cfg))
-  val mem = Mem(sz, UInt(axi.dataWidth))
+  val mem = SyncReadMem(sz, UInt(axi.dataWidth))
+
+  /** DEBUG PROCESS **/
+  val d_read    = io.debug.r
+  val d_write   = RegNext(io.debug.w)
+  val d_waddr   = RegNext(io.debug.wa)
+  val d_raddr   = RegNext(io.debug.ra)
+  val d_din     = RegNext(io.debug.din)
+  d_din         := io.debug.din
+  when (d_read) {
+    io.debug.dout := mem.read(d_raddr)
+  }
+  when (d_write) {
+    mem.write(d_waddr, d_din)
+  }
 
   /** WRITE PROCESS **/
   val wa_valid = (io.saxi.writeAddr.valid)
@@ -49,7 +76,8 @@ class AxiSlaveModel(val cfg: AxiSlaveModelConfiguration)
     require (idx >= 0 && idx < cfg.size,
              "AxiSlaveModel: read at invalid index %d (max: %d) for address 0x%x"
              .format(idx, cfg.size - 1, address))
-    t.peekAt(mem, address / (axi.dataWidth / 8))
+    //t.peekAt(mem, address / (axi.dataWidth / 8))
+    BigInt(0)
   }
 
   /**
@@ -62,7 +90,8 @@ class AxiSlaveModel(val cfg: AxiSlaveModelConfiguration)
     require (index >= 0 && index < cfg.size,
              "AxiSlaveModel: read at invalid index %d (max: %d)"
              .format(index, cfg.size - 1))
-    t.peekAt(mem, index)
+    //t.peekAt(mem, index)
+    BigInt(0)
   }
 
   /**
@@ -74,7 +103,7 @@ class AxiSlaveModel(val cfg: AxiSlaveModelConfiguration)
   def set(address: Int, value: BigInt)(implicit t: PeekPokeTester[_]) = {
     val idx = address / (axi.dataWidth / 8)
     printf("AxiSlaveModel: set data at 0x%x (idx: %d) to 0x%x".format(address, value, idx))
-    t.pokeAt(mem, value, idx)
+    //t.pokeAt(mem, value, idx)
   }
 
   io.saxi.writeAddr.ready      := !wa_hs
@@ -106,7 +135,8 @@ class AxiSlaveModel(val cfg: AxiSlaveModelConfiguration)
     when (wa_hs && wr_wait === 0.U) {
       when (wa_hs && wd_valid && !wr_valid) {
         val shifted_addr   = if (axi.dataWidth > 8) wa >> log2Ceil(axi.dataWidth / 8).U else wa
-        mem(shifted_addr) := wd_data
+        //mem(shifted_addr) := wd_data
+        mem.write(shifted_addr, wd_data)
         printf("writing data 0x%x to address 0x%x (0x%x)\n", wd_data, wa, shifted_addr)
         when (io.saxi.writeData.bits.last || wl === 0.U) { wr_valid := true.B }
         .otherwise {
@@ -143,7 +173,7 @@ class AxiSlaveModel(val cfg: AxiSlaveModelConfiguration)
   val rd_valid = ra_hs && rr_wait === 0.U
 
   io.saxi.readData.valid := rd_valid
-  io.saxi.readData.bits.data := mem(if (axi.dataWidth > 8) ra >> (log2Ceil(axi.dataWidth / 8)).U else ra)
+  io.saxi.readData.bits.data := mem.read(if (axi.dataWidth > 8) ra >> (Seq(log2Ceil(axi.dataWidth / 8), 1).max).U else ra)
   io.saxi.readData.bits.last := ra_hs && l === 0.U
   io.saxi.readData.bits.resp := rr_resp
 

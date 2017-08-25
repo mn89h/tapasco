@@ -25,6 +25,20 @@ case class Axi4LiteRegisterFileConfiguration(addrGranularity: Int = 32, regs: Ma
   /** Minimum bit width of address lines. */
   lazy val minAddrWidth: AddrWidth =
     AddrWidth(Seq(log2Ceil(regs.size * axi.dataWidth.toInt / addrGranularity), log2Ceil(regs.keys.max)).max)
+
+  /** Dumps address map as markdown file. **/
+  def dumpAddressMap(path: String) = {
+    def mksz(s: String, w: Int) = if (s.length > w) s.take(w) else if (s.length < w) s + (" " * (w - s.length)) else s
+    val fw = new java.io.FileWriter(java.nio.file.Paths.get(path).resolve("AdressMap.md").toString)
+    fw.append("| **Name**        |**From**|**To**  | **Description**                          |").append(NL)
+      .append("|:----------------|:------:|:------:|:-----------------------------------------|").append(NL)
+    for (off <- regs.keys.toList.sorted; reg = regs(off))
+      fw.append("| %s | 0x%04x | 0x%04x | %s |".format(
+        mksz(reg.name.getOrElse("N/A"), 15), off, off + axi.dataWidth / 8 - 1, reg.description
+      )).append(NL)
+    fw.flush()
+    fw.close
+  }
 }
 
 /**
@@ -45,20 +59,6 @@ class Axi4LiteRegisterFileIO(cfg: Axi4LiteRegisterFileConfiguration)(implicit ax
  * @param axi Implicit AXI configuration.
  **/
 class Axi4LiteRegisterFile(cfg: Axi4LiteRegisterFileConfiguration)(implicit axi: Configuration) extends Module {
-  /** Dumps address map as markdown file. **/
-  def dumpAddressMap(path: String) = {
-    def mksz(s: String, w: Int) = if (s.length > w) s.take(w) else if (s.length < w) s + (" " * (w - s.length)) else s
-    val fw = new java.io.FileWriter(java.nio.file.Paths.get(path).resolve("AdressMap.md").toString)
-    fw.append("| **Name**        |**From**|**To**  | **Description**                          |").append(NL)
-      .append("|:----------------|:------:|:------:|:-----------------------------------------|").append(NL)
-    for (off <- cfg.regs.keys.toList.sorted; reg = cfg.regs(off))
-      fw.append("| %s | 0x%04x | 0x%04x | %s |".format(
-        mksz(reg.name.getOrElse("N/A"), 15), off, off + axi.dataWidth / 8 - 1, reg.description
-      )).append(NL)
-    fw.flush()
-    fw.close
-  }
-
   /** HARDWARE **/
   val io = IO(new Axi4LiteRegisterFileIO(cfg))
 

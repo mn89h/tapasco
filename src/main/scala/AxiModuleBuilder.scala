@@ -1,7 +1,6 @@
 package chisel.axiutils
 import  chisel.axiutils.registers._
-import  chisel.packaging.{CoreDefinition, ModuleBuilder}
-import  chisel.packaging.CoreDefinition.root
+import  chisel.packaging._, chisel.packaging.CoreDefinition.root
 import  chisel.miscutils.DecoupledDataSource
 import  scala.sys.process._
 import  java.nio.file.Paths
@@ -35,10 +34,22 @@ object AxiModuleBuilder extends ModuleBuilder {
                                         DataWidth(64),
                                         IdWidth(1))
   implicit val axilite = Axi4Lite.Configuration(AddrWidth(32),
-                                                Axi4Lite.Width64)
+                                                Axi4Lite.Width32)
+  val exampleRegisterFile = new Axi4LiteRegisterFileConfiguration(addrGranularity = 8, regs = Map(
+    0  -> new ConstantRegister(value = BigInt("10101010", 16)),
+    4  -> new ConstantRegister(value = BigInt("20202020", 16)),
+    8  -> new ConstantRegister(value = BigInt("30303030", 16)),
+    16 -> new ConstantRegister(value = BigInt("40404040", 16), bitfield = Map(
+      "Byte #3" -> BitRange(31, 24),
+      "Byte #2" -> BitRange(23, 16),
+      "Byte #1" -> BitRange(15, 8),
+      "Byte #0" -> BitRange(7, 0)
+    ))
+  ))(Axi4Lite.Configuration(AddrWidth(32), Axi4Lite.Width32))
 
-  val modules: List[(() => Module, CoreDefinition)] = List(
-      ( // test module with fixed data
+  val modules: Seq[ModuleDef] = Seq(
+      ModuleDef( // test module with fixed data
+        None,
         () => new FifoAxiAdapterTest1(dataWidth = 32, 256),
         CoreDefinition(
           name = "FifoAxiAdapterTest1",
@@ -48,7 +59,8 @@ object AxiModuleBuilder extends ModuleBuilder {
           root = Paths.get(".").toAbsolutePath.resolve("ip").resolve("FifoAxiAdapterTest1").toString
         )
       ),
-      ( // generic adapter module FIFO -> AXI
+      ModuleDef( // generic adapter module FIFO -> AXI
+        None,
         () => new FifoAxiAdapter(fifoDepth = 8),
         CoreDefinition(
           name = "FifoAxiAdapter",
@@ -58,7 +70,8 @@ object AxiModuleBuilder extends ModuleBuilder {
           root = Paths.get(".").toAbsolutePath.resolve("ip").resolve("FifoAxiAdapter").toString
         )
       ),
-      ( // generic adapter module AXI -> FIFO
+      ModuleDef( // generic adapter module AXI -> FIFO
+        None,
         () => AxiFifoAdapter(fifoDepth = 4)
                             (Axi4.Configuration(addrWidth = AddrWidth(32),
                                                 dataWidth = DataWidth(32),
@@ -71,7 +84,8 @@ object AxiModuleBuilder extends ModuleBuilder {
           root = Paths.get(".").toAbsolutePath.resolve("ip").resolve("AxiFifoAdapter").toString
         )
       ),
-      ( // AXI-based sliding window
+      ModuleDef( // AXI-based sliding window
+        None,
         () => {
           implicit val axi = Axi4.Configuration(AddrWidth(32), DataWidth(64), IdWidth(1))
           new AxiSlidingWindow(AxiSlidingWindowConfiguration(
@@ -89,7 +103,8 @@ object AxiModuleBuilder extends ModuleBuilder {
           root = root("AxiSlidingWindow")
         )
       ),
-      ( // AXI Crossbar
+      ModuleDef( // AXI Crossbar
+        None,
         () => new AxiMux(8),
         CoreDefinition(
           name = "AxiMux",
@@ -99,50 +114,20 @@ object AxiModuleBuilder extends ModuleBuilder {
           root = root("AxiMux")
         )
       ),
-      ( // AXI Register File
-        () => {
-          new Axi4LiteRegisterFile(new Axi4LiteRegisterFileConfiguration(
-            regs = Map(0  -> new ConstantRegister(value = BigInt("10101010", 16)),
-                       4  -> new ConstantRegister(value = BigInt("20202020", 16)),
-                       8  -> new ConstantRegister(value = BigInt("30303030", 16)),
-                       16 -> new ConstantRegister(value = BigInt("40404040", 16), bitfield = Map(
-                         "Byte #3" -> BitRange(31, 24),
-                         "Byte #2" -> BitRange(23, 16),
-                         "Byte #1" -> BitRange(15, 8),
-                         "Byte #0" -> BitRange(7, 0)
-                       )))
-          ))
-        },
-        CoreDefinition/*.withActions*/(
+      ModuleDef( // AXI Register File
+        Some(exampleRegisterFile),
+        () => new Axi4LiteRegisterFile(exampleRegisterFile),
+        CoreDefinition.withActions(
           name = "Axi4LiteRegisterFile",
           vendor = "esa.cs.tu-darmstadt.de",
           library = "chisel",
           version = "0.1",
-          root = root("Axi4LiteRegisterFile")/*,
+          root = root("Axi4LiteRegisterFile"),
           postBuildActions = Seq(_ match {
-            case m: Axi4LiteRegisterFile => m.dumpAddressMap(root("Axi4LiteRegisterFile"))
-          })*/
+            case Some(cfg: Axi4LiteRegisterFileConfiguration) => cfg.dumpAddressMap(root("Axi4LiteRegisterFile"))
+            case _ => ()
+          })
         )
-      )/*,
-      ( // AXI4 Dummy
-        () => new chisel.axi.Dummy,
-        CoreDefinition(
-          name = "Axi4Dummy",
-          vendor = "esa.cs.tu-darmstadt.de",
-          library = "chisel",
-          version = "0.1",
-          root = root("Dummy")
-        )
-      ),
-      ( // AXI4Lite Dummy
-        () => new chisel.axi.Axi4Lite.Dummy,
-        CoreDefinition(
-          name = "Axi4LiteDummy",
-          vendor = "esa.cs.tu-darmstadt.de",
-          library = "chisel",
-          version = "0.1",
-          root = root("Dummy")
-        )
-      )*/
+      )
     )
 }

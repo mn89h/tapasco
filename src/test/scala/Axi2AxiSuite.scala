@@ -16,22 +16,25 @@ class Axi2AxiModule(val fifoDepth: Int = 16, val size: Option[Int])
                    (implicit axi: Axi4.Configuration) extends Module {
 
   require (size.isEmpty || log2Ceil(size.get) <= axi.addrWidth,
-           "size (%d) elements cannot be addressed by %d address bits".format(size.get, axi.addrWidth))
+           "size (%d) elements cannot be addressed by %d address bits".format(size.get, axi.addrWidth:Int))
 
   val io = IO(new Bundle {
     val deq = Decoupled(UInt(axi.dataWidth))
   })
 
-  val sz = size.getOrElse(pow(2, axi.addrWidth.toDouble).toInt)
+  val sz = size.getOrElse(pow(2, axi.addrWidth.toDouble).toInt / axi.dataWidth)
   val aw = Seq(axi.addrWidth:Int, log2Ceil(sz * (axi.dataWidth / 8))).min
   println ("Axi2AxiModule: address bits = %d, size = %d".format(aw, sz))
   val cfg = AxiSlaveModelConfiguration()
+
+  val data = 0 to sz map (n => n % pow(2, axi.dataWidth:Int).toInt)
 
   val dsrc = Module(new DecoupledDataSource(
       gen = UInt(axi.dataWidth),
       size = sz, 
       //data = n => UInt((random * pow(2, axi.dataWidth)).toInt),
-      data = n => (n % pow(2, axi.dataWidth:Int).toInt).U,
+      //data = n => (n % pow(2, axi.dataWidth:Int).toInt).U,
+      data = data map (_.U),
       repeat = false))
 
   val fad  = Module(new FifoAxiAdapter(fifoDepth = sz, burstSize = Some(fifoDepth)))
@@ -45,7 +48,7 @@ class Axi2AxiModule(val fifoDepth: Int = 16, val size: Option[Int])
   saxi.io.saxi.writeResp <> fad.io.maxi.writeResp
   saxi.io.saxi.readAddr  <> afa.io.maxi.readAddr
   saxi.io.saxi.readData  <> afa.io.maxi.readData
-  afa.reset := dsrc.io.out.valid || fad.fifo.io.count > 0.U
+  //afa.reset := dsrc.io.out.valid || fad.fifo.io.count > 0.U
   fad.io.base := base
   afa.io.base := base
   io.deq <> afa.io.deq
@@ -60,7 +63,7 @@ class Axi2AxiModule(val fifoDepth: Int = 16, val size: Option[Int])
 class Axi2AxiTester(m: Axi2AxiModule)
                    (implicit axi: Axi4.Configuration) extends PeekPokeTester(m) {
   def toBinaryString(v: BigInt): String =
-    "b%%%ds".format(axi.dataWidth).format(v.toString(2)).replace(' ', '0')
+    "b%%%ds".format(axi.dataWidth:Int).format(v.toString(2)).replace(' ', '0')
   private val O = 10000
   private var cc = 0
   private var ccc = O
@@ -79,7 +82,7 @@ class Axi2AxiTester(m: Axi2AxiModule)
   for (i <- 0 until m.sz) {
     while (peek(m.io.deq.valid) == 0) step (1)
     val v = peek(m.io.deq.bits)
-    val e = m.dsrc.data(i)
+    val e = m.data(i)
     expect (v == e, "mem[%08d] = %d (%s), expected: %d (%s)"
             .format(i, v, toBinaryString(v), e, toBinaryString(e)))
     step(1) // advance sim
@@ -94,7 +97,7 @@ class Axi2AxiSuite extends ChiselFlatSpec {
   def run(size: Int, fifoDepth: Int, addrWidth: Int, dataWidth: Int) {
     implicit val axi = Axi4.Configuration(addrWidth = AddrWidth(addrWidth), dataWidth = DataWidth(dataWidth))
     val dir = Paths.get("test")
-      .resolve("s%d_aw%d_dw%d".format(size, addrWidth, axi.dataWidth))
+      .resolve("s%d_aw%d_dw%d".format(size, addrWidth, axi.dataWidth:Int))
       .toString
     Driver.execute(Array("--fint-write-vcd", "--target-dir", dir),
                    () => new Axi2AxiModule(fifoDepth = fifoDepth,

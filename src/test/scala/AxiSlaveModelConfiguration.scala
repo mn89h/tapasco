@@ -36,7 +36,7 @@ object AxiSlaveModelConfiguration {
    **/
   def apply(size: Option[Int] = None, readDelay: Int = 30, writeDelay: Int = 120)
            (implicit axi: Axi4.Configuration) = {
-    val sz: Int = size.getOrElse(scala.math.pow(2, axi.addrWidth.get).toInt)
+    val sz: Int = size.getOrElse(scala.math.pow(2, axi.addrWidth:Int).toInt / axi.dataWidth)
     val aw: Int = Seq(axi.addrWidth:Int, log2Ceil(sz * axi.dataWidth / 8).toInt).min
     new AxiSlaveModelConfiguration(size = sz, readDelay = readDelay, writeDelay = writeDelay)
   }
