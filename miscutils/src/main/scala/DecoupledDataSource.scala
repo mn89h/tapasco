@@ -20,10 +20,14 @@ class DecoupledDataSourceIO[T <: Data](gen: T) extends Bundle {
                  otherwise valid will go low after data was
 		 consumed.
  **/
-class DecoupledDataSource[T <: Data](gen: T, val size : Int, val data: (Int) => T, val repeat: Boolean = true) extends Module {
-
-  println ("DecoupledDataSource: size = %d, repeat = %s, addrWidth = %d"
-    .format(size, if (repeat) "true" else "false", log2Ceil(if (repeat) size else size + 1)))
+class DecoupledDataSource[T <: Data](gen: T,
+                                     val size : Int,
+                                     val data: (Int) => T,
+                                     val repeat: Boolean = true)
+                                    (implicit l: Logging.Level)
+    extends Module with Logging {
+  cinfo("size = %d, repeat = %s, addrWidth = %d".format(size,
+    if (repeat) "true" else "false", log2Ceil(if (repeat) size else size + 1)))
 
   val ds  = for (i <- 0 until size) yield data(i) // evaluate data to array
   val io  = IO(new DecoupledDataSourceIO(gen)) // interface
@@ -35,9 +39,18 @@ class DecoupledDataSource[T <: Data](gen: T, val size : Int, val data: (Int) => 
     i := 0.U
   }
   .otherwise {
-    if (repeat)
-      when (io.out.ready && io.out.valid) { i := i + 1.U }
-    else
-      when (io.out.ready && io.out.valid && i < size.U) { i := i + 1.U }
+    when (io.out.ready && io.out.valid) {
+      val next = if (repeat) {
+        if (math.pow(2, log2Ceil(size)).toInt == size) {
+          i + 1.U
+        } else {
+          Mux((i + 1.U) < size.U, i + 1.U, 0.U)
+        }
+      } else {
+        Mux(i < size.U, i + 1.U, i)
+      }
+      info(p"i = $i -> $next, bits = 0x${Hexadecimal(io.out.bits.asUInt())}")
+      i := next
+    }
   }
 }
