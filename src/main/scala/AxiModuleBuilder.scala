@@ -77,7 +77,8 @@ object AxiModuleBuilder extends ModuleBuilder {
         () => AxiFifoAdapter(fifoDepth = 4)
                             (Axi4.Configuration(addrWidth = AddrWidth(32),
                                                 dataWidth = DataWidth(32),
-                                                idWidth   = IdWidth(1))),
+                                                idWidth   = IdWidth(1)),
+                             logLevel),
         CoreDefinition(
           name = "AxiFifoAdapter",
           vendor = "esa.cs.tu-darmstadt.de",
@@ -94,7 +95,7 @@ object AxiModuleBuilder extends ModuleBuilder {
             gen = UInt(8.W),
             width = 8,
             depth = 3,
-            afa = AxiFifoAdapterConfiguration(fifoDepth = 32, burstSize = Some(16))
+            afa = AxiFifoAdapter.Configuration(fifoDepth = 32, burstSize = Some(16))
           ))
         },
         CoreDefinition(

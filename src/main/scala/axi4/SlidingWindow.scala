@@ -1,5 +1,5 @@
 package chisel.axiutils
-import  chisel.miscutils.DataWidthConverter
+import  chisel.miscutils.{DataWidthConverter, Logging}
 import  chisel.axi._
 import  chisel3._
 import  chisel3.util._
@@ -14,7 +14,7 @@ object SlidingWindow {
   sealed case class Configuration[T <: Data](gen: T,
                                              width: Int,
                                              depth: Int,
-                                             afa: AxiFifoAdapterConfiguration)
+                                             afa: AxiFifoAdapter.Configuration)
 
   /**
    * I/O Bundle for an AxiSlidingWindow:
@@ -30,7 +30,8 @@ object SlidingWindow {
   }
 
   def apply[T <: Data](cfg: SlidingWindow.Configuration[T])
-                      (implicit axi: Axi4.Configuration): SlidingWindow[T] =
+                      (implicit axi: Axi4.Configuration,
+                       logLevel: Logging.Level): SlidingWindow[T] =
     new SlidingWindow(cfg)
 }
 
@@ -44,7 +45,8 @@ object SlidingWindow {
  * @param cfg Configuration parameters.
  **/
 class SlidingWindow[T <: Data](val cfg: SlidingWindow.Configuration[T])
-                              (implicit axi: Axi4.Configuration) extends Module {
+                              (implicit axi: Axi4.Configuration,
+                               logLevel: Logging.Level) extends Module {
   val io = IO(new SlidingWindow.IO(cfg))
 
   /** AXI DMA engine **/

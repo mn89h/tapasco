@@ -1,19 +1,21 @@
 package chisel.axiutils
 import  chisel3._
 import  chisel3.util._
-import  chisel.axi.Axi4._
+import  chisel.axi._
 
-class FifoAxiAdapterIO(fifoDepth: Int)(implicit axi: Configuration) extends Bundle {
-  val maxi  = Master(axi)
-  val enq   = Flipped(Decoupled(UInt(axi.dataWidth)))
-  val base  = Input(UInt(axi.addrWidth))
-  val count = Output(UInt(log2Ceil(fifoDepth).W))
+object FifoAxiAdapter {
+  class IO(fifoDepth: Int)(implicit axi: Axi4.Configuration) extends Bundle {
+    val maxi  = Axi4.Master(axi)
+    val enq   = Flipped(Decoupled(UInt(axi.dataWidth)))
+    val base  = Input(UInt(axi.addrWidth))
+    val count = Output(UInt(log2Ceil(fifoDepth).W))
+  }
 }
 
 class FifoAxiAdapter(fifoDepth: Int,
                      burstSize: Option[Int] = None,
                      size: Option[Int] = None)
-                    (implicit axi: Configuration) extends Module {
+                    (implicit axi: Axi4.Configuration) extends Module {
 
   val bsz = burstSize getOrElse fifoDepth
 
@@ -29,7 +31,7 @@ class FifoAxiAdapter(fifoDepth: Int,
                    burstSize.map(", burst size = %d".format(_)).getOrElse(""),
                    size.map(", size = %d".format(_)).getOrElse("")))
 
-  val io = IO(new FifoAxiAdapterIO(fifoDepth))
+  val io = IO(new FifoAxiAdapter.IO(fifoDepth))
 
   val axi_write :: axi_wait :: Nil = Enum(2)
 
@@ -55,10 +57,10 @@ class FifoAxiAdapter(fifoDepth: Int,
   io.maxi.writeAddr.bits.addr        := maxi_waddr
   io.maxi.writeAddr.bits.burst.size  := (if (axi.dataWidth > 8) log2Ceil(axi.dataWidth / 8) else 0).U
   io.maxi.writeAddr.bits.burst.len   := (bsz - 1).U
-  io.maxi.writeAddr.bits.burst.burst := Burst.Type.incr
+  io.maxi.writeAddr.bits.burst.burst := Axi4.Burst.Type.incr
   io.maxi.writeAddr.bits.id          := 0.U
   io.maxi.writeAddr.bits.lock.lock   := 0.U
-  io.maxi.writeAddr.bits.cache.cache := Cache.Write.WRITE_THROUGH_RW_ALLOCATE
+  io.maxi.writeAddr.bits.cache.cache := Axi4.Cache.Write.WRITE_THROUGH_RW_ALLOCATE
   io.maxi.writeAddr.bits.prot.prot   := 0.U
   io.maxi.writeAddr.bits.qos         := 0.U
   io.maxi.writeData.bits.strb.strb   := ("b" + ("1" * (axi.dataWidth / 8))).U

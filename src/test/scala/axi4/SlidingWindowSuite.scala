@@ -72,9 +72,9 @@ class SlidingWindowSuite extends ChiselFlatSpec {
   implicit val logLevel = Logging.Level.Info
   val chiselArgs = Array("--fint-write-vcd")
   implicit val axi: Axi4.Configuration = Axi4.Configuration(addrWidth = AddrWidth(32), dataWidth = DataWidth(64))
-  implicit val afa: AxiFifoAdapterConfiguration = AxiFifoAdapterConfiguration(fifoDepth = 16)
+  implicit val afa: AxiFifoAdapter.Configuration = AxiFifoAdapter.Configuration(fifoDepth = 16)
 
-  private def slidingWindow(width: Int, depth: Int)(implicit afa: AxiFifoAdapterConfiguration) = {
+  private def slidingWindow(width: Int, depth: Int)(implicit afa: AxiFifoAdapter.Configuration) = {
     val args = chiselArgs ++ Array("--target-dir", "test/slidingWindow/%dx%d".format(width, depth))
     val cfg = SlidingWindow.Configuration(gen = UInt(width.W),
                                           depth = depth,

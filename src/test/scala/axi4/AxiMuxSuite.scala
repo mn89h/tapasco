@@ -23,7 +23,7 @@ class AxiMuxReadTestModule(val n: Int)
   val mux = Module(new AxiMux(n))
   private val asmcfg = SlaveModel.Configuration(size = Some(n * 128))
   val saxi = Module(new SlaveModel(asmcfg))
-  private val afacfg = AxiFifoAdapterConfiguration(fifoDepth = 8, burstSize = Some(4))
+  private val afacfg = AxiFifoAdapter.Configuration(fifoDepth = 8, burstSize = Some(4))
   val afa = for (i <- 0 until n) yield Module(new AxiFifoAdapter(afacfg))
   val bases = (0 until n) map (_ * 128 * (axi.dataWidth / 8))
 
