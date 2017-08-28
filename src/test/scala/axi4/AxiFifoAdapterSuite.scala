@@ -1,5 +1,6 @@
-package chisel.axiutils
-import  chisel.miscutils.generators._
+package chisel.axiutils.axi4
+import  chisel.axiutils._
+import  chisel.miscutils._, chisel.miscutils.generators._
 import  chisel3._, chisel3.util._
 import  chisel3.iotesters.{ChiselFlatSpec, Driver, PeekPokeTester}
 import  java.nio.file.Paths
@@ -8,10 +9,11 @@ import  org.scalacheck._, org.scalacheck.Prop._
 import  org.scalatest.prop.Checkers
 
 class AxiFifoAdapterModule1(val fifoDepth: Int, val blockSize: Int)
-                           (implicit axi: Axi4.Configuration) extends Module {
+                           (implicit axi: Axi4.Configuration,
+                            logLevel: Logging.Level) extends Module {
   val addrWidth = Seq(log2Ceil(axi.dataWidth * fifoDepth * blockSize / 8), 1).max
-  val cfg = AxiSlaveModelConfiguration(size = Some(Math.pow(2, addrWidth:Int).toInt))
-  val saxi = Module (new AxiSlaveModel(cfg))
+  val cfg = SlaveModel.Configuration(size = Some(Math.pow(2, addrWidth:Int).toInt))
+  val saxi = Module (new SlaveModel(cfg))
   val io = IO(new Bundle {
     val dqr = Output(Bool())
     val afa_en        = Input(Bool())
@@ -95,6 +97,8 @@ class AxiFifoAdapterModule1Test(m: AxiFifoAdapterModule1)
 }
 
 class AxiFifoAdapterSuite extends ChiselFlatSpec with Checkers {
+  implicit val logLevel = Logging.Level.Info
+
   def runTest(dataWidth: Int, fifoDepth: Int, blockSize: Int): Boolean = {
     val dir = Paths.get("test").resolve("dw%d_fd%d_bs%d".format(dataWidth, fifoDepth, blockSize)).toString
     implicit val axi = Axi4.Configuration(dataWidth = DataWidth(dataWidth), addrWidth = AddrWidth(32))

@@ -1,13 +1,13 @@
-package chisel.axiutils.registers
-import  chisel.axiutils.{Axi4LiteProgrammableMaster, MasterAction}
+package chisel.axiutils.axi4lite
+import  chisel.axi._
+import  chisel.miscutils.Logging
 import  chisel3._
 import  chisel3.util._
 import  chisel3.iotesters.{ChiselFlatSpec, Driver, PeekPokeTester}
-import  chisel.axi._
 
 /**
- * Harness for Axi4LiteRegisterFile:
- * Creates a register file using the specified register map, connects an Axi4LiteProgrammableMaster
+ * Harness for Axi4Lite RegisterFile:
+ * Creates a register file using the specified register map, connects an ProgrammableMaster
  * to the register file and programs it with the specified actions.
  * Read data is queued in a FIFO and can be accessed from the outside.
  * When all actions are processed, the `finished` flag is driven high.
@@ -17,18 +17,18 @@ import  chisel.axi._
  * @param actions master actions to perform
  **/
 class RegFileTest(val size: Int, val off: Int, regs: Map[Int, ControlRegister], actions: Seq[MasterAction])
-                 (implicit axi: Axi4Lite.Configuration) extends Module {
+                 (implicit axi: Axi4Lite.Configuration, logLevel: Logging.Level) extends Module {
   val io = IO(new Bundle {
     val out = Decoupled(UInt(axi.dataWidth))
     val finished = Output(Bool())
     val rresp = Output(UInt(2.W))
     val wresp = Output(UInt(2.W))
   })
-  val cfg = new Axi4LiteRegisterFileConfiguration(regs = regs)
-  val saxi = Module(new Axi4LiteRegisterFile(cfg))
-  val m = Module(new Axi4LiteProgrammableMaster(actions))
-  m.io.maxi <> saxi.io.saxi
-  io.out    <> m.io.out
+  val cfg = new RegisterFile.Configuration(regs = regs)
+  val saxi = Module(new RegisterFile(cfg))
+  val m = Module(new ProgrammableMaster(actions))
+  m.io.maxi         <> saxi.io.saxi
+  io.out            <> m.io.out
   io.finished       := m.io.finished
   m.io.w_resp.ready := true.B
   io.rresp          := m.io.maxi.readData.bits.resp
@@ -128,7 +128,8 @@ class InvalidWriteTester(m: RegFileTest, writes: Int) extends PeekPokeTester(m) 
 }
 
 /** Unit test suite for Axi4LiteRegisterFile module. **/
-class Axi4LiteRegisterFileSuite extends ChiselFlatSpec {
+class RegisterFileSuite extends ChiselFlatSpec {
+  implicit val logLevel = Logging.Level.Info
   // basic Chisel arguments
   val chiselArgs = Array("--fint-write-vcd")
   // implicit AXI configuration

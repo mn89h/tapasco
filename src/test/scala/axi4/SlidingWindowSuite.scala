@@ -1,15 +1,17 @@
-package chisel.axiutils
+package chisel.axiutils.axi4
+import  chisel.axi._
+import  chisel.axiutils._
+import  chisel.miscutils.Logging
 import  chisel3._
 import  chisel3.util._
 import  chisel3.iotesters.{ChiselFlatSpec, Driver, PeekPokeTester}
-import  chisel.axi._
 
-/**
- * Test module for AxiSlidingWindow:
- * Connects AxiSlidingWindow instance to AXI slave model.
+/** Test module for SlidingWindow:
+ *  Connects SlidingWindow instance to AXI slave model.
  **/
-class AxiSlidingWindowTestModule[T <: Data](cfg: AxiSlidingWindowConfiguration[T])
-                                           (implicit val axi: Axi4.Configuration) extends Module {
+class SlidingWindowTestModule[T <: Data](cfg: SlidingWindow.Configuration[T])
+                                        (implicit val axi: Axi4.Configuration,
+                                         logLevel: Logging.Level) extends Module {
   val io = IO(new Bundle {
     val ready          = Input(Bool())
     val asw_data_valid = Output(Bool())
@@ -17,9 +19,9 @@ class AxiSlidingWindowTestModule[T <: Data](cfg: AxiSlidingWindowConfiguration[T
   })
 
   /** AXI memory model **/
-  val saxi = Module(new AxiSlaveModel(AxiSlaveModelConfiguration(size = Some(1024))))
+  val saxi = Module(new SlaveModel(SlaveModel.Configuration(size = Some(1024))))
   /** AxiSlidingWindow instance (DUT) **/
-  val asw = Module(new AxiSlidingWindow(cfg))
+  val asw = Module(new SlidingWindow(cfg))
   asw.io.maxi <> saxi.io.saxi
   val ready = RegInit(false.B)
   ready := io.ready
@@ -30,15 +32,14 @@ class AxiSlidingWindowTestModule[T <: Data](cfg: AxiSlidingWindowConfiguration[T
   io.asw_data_bits  := asw.io.data.bits
 }
 
-/**
- * Tester class for AxiSlidingWindow:
- * Fills memory model with increasing integers of configured element width,
- * then checks sliding window against expected values at each step.
- * Does not operate at full speed, each step has at least one cycle delay.
+/** Tester class for SlidingWindow:
+ *  Fills memory model with increasing integers of configured element width,
+ *  then checks sliding window against expected values at each step.
+ *  Does not operate at full speed, each step has at least one cycle delay.
  **/
-class AxiSlidingWindowTester[T <: Data](m: AxiSlidingWindowTestModule[T]) extends PeekPokeTester(m) {
+class SlidingWindowTester[T <: Data](m: SlidingWindowTestModule[T]) extends PeekPokeTester(m) {
   // fill memory model
-  AxiSlaveModel.fillWithLinearSeq(m.saxi, m.axi.dataWidth)(m.axi, this)
+  SlaveModel.fillWithLinearSeq(m.saxi, m.axi.dataWidth)(m.axi, this)
   reset(10) // reset
   
   var noErrors = true
@@ -67,21 +68,20 @@ class AxiSlidingWindowTester[T <: Data](m: AxiSlidingWindowTestModule[T]) extend
 }
 
 /** Unit test suite for AxiSlidingWindow. **/
-class AxiSlidingWindowSuite extends ChiselFlatSpec {
+class SlidingWindowSuite extends ChiselFlatSpec {
+  implicit val logLevel = Logging.Level.Info
   val chiselArgs = Array("--fint-write-vcd")
   implicit val axi: Axi4.Configuration = Axi4.Configuration(addrWidth = AddrWidth(32), dataWidth = DataWidth(64))
   implicit val afa: AxiFifoAdapterConfiguration = AxiFifoAdapterConfiguration(fifoDepth = 16)
 
   private def slidingWindow(width: Int, depth: Int)(implicit afa: AxiFifoAdapterConfiguration) = {
     val args = chiselArgs ++ Array("--target-dir", "test/slidingWindow/%dx%d".format(width, depth))
-    val cfg = AxiSlidingWindowConfiguration(
-        gen = UInt(width.W),
-        depth = depth,
-        width = width,
-        afa = afa
-      )
-    Driver.execute(args, () => new AxiSlidingWindowTestModule(cfg))
-      { m => new AxiSlidingWindowTester(m) }
+    val cfg = SlidingWindow.Configuration(gen = UInt(width.W),
+                                          depth = depth,
+                                          width = width,
+                                          afa = afa)
+    Driver.execute(args, () => new SlidingWindowTestModule(cfg))
+      { m => new SlidingWindowTester(m) }
   }
 
   "slidingWindow_8_3" should "be ok" in    { slidingWindow(8, 3) }

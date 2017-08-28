@@ -1,4 +1,4 @@
-package chisel.axiutils
+package chisel.axiutils.axi4lite
 import  chisel3._
 import  chisel3.util._
 import  chisel.axi._
@@ -15,8 +15,8 @@ case class MasterAction(isRead: Boolean = true, addr: Int, value: Option[BigInt]
  *  @param action Sequence of transactions, executed sequentially without delay.
  *  @param axi implicit AXI configuration.
  **/
-class Axi4LiteProgrammableMaster(action: Seq[MasterAction])
-                                (implicit axi: Axi4Lite.Configuration) extends Module {
+class ProgrammableMaster(action: Seq[MasterAction])
+                        (implicit axi: Axi4Lite.Configuration) extends Module {
   val io = IO(new Bundle {
     val maxi     = Axi4Lite.Master(axi)
     val out      = Decoupled(UInt(axi.dataWidth))

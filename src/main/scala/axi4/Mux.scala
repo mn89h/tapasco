@@ -3,35 +3,29 @@ import  chisel3._
 import  chisel3.util._
 import  chisel.axi.Axi4._
 
-/**
- * I/O Bundle for AXI mux.
- * @param n Number of slave interfaces.
- * @param axi Implicit AXI interface configuration.
- **/
-class AxiMuxIO(n: Int)(implicit axi: Configuration) extends Bundle {
-  val saxi = Vec(n, Slave(axi))
-  val maxi = Master(axi)
-
-  /*jdef renameSignals() = {
-    for (i <- 0 until n)
-      saxi(i).renameSignals(Some("S%02d_".format(i)), None)
-    maxi.renameSignals(None, None)
-  }*/
+object AxiMux {
+  /** I/O Bundle for AXI mux.
+   *  @param n Number of slave interfaces.
+   *  @param axi Implicit AXI interface configuration.
+   **/
+  class IO(n: Int)(implicit axi: Configuration) extends Bundle {
+    val saxi = Vec(n, Slave(axi))
+    val maxi = Master(axi)
+  }
 }
 
-/**
- * AxiMux: Connect n AXI-MM masters to one AXI-MM slave.
- * @param n Number of slave interfaces.
- * @param axi Implicit AXI interface configuration.
+/** Connect n AXI-MM masters to one AXI-MM slave.
+ *  @param n Number of slave interfaces.
+ *  @param axi Implicit AXI interface configuration.
  **/
 class AxiMux(n: Int)(implicit axi: Configuration) extends Module {
-  val io = IO(new AxiMuxIO(n))
-  //io.renameSignals()
+  val io = IO(new AxiMux.IO(n))
 
+  // states of the FSM
   val waiting :: in_burst :: Nil = Enum(2)
 
-  val r_curr = Reg(UInt(log2Ceil(n).W))
-  val w_curr = Reg(UInt(log2Ceil(n).W))
+  val r_curr  = Reg(UInt(log2Ceil(n).W))
+  val w_curr  = Reg(UInt(log2Ceil(n).W))
   val r_state = RegInit(waiting)
   val w_state = RegInit(waiting)
 

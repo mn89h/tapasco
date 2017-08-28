@@ -4,39 +4,34 @@ import  chisel.axi._
 import  chisel3._
 import  chisel3.util._
 
-/**
- * Configuration parameters for an AxiSlidingWindow.
- * @param gen Underlying element type.
- * @param width Width of gen type in bits (TODO infer bitwidth of gen)
- * @param depth Depth of the sliding window (accessible elements).
- * @param axicfg AXI interface configuration.
- **/
-sealed case class AxiSlidingWindowConfiguration[T <: Data](
-  gen: T,
-  width: Int,
-  depth: Int,
-  afa: AxiFifoAdapterConfiguration
-)
+object SlidingWindow {
+  /** Configuration parameters for a SlidingWindow.
+   *  @param gen Underlying element type.
+   *  @param width Width of gen type in bits (TODO infer bitwidth of gen)
+   *  @param depth Depth of the sliding window (accessible elements).
+   *  @param axicfg AXI interface configuration.
+   **/
+  sealed case class Configuration[T <: Data](gen: T,
+                                             width: Int,
+                                             depth: Int,
+                                             afa: AxiFifoAdapterConfiguration)
 
-/**
- * I/O Bundle for an AxiSlidingWindow:
- * Consists of base address input, AXI master interface and access
- * to the elements of the sliding window.
- * @param cfg Configuration parameters.
- **/
-class AxiSlidingWindowIO[T <: Data](cfg: AxiSlidingWindowConfiguration[T])
-                                   (implicit axi: Axi4.Configuration) extends Bundle {
-  val base = Input(UInt(axi.addrWidth))
-  val maxi = Axi4.Master(axi)
-  val data = Decoupled(Vec(cfg.depth, cfg.gen))
-
-  def renameSignals() = {
-    base.suggestName("BASE")
-    data.ready.suggestName("DATA_READY")
-    data.valid.suggestName("DATA_VALID")
-    for (i <- 0 until cfg.depth) data.bits(i).suggestName("DATA_%02d".format(i))
-    //maxi.renameSignals(None, None)
+  /**
+   * I/O Bundle for an AxiSlidingWindow:
+   * Consists of base address input, AXI master interface and access
+   * to the elements of the sliding window.
+   * @param cfg Configuration parameters.
+   **/
+  class IO[T <: Data](cfg: Configuration[T])
+                     (implicit axi: Axi4.Configuration) extends Bundle {
+    val base = Input(UInt(axi.addrWidth))
+    val maxi = Axi4.Master(axi)
+    val data = Decoupled(Vec(cfg.depth, cfg.gen))
   }
+
+  def apply[T <: Data](cfg: SlidingWindow.Configuration[T])
+                      (implicit axi: Axi4.Configuration): SlidingWindow[T] =
+    new SlidingWindow(cfg)
 }
 
 /**
@@ -48,10 +43,9 @@ class AxiSlidingWindowIO[T <: Data](cfg: AxiSlidingWindowConfiguration[T])
  * one element.
  * @param cfg Configuration parameters.
  **/
-class AxiSlidingWindow[T <: Data](val cfg: AxiSlidingWindowConfiguration[T])
-                                 (implicit axi: Axi4.Configuration) extends Module {
-  val io = IO(new AxiSlidingWindowIO(cfg))
-  io.renameSignals()
+class SlidingWindow[T <: Data](val cfg: SlidingWindow.Configuration[T])
+                              (implicit axi: Axi4.Configuration) extends Module {
+  val io = IO(new SlidingWindow.IO(cfg))
 
   /** AXI DMA engine **/
   val afa = Module(AxiFifoAdapter(cfg.afa))
@@ -99,11 +93,4 @@ class AxiSlidingWindow[T <: Data](val cfg: AxiSlidingWindowConfiguration[T])
       }
     }
   }
-}
-
-/** AxiSlidingWindow companion object: Factory methods. **/
-object AxiSlidingWindow {
-  def apply[T <: Data](cfg: AxiSlidingWindowConfiguration[T])
-                      (implicit axi: Axi4.Configuration): AxiSlidingWindow[T] =
-    new AxiSlidingWindow(cfg)
 }

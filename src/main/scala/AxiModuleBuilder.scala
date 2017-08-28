@@ -1,7 +1,7 @@
 package chisel.axiutils
-import  chisel.axiutils.registers._
+import  chisel.axiutils.axi4lite._
 import  chisel.packaging._, chisel.packaging.CoreDefinition.root
-import  chisel.miscutils.DecoupledDataSource
+import  chisel.miscutils.DecoupledDataSource, chisel.miscutils.Logging
 import  scala.sys.process._
 import  java.nio.file.Paths
 import  chisel3._
@@ -9,6 +9,7 @@ import  chisel.axi._
 
 class FifoAxiAdapterTest1(dataWidth: Int, size: Int) extends Module {
   val addrWidth = 32
+  implicit val logLevel = Logging.Level.Info
   implicit val axi = Axi4.Configuration(AddrWidth(addrWidth),
                                         DataWidth(dataWidth),
                                         IdWidth(1))
@@ -30,12 +31,13 @@ class FifoAxiAdapterTest1(dataWidth: Int, size: Int) extends Module {
 }
 
 object AxiModuleBuilder extends ModuleBuilder {
+  implicit val logLevel = Logging.Level.Info
   implicit val axi = Axi4.Configuration(AddrWidth(32),
                                         DataWidth(64),
                                         IdWidth(1))
   implicit val axilite = Axi4Lite.Configuration(AddrWidth(32),
                                                 Axi4Lite.Width32)
-  val exampleRegisterFile = new Axi4LiteRegisterFileConfiguration(addrGranularity = 8, regs = Map(
+  val exampleRegisterFile = new axi4lite.RegisterFile.Configuration(addrGranularity = 8, regs = Map(
     0  -> new ConstantRegister(value = BigInt("10101010", 16)),
     4  -> new ConstantRegister(value = BigInt("20202020", 16)),
     8  -> new ConstantRegister(value = BigInt("30303030", 16)),
@@ -88,7 +90,7 @@ object AxiModuleBuilder extends ModuleBuilder {
         None,
         () => {
           implicit val axi = Axi4.Configuration(AddrWidth(32), DataWidth(64), IdWidth(1))
-          new AxiSlidingWindow(AxiSlidingWindowConfiguration(
+          new SlidingWindow(SlidingWindow.Configuration(
             gen = UInt(8.W),
             width = 8,
             depth = 3,
@@ -116,15 +118,15 @@ object AxiModuleBuilder extends ModuleBuilder {
       ),
       ModuleDef( // AXI Register File
         Some(exampleRegisterFile),
-        () => new Axi4LiteRegisterFile(exampleRegisterFile),
+        () => new RegisterFile(exampleRegisterFile),
         CoreDefinition.withActions(
-          name = "Axi4LiteRegisterFile",
+          name = "RegisterFile",
           vendor = "esa.cs.tu-darmstadt.de",
           library = "chisel",
           version = "0.1",
-          root = root("Axi4LiteRegisterFile"),
+          root = root("RegisterFile"),
           postBuildActions = Seq(_ match {
-            case Some(cfg: Axi4LiteRegisterFileConfiguration) => cfg.dumpAddressMap(root("Axi4LiteRegisterFile"))
+            case Some(cfg: RegisterFile.Configuration) => cfg.dumpAddressMap(root("RegisterFile"))
             case _ => ()
           })
         )

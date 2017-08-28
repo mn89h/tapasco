@@ -1,20 +1,21 @@
-package chisel.axiutils
+package chisel.axiutils.axi4
 import  chisel3._
 import  chisel3.util._
 import  chisel3.iotesters.{ChiselFlatSpec, Driver, PeekPokeTester}
 import  chisel.axi._
+import  chisel.axiutils._
 import  org.scalatest.junit.JUnitSuite
-import  chisel.miscutils.DecoupledDataSource
+import  chisel.miscutils.{DecoupledDataSource, Logging}
 import  scala.math.{random, pow}
 
 /**
  * Composite test module:
- * Uses FifoAxiAdapter to fill AxiSlaveModel; then reads data from
- * AxiSlaveModel via AxiFifoAdapter.
+ * Uses FifoAxiAdapter to fill SlaveModel; then reads data from
+ * SlaveModel via AxiFifoAdapter.
  **/
 class Axi2AxiModule(val fifoDepth: Int = 16, val size: Option[Int])
-                   (implicit axi: Axi4.Configuration) extends Module {
-
+                   (implicit axi: Axi4.Configuration, l: Logging.Level)
+    extends Module with Logging {
   require (size.isEmpty || log2Ceil(size.get) <= axi.addrWidth,
            "size (%d) elements cannot be addressed by %d address bits".format(size.get, axi.addrWidth:Int))
 
@@ -24,21 +25,19 @@ class Axi2AxiModule(val fifoDepth: Int = 16, val size: Option[Int])
 
   val sz = size.getOrElse(pow(2, axi.addrWidth.toDouble).toInt / axi.dataWidth)
   val aw = Seq(axi.addrWidth:Int, log2Ceil(sz * (axi.dataWidth / 8))).min
-  println ("Axi2AxiModule: address bits = %d, size = %d".format(aw, sz))
-  val cfg = AxiSlaveModelConfiguration()
+  cinfo ("Axi2AxiModule: address bits = %d, size = %d".format(aw, sz))
+  val cfg = SlaveModel.Configuration()
 
   val data = 0 to sz map (n => n % pow(2, axi.dataWidth:Int).toInt)
 
   val dsrc = Module(new DecoupledDataSource(
       gen = UInt(axi.dataWidth),
       size = sz, 
-      //data = n => UInt((random * pow(2, axi.dataWidth)).toInt),
-      //data = n => (n % pow(2, axi.dataWidth:Int).toInt).U,
       data = data map (_.U),
       repeat = false))
 
   val fad  = Module(new FifoAxiAdapter(fifoDepth = sz, burstSize = Some(fifoDepth)))
-  val saxi = Module(new AxiSlaveModel(cfg))
+  val saxi = Module(new SlaveModel(cfg))
   val afa  = Module(AxiFifoAdapter(fifoDepth = fifoDepth))
   val base = 0.U(aw.W)
 
@@ -48,7 +47,7 @@ class Axi2AxiModule(val fifoDepth: Int = 16, val size: Option[Int])
   saxi.io.saxi.writeResp <> fad.io.maxi.writeResp
   saxi.io.saxi.readAddr  <> afa.io.maxi.readAddr
   saxi.io.saxi.readData  <> afa.io.maxi.readData
-  //afa.reset := dsrc.io.out.valid || fad.fifo.io.count > 0.U
+  // FIXME afa.reset := dsrc.io.out.valid || fad.fifo.io.count > 0.U
   fad.io.base := base
   afa.io.base := base
   io.deq <> afa.io.deq
@@ -61,7 +60,7 @@ class Axi2AxiModule(val fifoDepth: Int = 16, val size: Option[Int])
  * Does NOT perform any timing checks, only correctness.
  **/
 class Axi2AxiTester(m: Axi2AxiModule)
-                   (implicit axi: Axi4.Configuration) extends PeekPokeTester(m) {
+                   (implicit axi: Axi4.Configuration, l: Logging.Level) extends PeekPokeTester(m) {
   def toBinaryString(v: BigInt): String =
     "b%%%ds".format(axi.dataWidth:Int).format(v.toString(2)).replace(' ', '0')
   private val O = 10000
@@ -93,6 +92,7 @@ class Axi2AxiTester(m: Axi2AxiModule)
 /** Test suite using both AxiFifoAdapter and FifoAxiAdapter. **/
 class Axi2AxiSuite extends ChiselFlatSpec {
   import java.nio.file._
+  implicit val logLevel = chisel.miscutils.Logging.Level.Warn
 
   def run(size: Int, fifoDepth: Int, addrWidth: Int, dataWidth: Int) {
     implicit val axi = Axi4.Configuration(addrWidth = AddrWidth(addrWidth), dataWidth = DataWidth(dataWidth))

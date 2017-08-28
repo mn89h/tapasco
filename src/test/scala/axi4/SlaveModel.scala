@@ -1,7 +1,9 @@
-package chisel.axiutils
+package chisel.axiutils.axi4
 import  chisel3._, chisel3.util._
 import  chisel3.iotesters.{PeekPokeTester}
 import  chisel.axi._
+import  chisel.miscutils.Logging
+import  scala.util.Properties.{lineSeparator => NL}
 
 class DebugIO(implicit axi: Axi4.Configuration) extends Bundle {
   val ra   = Input(UInt(axi.addrWidth))
@@ -14,34 +16,111 @@ class DebugIO(implicit axi: Axi4.Configuration) extends Bundle {
   override def cloneType = { new DebugIO()(axi).asInstanceOf[this.type] }
 }
 
-class AxiSlaveModelIO(val cfg: AxiSlaveModelConfiguration)
-                     (implicit axi: Axi4.Configuration) extends Bundle {
-  val saxi  = Axi4.Slave(axi)
-  val debug = new DebugIO
+object SlaveModel {
+  /**
+   * SlaveModelConfiguration configures an SlaveModel instance.
+   * @param addrWidth address bits for AXI4 interface.
+   * @param dataWidth word width for AXI4 interface.
+   * @param idWidth id bits for AXI4 interface.
+   * @param size size of memory to model (in dataWidth-sized elements).
+   * @param readDelay simulated delay between read address handshake and data.
+   * @param writeDelay simulated delay between write address handshake and data.
+   **/
+  class Configuration(val size: Int,
+                      val readDelay: Int,
+                      val writeDelay: Int)
+                     (implicit axi: Axi4.Configuration) {
+    require (axi.dataWidth > 0 && axi.dataWidth <= 256,
+             "dataWidth (%d) must be 0 < dataWidth <= 256".format(axi.dataWidth))
+    require (axi.idWidth.toInt == 1, "id width (%d) is not supported, use 1bit".format(axi.idWidth))
+    require (readDelay >= 0, "read delay (%d) must be >= 0".format(readDelay))
+    require (writeDelay >= 0, "write delay (%d) must be >= 0".format(writeDelay))
 
-  override def cloneType = { new AxiSlaveModelIO(cfg)(axi).asInstanceOf[this.type] }
+    override def toString: String =
+      "addrWidth = %d, dataWidth = %d, idWidth = %d, size = %d, readDelay = %d, writeDelay = %d"
+      .format(axi.addrWidth:Int, axi.dataWidth:Int, axi.idWidth:Int, size, readDelay, writeDelay)
+  }
+
+  object Configuration {
+    /**
+     * Construct a Configuration. Size and address width are optional,
+     * but one needs to be supplied to determine simulated memory size.
+     * @param size size of memory to model in bytes (optional).
+     * @param readDelay simulated delay between read address handshake and data (default: 30).
+     * @param writeDelay simulated delay between write address handshake and data (default: 20).
+     **/
+    def apply(size: Option[Int] = None, readDelay: Int = 30, writeDelay: Int = 120)
+             (implicit axi: Axi4.Configuration) = {
+      val sz: Int = size.getOrElse(scala.math.pow(2, axi.addrWidth:Int).toInt / axi.dataWidth)
+      val aw: Int = Seq(axi.addrWidth:Int, log2Ceil(sz * axi.dataWidth / 8).toInt).min
+      new Configuration(size = sz, readDelay = readDelay, writeDelay = writeDelay)
+    }
+  }
+
+  class IO(val cfg: Configuration)(implicit axi: Axi4.Configuration) extends Bundle {
+    val saxi  = Axi4.Slave(axi)
+    val debug = new DebugIO
+
+    override def cloneType = { new SlaveModel.IO(cfg)(axi).asInstanceOf[this.type] }
+  }
+
+  /**
+   * Fills the given AXI memory model with linear data:
+   * Data is filled with increasing integers of bitWidth size.
+   * @param m SlaveModel to fill.
+   * @param bitWidth Number of bits per element.
+   * @param tester PeekPokeTester instance for memory poking (implicit).
+   **/
+  def fillWithLinearSeq(m: SlaveModel, bitWidth: Int)
+                       (implicit axi: Axi4.Configuration, tester: PeekPokeTester[_]) = {
+    import scala.math.{log, pow}
+    require (axi.dataWidth % bitWidth == 0,
+             "bitWidth (%d) must be evenly divisible by data width (%d)"
+             .format(bitWidth, axi.dataWidth:Int))
+    val maxData: Int = pow(2, bitWidth).toInt
+    val maxAddr: Int = pow(2, axi.addrWidth:Int).toInt
+    val size: Int = m.cfg.size 
+    def makeNumber(i: Int): Int = {
+      /*printf("fillWithLinearSeq::makeNumber: i = %d, maxData = 0x%x -> 0x%x%s"
+             .format(i, maxData, i % maxData, NL))*/
+      i % maxData
+    }
+
+    printf("fillWithLinearSeq: size = %d words, %d bits, bitWidth: %d%s"
+      .format(size, axi.dataWidth:Int, bitWidth, NL))
+    
+    var word: BigInt = 0
+    for (i <- 0 until size; addr = i * (axi.dataWidth / 8)) {
+      for (j <- 0 until axi.dataWidth / bitWidth)
+        word = (word << bitWidth) | makeNumber(i * (axi.dataWidth / bitWidth) + j)
+      printf("fillWithLinearSeq: address = 0x%x, word = 0x%x%s".format(addr, word, NL))
+      m.set(addr, word)
+      word = 0
+    }
+  }
 }
 
-class AxiSlaveModel(val cfg: AxiSlaveModelConfiguration)
-                   (implicit val axi: Axi4.Configuration) extends Module {
-  val sz = cfg.size
-  println ("AxiSlaveModel: %s".format(cfg.toString))
 
-  val io = IO(new AxiSlaveModelIO(cfg))
+class SlaveModel(val cfg: SlaveModel.Configuration)
+                   (implicit val axi: Axi4.Configuration,
+                    logLevel: Logging.Level) extends Module with Logging {
+  val sz = cfg.size
+  cinfo(cfg.toString)
+
+  val io = IO(new SlaveModel.IO(cfg))
   val mem = SyncReadMem(sz, UInt(axi.dataWidth))
 
   /** DEBUG PROCESS **/
-  val d_read    = io.debug.r
   val d_write   = RegNext(io.debug.w)
   val d_waddr   = RegNext(io.debug.wa)
-  val d_raddr   = RegNext(io.debug.ra)
   val d_din     = RegNext(io.debug.din)
-  d_din         := io.debug.din
-  when (d_read) {
-    io.debug.dout := mem.read(d_raddr)
+  when (io.debug.r) {
+    io.debug.dout := mem.read(io.debug.ra)
+    info("read 0x${Hexadecimal(mem.read(io.debug.ra))} at 0x${Hexadecimal(io.debug.ra)}")
   }
   when (d_write) {
     mem.write(d_waddr, d_din)
+    info("wrote 0x${Hexadecimal(d_din)} to 0x${Hexadecimal(d_waddr)}")
   }
 
   /** WRITE PROCESS **/
@@ -74,10 +153,15 @@ class AxiSlaveModel(val cfg: AxiSlaveModelConfiguration)
   def at(address: Int)(implicit t: PeekPokeTester[_]): BigInt  = {
     val idx = address / (axi.dataWidth / 8)
     require (idx >= 0 && idx < cfg.size,
-             "AxiSlaveModel: read at invalid index %d (max: %d) for address 0x%x"
+             "SlaveModel: read at invalid index %d (max: %d) for address 0x%x"
              .format(idx, cfg.size - 1, address))
     //t.peekAt(mem, address / (axi.dataWidth / 8))
-    BigInt(0)
+    t.poke(io.debug.ra, address / (axi.dataWidth / 8))
+    t.poke(io.debug.r, 1)
+    t.step(1)
+    val v = t.peek(io.debug.dout)
+    t.poke(io.debug.r, 0)
+    v
   }
 
   /**
@@ -88,10 +172,15 @@ class AxiSlaveModel(val cfg: AxiSlaveModelConfiguration)
    **/
   def apply(index: Int)(implicit t: PeekPokeTester[_]): BigInt = {
     require (index >= 0 && index < cfg.size,
-             "AxiSlaveModel: read at invalid index %d (max: %d)"
+             "SlaveModel: read at invalid index %d (max: %d)"
              .format(index, cfg.size - 1))
     //t.peekAt(mem, index)
-    BigInt(0)
+    t.poke(io.debug.ra, index)
+    t.poke(io.debug.r, 1)
+    t.step(1)
+    val v = t.peek(io.debug.dout)
+    t.poke(io.debug.r, 0)
+    v
   }
 
   /**
@@ -102,8 +191,13 @@ class AxiSlaveModel(val cfg: AxiSlaveModelConfiguration)
    **/
   def set(address: Int, value: BigInt)(implicit t: PeekPokeTester[_]) = {
     val idx = address / (axi.dataWidth / 8)
-    printf("AxiSlaveModel: set data at 0x%x (idx: %d) to 0x%x".format(address, value, idx))
+    printf("SlaveModel: set data at 0x%x (idx: %d) to 0x%x".format(address, value, idx))
     //t.pokeAt(mem, value, idx)
+    t.poke(io.debug.wa, idx)
+    t.poke(io.debug.din, value)
+    t.poke(io.debug.w, 1)
+    t.step(1)
+    t.poke(io.debug.w, 0)
   }
 
   io.saxi.writeAddr.ready      := !wa_hs
@@ -127,7 +221,8 @@ class AxiSlaveModel(val cfg: AxiSlaveModelConfiguration)
       wa     := wa_addr
       wl     := wa_len
       wa_hs  := true.B
-      assert (wa_size === (if (axi.dataWidth > 8) log2Ceil(axi.dataWidth / 8).U else 0.U), "wa_size is not supported".format(wa_size))
+      assert (wa_size === (if (axi.dataWidth > 8) log2Ceil(axi.dataWidth / 8).U else 0.U),
+              "wa_size is not supported".format(wa_size))
       assert (wa_burst < 2.U, "wa_burst type (b%s) not supported".format(wa_burst))
       if (cfg.writeDelay > 0) wr_wait := cfg.writeDelay.U
     }
@@ -205,45 +300,6 @@ class AxiSlaveModel(val cfg: AxiSlaveModelConfiguration)
       l      := l - 1.U
       ra     := ra + (axi.dataWidth / 8).U
       when (l === 0.U) { ra_hs := false.B }
-    }
-  }
-}
-
-/** AxiSlaveModel companion object with diverse helpers. **/
-object AxiSlaveModel {
-  import scala.util.Properties.{lineSeparator => NL}
-  /**
-   * Fills the given AXI memory model with linear data:
-   * Data is filled with increasing integers of bitWidth size.
-   * @param m AxiSlaveModel to fill.
-   * @param bitWidth Number of bits per element.
-   * @param tester PeekPokeTester instance for memory poking (implicit).
-   **/
-  def fillWithLinearSeq(m: AxiSlaveModel, bitWidth: Int)
-                       (implicit axi: Axi4.Configuration, tester: PeekPokeTester[_]) = {
-    import scala.math.{log, pow}
-    require (axi.dataWidth % bitWidth == 0,
-             "bitWidth (%d) must be evenly divisible by data width (%d)"
-             .format(bitWidth, axi.dataWidth:Int))
-    val maxData: Int = pow(2, bitWidth).toInt
-    val maxAddr: Int = pow(2, axi.addrWidth:Int).toInt
-    val size: Int = m.cfg.size 
-    def makeNumber(i: Int): Int = {
-      /*printf("fillWithLinearSeq::makeNumber: i = %d, maxData = 0x%x -> 0x%x%s"
-             .format(i, maxData, i % maxData, NL))*/
-      i % maxData
-    }
-
-    printf("fillWithLinearSeq: size = %d words, %d bits, bitWidth: %d%s"
-      .format(size, axi.dataWidth:Int, bitWidth, NL))
-    
-    var word: BigInt = 0
-    for (i <- 0 until size; addr = i * (axi.dataWidth / 8)) {
-      for (j <- 0 until axi.dataWidth / bitWidth)
-        word = (word << bitWidth) | makeNumber(i * (axi.dataWidth / bitWidth) + j)
-      printf("fillWithLinearSeq: address = 0x%x, word = 0x%x%s".format(addr, word, NL))
-      m.set(addr, word)
-      word = 0
     }
   }
 }

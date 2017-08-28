@@ -1,5 +1,5 @@
-package chisel.axiutils.registers
-import Chisel.{Reg, UInt}
+package chisel.axiutils.axi4lite
+import  Chisel.{Reg, UInt}
 
 /**
  * Abstract base class for control registers.

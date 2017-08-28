@@ -1,4 +1,6 @@
-package chisel.axiutils
+package chisel.axiutils.axi4
+import  chisel.axiutils._
+import  chisel.miscutils.Logging
 import  chisel3._
 import  chisel3.util._
 import  chisel3.iotesters.{ChiselFlatSpec, Driver, PeekPokeTester}
@@ -10,15 +12,17 @@ import  chisel.axi._
  * @param n Number of parallel masters.
  * @param axi Implicit AXI interface configuration.
  **/
-class AxiMuxReadTestModule(val n: Int)(implicit axi: Axi4.Configuration) extends Module {
+class AxiMuxReadTestModule(val n: Int)
+                          (implicit axi: Axi4.Configuration,
+                           logLevel: Logging.Level) extends Module {
   val io = IO(new Bundle {
     val afa_deq_ready = Output(UInt(n.W))
     val afa_deq_valid = Output(UInt(n.W))
     val afa_deq_bits  = Input(Vec(n, UInt(axi.dataWidth)))
   })
   val mux = Module(new AxiMux(n))
-  private val asmcfg = AxiSlaveModelConfiguration(size = Some(n * 128))
-  val saxi = Module(new AxiSlaveModel(asmcfg))
+  private val asmcfg = SlaveModel.Configuration(size = Some(n * 128))
+  val saxi = Module(new SlaveModel(asmcfg))
   private val afacfg = AxiFifoAdapterConfiguration(fifoDepth = 8, burstSize = Some(4))
   val afa = for (i <- 0 until n) yield Module(new AxiFifoAdapter(afacfg))
   val bases = (0 until n) map (_ * 128 * (axi.dataWidth / 8))
@@ -39,7 +43,7 @@ class AxiMuxReadTestModule(val n: Int)(implicit axi: Axi4.Configuration) extends
 /**
  * Unit test for reading across an AxiMux module:
  * Connects multiple AxiFifoAdapters with increasing base addresses 
- * to single AxiSlaveModel and checks the data for correctness.
+ * to single SlaveModel and checks the data for correctness.
  * No performance measurement!
  * @param m Test module.
  * @param isTrace if true, will enable tracing in Chisel PeekPokeTester.
@@ -47,7 +51,7 @@ class AxiMuxReadTestModule(val n: Int)(implicit axi: Axi4.Configuration) extends
 class AxiMuxReadTester(m: AxiMuxReadTestModule)
                       (implicit axi: Axi4.Configuration) extends PeekPokeTester(m) {
   implicit val tester = this
-  AxiSlaveModel.fillWithLinearSeq(m.saxi, axi.dataWidth)
+  SlaveModel.fillWithLinearSeq(m.saxi, axi.dataWidth)
   reset(10)
 
   var counter: Array[Int] = Array.fill[Int](m.n)(0)
@@ -68,6 +72,7 @@ class AxiMuxReadTester(m: AxiMuxReadTestModule)
  * Unit test suit for AxiMux.
  **/
 class AxiMuxSuite extends ChiselFlatSpec {
+  implicit val logLevel = Logging.Level.Info
   val chiselArgs = Array("--fint-write-vcd")
   implicit val axi = Axi4.Configuration(addrWidth = AddrWidth(32), dataWidth = DataWidth(64))
 
