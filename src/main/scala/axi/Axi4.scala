@@ -8,7 +8,10 @@ object Axi4 {
                       val idWidth:     IdWidth     = IdWidth(1),
                       val userWidth:   UserWidth   = UserWidth(0),
                       val regionWidth: RegionWidth = RegionWidth(0),
-                      val hasQoS:      Boolean     = false)
+                      val hasQoS:      Boolean     = false) {
+    override def toString: String =
+      s"Axi4($addrWidth $dataWidth $idWidth $userWidth $regionWidth $hasQoS)"
+  }
 
   object Configuration {
     def apply(addrWidth:   AddrWidth,
