@@ -34,3 +34,5 @@ lazy val miscutils = project.in(file("miscutils"))
 
 lazy val root = (project in file(".")).dependsOn(packaging, miscutils, miscutils % "test->test")
 
+cleanFiles += (baseDirectory.value / "test")
+
