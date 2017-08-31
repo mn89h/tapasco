@@ -39,7 +39,7 @@ class SlidingWindowTestModule[T <: Data](cfg: SlidingWindow.Configuration[T])
  **/
 class SlidingWindowTester[T <: Data](m: SlidingWindowTestModule[T]) extends PeekPokeTester(m) {
   // fill memory model
-  SlaveModel.fillWithLinearSeq(m.saxi, m.axi.dataWidth)(m.axi, this)
+  //SlaveModel.fillWithLinearSeq(m.saxi, m.axi.dataWidth)(m.axi, this)
   reset(10) // reset
   
   var noErrors = true

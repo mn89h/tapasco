@@ -1,21 +1,24 @@
-package chisel.axiutils
+package chisel.axiutils.axi4
+import  chisel.axi._
+import  chisel.miscutils._
 import  chisel3._
 import  chisel3.util._
-import  chisel.axi._
 
 object FifoAxiAdapter {
   class IO(fifoDepth: Int)(implicit axi: Axi4.Configuration) extends Bundle {
-    val maxi  = Axi4.Master(axi)
-    val enq   = Flipped(Decoupled(UInt(axi.dataWidth)))
-    val base  = Input(UInt(axi.addrWidth))
-    val count = Output(UInt(log2Ceil(fifoDepth).W))
+    val enable = Input(Bool())
+    val maxi   = Axi4.Master(axi)
+    val enq    = Flipped(Decoupled(UInt(axi.dataWidth)))
+    val base   = Input(UInt(axi.addrWidth))
+    val count  = Output(UInt(log2Ceil(fifoDepth).W))
   }
 }
 
 class FifoAxiAdapter(fifoDepth: Int,
                      burstSize: Option[Int] = None,
                      size: Option[Int] = None)
-                    (implicit axi: Axi4.Configuration) extends Module {
+                    (implicit axi: Axi4.Configuration,
+                     logLevel: Logging.Level) extends Module with Logging {
 
   val bsz = burstSize getOrElse fifoDepth
 
@@ -26,31 +29,32 @@ class FifoAxiAdapter(fifoDepth: Int,
            "burst size (%d) must be 0 < bsz <= FIFO depth (%d) <= 256"
            .format(bsz, fifoDepth))
 
-  println ("FifoAxiAdapter: fifoDepth = %d, address bits = %d, data bits = %d, id bits = %d%s%s"
-           .format(fifoDepth, axi.addrWidth:Int, axi.dataWidth:Int, axi.idWidth:Int,
-                   burstSize.map(", burst size = %d".format(_)).getOrElse(""),
-                   size.map(", size = %d".format(_)).getOrElse("")))
+  cinfo("FifoAxiAdapter: fifoDepth = %d, address bits = %d, data bits = %d, id bits = %d%s%s"
+        .format(fifoDepth, axi.addrWidth:Int, axi.dataWidth:Int, axi.idWidth:Int,
+                burstSize.map(", burst size = %d".format(_)).getOrElse(""),
+                size.map(", size = %d".format(_)).getOrElse("")))
 
   val io = IO(new FifoAxiAdapter.IO(fifoDepth))
+  val en = RegNext(io.enable, init = false.B)
 
   val axi_write :: axi_wait :: Nil = Enum(2)
 
   val fifo                     = Module(new Queue(UInt(axi.dataWidth), fifoDepth))
   val state                    = RegInit(axi_wait)
-  val len                      = Reg(UInt(log2Ceil(bsz).W))
-  val maxi_wlast               = state === axi_write && len === 0.U
+  val len                      = RegInit(UInt(log2Ceil(bsz).W), init = (bsz - 1).U)
+  val maxi_wlast               = state === axi_write & len === 0.U
   val maxi_waddr               = RegInit(io.base)
-  val maxi_wavalid             = !reset && fifo.io.count >= bsz.U
+  val maxi_wavalid             = fifo.io.count >= bsz.U
   val maxi_waready             = io.maxi.writeAddr.ready
-  val maxi_wready              = state === axi_write && io.maxi.writeData.ready
-  val maxi_wvalid              = state === axi_write && fifo.io.deq.valid
+  val maxi_wready              = state === axi_write & io.maxi.writeData.ready
+  val maxi_wvalid              = state === axi_write & fifo.io.deq.valid
 
   io.enq                             <> fifo.io.enq
   io.maxi.writeData.bits.last        := maxi_wlast
   io.maxi.writeData.bits.data        := fifo.io.deq.bits
   io.maxi.writeData.valid            := maxi_wvalid
   io.maxi.writeAddr.valid            := maxi_wavalid
-  fifo.io.deq.ready                  := state === axi_write && io.maxi.writeData.ready
+  fifo.io.deq.ready                  := state === axi_write & io.maxi.writeData.ready
   io.count                           := fifo.io.count
 
   // AXI boilerplate
@@ -70,13 +74,13 @@ class FifoAxiAdapter(fifoDepth: Int,
   io.maxi.readAddr.valid             := false.B
   io.maxi.readData.ready             := false.B
 
-  when (reset) {
-    state := axi_wait
-    len   := (bsz - 1).U
-  }
-  .otherwise {
-    when (state === axi_wait && fifo.io.count >= bsz.U) { state := axi_write }
-    when (maxi_wavalid && maxi_waready) {
+  when (en) {
+    when (state === axi_wait) {
+      when (fifo.io.count >= bsz.U | (fifo.io.count > 0.U & ~fifo.io.deq.valid)) {
+        state := axi_write
+      }
+    }
+    when (maxi_wavalid & maxi_waready) {
       val addr_off  = (bsz * (axi.dataWidth / 8)).U
       val next_addr = maxi_waddr + addr_off
       if (size.isEmpty)
@@ -85,10 +89,10 @@ class FifoAxiAdapter(fifoDepth: Int,
         maxi_waddr := Mux(next_addr >= io.base + size.get.U, io.base, next_addr)
     }
     when (state === axi_write) {
-      when (maxi_wready && maxi_wvalid) {
+      when (maxi_wready & maxi_wvalid) {
         when (maxi_wlast) {
           state := Mux(fifo.io.count >= bsz.U, state, axi_wait)
-          len := (bsz - 1).U
+          len   := fifo.io.count - 1.U
         }
         .otherwise { len := len - 1.U }
       }

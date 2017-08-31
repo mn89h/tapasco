@@ -51,7 +51,7 @@ class AxiMuxReadTestModule(val n: Int)
 class AxiMuxReadTester(m: AxiMuxReadTestModule)
                       (implicit axi: Axi4.Configuration) extends PeekPokeTester(m) {
   implicit val tester = this
-  SlaveModel.fillWithLinearSeq(m.saxi, axi.dataWidth)
+  //SlaveModel.fillWithLinearSeq(m.saxi, axi.dataWidth)
   reset(10)
 
   var counter: Array[Int] = Array.fill[Int](m.n)(0)

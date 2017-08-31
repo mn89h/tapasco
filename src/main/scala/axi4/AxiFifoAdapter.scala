@@ -5,40 +5,36 @@ import  chisel3._
 import  chisel3.util._
 
 object AxiFifoAdapter {
-  /**
-   * Configuration parameters for AxiFifoAdapter.
-   * @param axi AXI-MM interface parameters.
-   * @param fifoDepth Depth of the backing FIFO (each element data width wide).
-   * @param burstSize Number of beats per burst (optional).
-   * @param size Address wrap-around after size elements (optional).
+  /** Configuration parameters for AxiFifoAdapter.
+   *  @param axi AXI-MM interface parameters.
+   *  @param fifoDepth Depth of the backing FIFO (each element data width wide).
+   *  @param burstSize Number of beats per burst (optional).
+   *  @param size Address wrap-around after size elements (optional).
    **/
   sealed case class Configuration(fifoDepth: Int,
                                   burstSize: Option[Int] = None,
                                   size: Option[Int] = None)
 
-  /**
-   * I/O bundle for AxiFifoAdapter.
-   **/
+  /** I/O bundle for AxiFifoAdapter. */
   class IO(cfg: Configuration)(implicit axi: Axi4.Configuration) extends Bundle {
-    val maxi = Axi4.Master(axi)
-    val deq  = Decoupled(UInt(axi.dataWidth))
-    val base = Input(UInt(axi.addrWidth))
+    val enable = Input(Bool())
+    val maxi   = Axi4.Master(axi)
+    val deq    = Decoupled(UInt(axi.dataWidth))
+    val base   = Input(UInt(axi.addrWidth))
   }
 
-  /**
-   * Build an AxiFifoAdapter.
-   * @param cfg Configuration.
-   * @return AxiFifoAdapter instance.
+  /** Build an AxiFifoAdapter.
+   *  @param cfg Configuration.
+   *  @return AxiFifoAdapter instance.
    **/
   def apply(cfg: Configuration)(implicit axi: Axi4.Configuration, l: Logging.Level): AxiFifoAdapter =
     new AxiFifoAdapter(cfg)
 
-  /**
-   * Build an AxiFifoAdapter.
-   * @param fifoDepth Depth of the backing FIFO (each element data width wide).
-   * @param burstSize Number of beats per burst (optional).
-   * @param size Address wrap-around after size elements (optional).
-   * @return AxiFifoAdapter instance.
+  /** Build an AxiFifoAdapter.
+   *  @param fifoDepth Depth of the backing FIFO (each element data width wide).
+   *  @param burstSize Number of beats per burst (optional).
+   *  @param size Address wrap-around after size elements (optional).
+   *  @return AxiFifoAdapter instance.
    **/
   def apply(fifoDepth: Int,
             burstSize: Option[Int] = None,
@@ -47,11 +43,10 @@ object AxiFifoAdapter {
     new AxiFifoAdapter(Configuration(fifoDepth = fifoDepth, burstSize = burstSize, size = size))
 }
 
-/**
- * AxiFifoAdapter is simple DMA engine filling a FIFO via AXI-MM master.
- * The backing FIFO is filled continuosly with burst via the master
- * interface; the FIFO itself uses handshakes for consumption.
- * @param cfg Configuration parameters.
+/** AxiFifoAdapter is simple DMA engine filling a FIFO via AXI-MM master.
+ *  The backing FIFO is filled continuosly with bursts via the master
+ *  interface; the FIFO itself uses handshakes for consumption.
+ *  @param cfg Configuration parameters.
  **/
 class AxiFifoAdapter(cfg: AxiFifoAdapter.Configuration)
                     (implicit axi: Axi4.Configuration,
@@ -73,20 +68,22 @@ class AxiFifoAdapter(cfg: AxiFifoAdapter.Configuration)
                  cfg.size.map(", size = %d".format(_)).getOrElse("")))
 
   val io = IO(new AxiFifoAdapter.IO(cfg))
+  val en = RegNext(io.enable, init = false.B)
 
   val axi_read :: axi_wait :: Nil = Enum(2)
 
+
   val fifo  = Module(new Queue(UInt(axi.dataWidth), cfg.fifoDepth))
   val state = RegInit(axi_wait)
-  val len   = Reg(UInt(log2Ceil(bsz).W))
-  val ra_hs = Reg(Bool())
+  val len   = RegInit(UInt(log2Ceil(bsz).W), (bsz - 1).U)
+  val ra_hs = RegInit(Bool(), init = false.B)
 
   val maxi_rlast   = io.maxi.readData.bits.last
   val maxi_raddr   = RegInit(io.base)
-  val maxi_ravalid = !reset && state === axi_read && !ra_hs
+  val maxi_ravalid = state === axi_read & ~ra_hs
   val maxi_raready = io.maxi.readAddr.ready
-  val maxi_rready  = !reset && state === axi_read && fifo.io.enq.ready
-  val maxi_rvalid  = state === axi_read && io.maxi.readData.valid
+  val maxi_rready  = state === axi_read & fifo.io.enq.ready
+  val maxi_rvalid  = state === axi_read & io.maxi.readData.valid
 
   io.deq                            <> fifo.io.deq
   fifo.io.enq.bits                  := io.maxi.readData.bits.data
@@ -110,20 +107,14 @@ class AxiFifoAdapter(cfg: AxiFifoAdapter.Configuration)
   io.maxi.writeData.valid           := false.B
   io.maxi.writeResp.ready           := false.B
 
-  when (reset) {
-    state       := axi_wait
-    len         := (bsz - 1).U
-    maxi_raddr  := io.base
-    ra_hs       := false.B
-  }
-  .otherwise {
-    when (state === axi_wait && fifo.io.count <= (cfg.fifoDepth - bsz).U) { state := axi_read }
+  when (en) {
+    when (state === axi_wait & fifo.io.count <= (cfg.fifoDepth - bsz).U) { state := axi_read }
     when (state === axi_read) {
-      when (maxi_ravalid && maxi_raready) {
+      when (maxi_ravalid & maxi_raready) {
         maxi_raddr := maxi_raddr + (bsz * (axi.dataWidth / 8)).U
         ra_hs := true.B
       }
-      when (maxi_rready && maxi_rvalid) {
+      when (maxi_rready & maxi_rvalid) {
         when (maxi_rlast) {
           state := Mux(fifo.io.count <= (cfg.fifoDepth - bsz).U, state, axi_wait)
           len := (bsz - 1).U
