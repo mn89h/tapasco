@@ -26,20 +26,6 @@ object Axi4 {
       Some((c.addrWidth, c.dataWidth, c.idWidth, c.userWidth, c.regionWidth, c.hasQoS))
   }
 
-  implicit class fromIntToSize(size: Int) {
-    import Burst.Size._
-    def BSZ: UInt = size match {
-      case 1   => s1
-      case 4   => s4
-      case 8   => s8
-      case 16  => s16
-      case 32  => s32
-      case 64  => s64
-      case 128 => s128
-      case _   => throw new Exception("invalid size, only 0 < powers of 2 <= 128")
-    }
-  }
-
   class Burst extends Bundle {
     val burst = UInt(2.W)
     val len   = UInt(8.W)
@@ -51,7 +37,7 @@ object Axi4 {
       val fixed :: incr :: wrap :: Nil = Enum(3)
     }
     object Size {
-      val s1 :: s2 :: s4 :: s8 :: s16 :: s32 :: s64 :: s128 :: Nil = Enum(8)
+      val s1 :: s2 :: s4 :: s8 :: s16 :: s32 :: s64 :: s128 :: s256 :: Nil = Enum(9)
     }
   }
 
@@ -108,19 +94,69 @@ object Axi4 {
     val lock   = new Lock
     val cache  = new Cache
     val prot   = new Protection
-    val qos    = UInt(if (cfg.hasQoS) 4.W else 0.W)
-    val region = UInt(cfg.regionWidth)
-    val user   = UInt(cfg.userWidth)
+    // FIXME: how to represent optional signals?
+    val qos    = if (cfg.hasQoS) UInt(4.W) else UInt(1.W)
+    val region = if (cfg.regionWidth > 0) UInt(cfg.regionWidth) else UInt(1.W)
+    val user   = if (cfg.userWidth > 0) UInt(cfg.userWidth) else UInt(1.W)
 
     override def cloneType = { new Address()(cfg).asInstanceOf[this.type] }
   }
 
+  implicit class AddToAddress(a: Address) {
+    def read(address: Int,
+             len: Int,
+             id: Int,
+             burst: UInt = Burst.Type.incr,
+             lock: UInt = Lock.Access.normal,
+             cache: UInt = Cache.Read.NORMAL_NON_CACHEABLE_BUFFERABLE,
+             prot: UInt = Protection(Protection.Flag.NON_SECURE,
+                                     Protection.Flag.NON_PRIVILEGED,
+                                     Protection.Flag.DATA).U)
+            (implicit axi: Configuration) = {
+      a.id := id.U
+      a.addr := address.U
+      a.burst.len := (len - 1).U
+      a.burst.size := (axi.dataWidth:Int).U
+      a.burst.burst := burst
+      a.lock.lock := lock
+      a.cache.cache := cache
+      a.prot.prot := prot
+      a.region := 0.U
+      a.user := 0.U
+      a.qos := 0.U
+    }
+
+    def write(address: Int,
+              len: Int,
+              id: Int,
+              burst: UInt = Burst.Type.incr,
+              lock: UInt = Lock.Access.normal,
+              cache: UInt = Cache.Write.NORMAL_NON_CACHEABLE_BUFFERABLE,
+              prot: UInt = Protection(Protection.Flag.NON_SECURE,
+                                      Protection.Flag.NON_PRIVILEGED,
+                                      Protection.Flag.DATA).U)
+             (implicit axi: Configuration) = {
+      a.id := id.U
+      a.addr := address.U
+      a.burst.len := (len - 1).U
+      a.burst.size := (axi.dataWidth:Int).U
+      a.burst.burst := burst
+      a.lock.lock := lock
+      a.cache.cache := cache
+      a.prot.prot := prot
+      a.region := 0.U
+      a.user := 0.U
+      a.qos := 0.U
+    }
+  }
+
   object Data {
     abstract private[axi] class DataChannel(implicit cfg: Configuration) extends Bundle {
-      val id    = UInt(cfg.idWidth)
-      val data  = UInt(cfg.dataWidth)
+      // FIXME signals are optional
+      val id    = if (cfg.idWidth > 0) UInt(cfg.idWidth) else UInt(1.W)
+      val data  = if (cfg.dataWidth > 0) UInt(cfg.dataWidth) else UInt(1.W)
       val last  = Bool()
-      val user  = UInt(cfg.userWidth)
+      val user  = if (cfg.userWidth > 0) UInt(cfg.userWidth) else UInt(1.W)
     }
 
     class Read(implicit cfg: Configuration) extends DataChannel {
@@ -152,6 +188,18 @@ object Axi4 {
     val readData  = Flipped(Irrevocable(new Data.Read))
 
     override def cloneType = { new Master()(cfg).asInstanceOf[this.type] }
+  }
+
+  implicit class AddToMaster(m: Master) {
+    def read(a: Address) {
+      m.readAddr.bits  := a
+      m.readAddr.valid := true.B
+    }
+
+    def write(a: Address) {
+      m.writeAddr.bits  := a
+      m.writeAddr.valid := true.B
+    }
   }
 
   object Master {
