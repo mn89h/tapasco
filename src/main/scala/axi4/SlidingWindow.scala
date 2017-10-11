@@ -70,7 +70,7 @@ class SlidingWindow[T <: Data](val cfg: SlidingWindow.Configuration[T])
   val cnt = Reg(UInt(log2Ceil(cfg.depth).W))
 
   // input readiness is wired through to data input
-  data_in.ready := Mux(state === init, !reset, io.data.ready)
+  data_in.ready := RegNext(state === init | io.data.ready, init = false.B)
   io.data.valid := state === full && data_in.valid
 
   for (i <- 0 until cfg.depth)
@@ -82,17 +82,15 @@ class SlidingWindow[T <: Data](val cfg: SlidingWindow.Configuration[T])
   // connect AFA M-AXI to outside
   io.maxi <> afa.io.maxi
 
-  when (!reset) {
-    // shift data on handshake
-    when (data_in.ready && data_in.valid) {
-      mem(cfg.depth - 1) := data_in.bits
-      for (i <- 0 until cfg.depth - 1)
-        mem(i) := mem(i + 1)
+  // shift data on handshake
+  when (data_in.ready && data_in.valid) {
+    mem(cfg.depth - 1) := data_in.bits
+    for (i <- 0 until cfg.depth - 1)
+      mem(i) := mem(i + 1)
 
-      when (state === init) {
-        cnt := cnt + 1.U
-        when (cnt === (cfg.depth - 1).U) { state := full }
-      }
+    when (state === init) {
+      cnt := cnt + 1.U
+      when (cnt === (cfg.depth - 1).U) { state := full }
     }
   }
 }
