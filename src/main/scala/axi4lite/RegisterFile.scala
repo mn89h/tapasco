@@ -25,8 +25,11 @@ object RegisterFile {
     require (regs.size == 1 || !(o reduce (_||_)), "ranges must not overlap: " + regs)
 
     /** Minimum bit width of address lines. */
-    lazy val minAddrWidth: AddrWidth =
-      AddrWidth(Seq(log2Ceil(regs.size * axi.dataWidth.toInt / addrGranularity), log2Ceil(regs.keys.max)).max)
+    lazy val minAddrWidth: AddrWidth = AddrWidth(Seq(if (regs.size * axi.dataWidth.toInt >= regs.keys.max) {
+      log2Ceil((regs.size * axi.dataWidth.toInt) / addrGranularity)
+    } else {
+      log2Ceil(regs.keys.max)
+    }, 1).max)
 
     /** Dumps address map as markdown file. **/
     def dumpAddressMap(path: String) = {
@@ -51,6 +54,8 @@ object RegisterFile {
   class IO(cfg: Configuration)(implicit axi: Axi4Lite.Configuration) extends Bundle {
     val addrWidth: AddrWidth = AddrWidth(Seq(cfg.minAddrWidth:Int, axi.addrWidth:Int).max)
     val saxi = Axi4Lite.Slave(axi)
+
+    override def cloneType = new IO(cfg)(axi).asInstanceOf[this.type]
   }
 }
 
@@ -72,89 +77,72 @@ class RegisterFile(cfg: RegisterFile.Configuration)
   val ready :: fetch :: transfer :: response :: Nil = Enum(4)
 
   /** READ PROCESS **/
-  val r_state = RegInit(ready)            // read state
-  val r_data  = Reg(UInt(axi.dataWidth))  // read data buffer
-  val r_addr  = Reg(UInt(axi.addrWidth))  // read address
+  val r_state = RegInit(ready)                               // read state
+  val r_data  = RegInit(UInt(axi.dataWidth), "hDEADBEEF".U)  // read data buffer
+  val r_addr  = RegInit(UInt(axi.addrWidth), 0.U)            // read address
 
-  io.saxi.readAddr.ready     := r_state === ready
-  io.saxi.readData.valid     := r_state === transfer
+  io.saxi.readAddr.ready     := RegNext(r_state === ready, init = false.B)
+  io.saxi.readData.valid     := RegNext(r_state === transfer, init = false.B)
   io.saxi.readData.bits.data := r_data
   io.saxi.readData.bits.resp := Response.slverr
 
-  when (reset) {
-    r_data                 := "hDEADBEEF".U
-    r_state                := ready
-    io.saxi.readAddr.ready := false.B
-    io.saxi.readData.valid := false.B
+  // assign data from reg
+  for (off <- cfg.regs.keys.toList.sorted) {
+    when (r_addr === off.U) {
+      cfg.regs(off).read() map { v => r_data := v; io.saxi.readData.bits.resp := 0.U }
+    }
   }
-  .otherwise {
-    // assign data from reg
-    for (off <- cfg.regs.keys.toList.sorted) {
-      when (r_addr === off.U) {
-        cfg.regs(off).read() map { v => r_data := v; io.saxi.readData.bits.resp := 0.U }
-      }
-    }
 
-    // address receive state
-    when (r_state === ready && io.saxi.readAddr.valid) {
-      assert(io.saxi.readAddr.bits.prot.prot === 0.U, "RegisterFile: read does not support PROT")
-      r_addr  := io.saxi.readAddr.bits.addr
-      r_state := fetch
-      info("received read address 0x${Hexadecimal(io.saxi.readAddr.bits.addr)}")
-    }
+  // address receive state
+  when (r_state === ready && io.saxi.readAddr.valid) {
+    assert(io.saxi.readAddr.bits.prot.prot === 0.U, "RegisterFile: read does not support PROT")
+    r_addr  := io.saxi.readAddr.bits.addr
+    r_state := fetch
+    info(p"received read address 0x${Hexadecimal(io.saxi.readAddr.bits.addr)}")
+  }
 
-    // wait one cycle for fetch
-    when (r_state === fetch) { r_state := transfer }
+  // wait one cycle for fetch
+  when (r_state === fetch) { r_state := transfer }
 
-    // data transfer state
-    when (r_state === transfer && io.saxi.readData.ready) {
-      r_state := ready
-      info("read 0x${Hexadecimal(r_data)} from address 0x${Hexadecimal(r_addr)}")
-    }
+  // data transfer state
+  when (r_state === transfer && io.saxi.readData.ready) {
+    r_state := ready
+    info(p"read 0x${Hexadecimal(r_data)} from address 0x${Hexadecimal(r_addr)}")
   }
 
   /** WRITE PROCESS **/
-  val w_state = RegInit(ready)             // write state
-  val w_data  = Reg(UInt(axi.dataWidth))   // write data buffer
-  val w_addr  = Reg(UInt(axi.addrWidth))   // write address
-  val w_resp  = Reg(UInt(2.W))             // write response
+  val w_state = RegInit(ready)                                // write state
+  val w_data  = RegInit(UInt(axi.dataWidth), "hDEADBEEF".U)   // write data buffer
+  val w_addr  = RegInit(UInt(axi.addrWidth), 0.U)             // write address
+  val w_resp  = RegInit(UInt(2.W), Response.slverr)           // write response
 
   w_resp                       := Response.slverr
   io.saxi.writeResp.bits.bresp := w_resp
-  io.saxi.writeResp.valid      := w_state === response
-  io.saxi.writeData.ready      := w_state === transfer
-  io.saxi.writeAddr.ready      := w_state === ready
+  io.saxi.writeResp.valid      := RegNext(w_state === response, init = false.B)
+  io.saxi.writeData.ready      := RegNext(w_state === transfer, init = false.B)
+  io.saxi.writeAddr.ready      := RegNext(w_state === ready, init = false.B)
 
-  when (reset) {
-    w_data                  := "hDEADBEEF".U
-    w_state                 := ready
-    io.saxi.writeAddr.ready := false.B
-    io.saxi.writeData.ready := false.B
-    io.saxi.writeResp.valid := false.B
+  // address receive state
+  when (w_state === ready) {
+    when (io.saxi.writeAddr.valid) {
+      assert(io.saxi.readAddr.bits.prot.prot === 0.U, "RegisterFile: write does not support PROT")
+      w_addr  := io.saxi.writeAddr.bits.addr
+      w_state := transfer
+      info(p"received write address 0x${Hexadecimal(io.saxi.writeAddr.bits.addr)}")
+    }
   }
-  .otherwise {
-    // address receive state
-    when (w_state === ready) {
-      when (io.saxi.writeAddr.valid) {
-        assert(io.saxi.readAddr.bits.prot.prot === 0.U, "RegisterFile: write does not support PROT")
-        w_addr  := io.saxi.writeAddr.bits.addr
-        w_state := transfer
-        info("received write address 0x${Hexadecimal(io.saxi.writeAddr.bits.addr)}")
+  // data transfer state
+  when (w_state === transfer && io.saxi.writeData.valid) {
+    // TODO assert strobes; implement logic to return slverr when strobes not set
+    w_state := response
+    // assign data to reg
+    for (off <- cfg.regs.keys.toList.sorted) {
+      when (w_addr === off.U) {
+        info(p"writing 0x${Hexadecimal(w_data)} to register with offset ${off.U}")
+        w_resp := Mux(cfg.regs(off).write(io.saxi.writeData.bits.data).B, Response.okay, Response.slverr)
       }
     }
-    // data transfer state
-    when (w_state === transfer && io.saxi.writeData.valid) {
-      // TODO assert strobes; implement logic to return slverr when strobes not set
-      w_state := response
-      // assign data to reg
-      for (off <- cfg.regs.keys.toList.sorted) {
-        when (w_addr === off.U) {
-          info("writing 0x${Hexadecimal(w_data)} to register with offset ${off.U}")
-          w_resp := Mux(cfg.regs(off).write(io.saxi.writeData.bits.data).B, Response.okay, Response.slverr)
-        }
-      }
-    }
-    // write response state
-    when (w_state === response && io.saxi.writeResp.ready) { w_state := ready }
   }
+  // write response state
+  when (w_state === response && io.saxi.writeResp.ready) { w_state := ready }
 }
