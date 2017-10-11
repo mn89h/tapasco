@@ -24,8 +24,8 @@ class AxiMux(n: Int)(implicit axi: Configuration) extends Module {
   // states of the FSM
   val waiting :: in_burst :: Nil = Enum(2)
 
-  val r_curr  = Reg(UInt(log2Ceil(n).W))
-  val w_curr  = Reg(UInt(log2Ceil(n).W))
+  val r_curr  = RegInit(UInt(log2Ceil(n).W), 0.U)
+  val w_curr  = RegInit(UInt(log2Ceil(n).W), 0.U)
   val r_state = RegInit(waiting)
   val w_state = RegInit(waiting)
 
@@ -69,31 +69,25 @@ class AxiMux(n: Int)(implicit axi: Configuration) extends Module {
   io.maxi.writeData.valid         := io.saxi(w_curr).writeData.valid
   io.maxi.writeData.bits          := io.saxi(w_curr).writeData.bits
 
-  when (reset) {
-    r_curr := 0.U
-    w_curr := 0.U
+  when (r_state === waiting) {
+    when (io.saxi(r_curr).readAddr.valid) { r_state := in_burst }
+    .otherwise { next_r() }
   }
   .otherwise {
-    when (r_state === waiting) {
-      when (io.saxi(r_curr).readAddr.valid) { r_state := in_burst }
-      .otherwise { next_r() }
+    when (io.saxi(r_curr).readData.bits.last) {
+      next_r()
+      r_state := waiting
     }
-    .otherwise {
-      when (io.saxi(r_curr).readData.bits.last) {
-        next_r()
-        r_state := waiting
-      }
-    }
+  }
 
-    when (w_state === waiting) {
-      when (io.saxi(w_curr).writeAddr.valid) { w_state := in_burst }
-      .otherwise { next_w() }
-    }
-    .otherwise {
-      when (io.saxi(w_curr).writeData.bits.last) {
-        next_w()
-        w_state := waiting
-      }
+  when (w_state === waiting) {
+    when (io.saxi(w_curr).writeAddr.valid) { w_state := in_burst }
+    .otherwise { next_w() }
+  }
+  .otherwise {
+    when (io.saxi(w_curr).writeData.bits.last) {
+      next_w()
+      w_state := waiting
     }
   }
 }
