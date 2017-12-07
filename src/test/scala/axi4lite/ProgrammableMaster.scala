@@ -24,7 +24,7 @@ class ProgrammableMaster(action: Seq[MasterAction])
     val w_resp   = Decoupled(UInt(2.W))
   })
 
-  val cnt = Reg(UInt(log2Ceil(action.length + 1).W)) // current action; last value indicates completion
+  val cnt = RegInit(UInt(log2Ceil(action.length + 1).W), init = 0.U) // current action; last value indicates completion
   val s_addr :: s_wtransfer :: s_rtransfer :: s_response :: s_idle :: Nil = Enum(5)
   val state = RegInit(s_addr)
   val w_data = Reg(UInt(axi.dataWidth))
@@ -50,53 +50,48 @@ class ProgrammableMaster(action: Seq[MasterAction])
 
   io.finished                    := cnt === action.length.U
 
-  when (reset) {
-    cnt := 0.U
+  // always assign address from current action
+  for (i <- 0 until action.length) {
+    when (i.U === cnt) {
+      io.maxi.readAddr.bits.addr  := action(i).addr.U
+      io.maxi.writeAddr.bits.addr := action(i).addr.U
+    }
   }
-  .otherwise {
-    // always assign address from current action
+
+  when (state === s_addr) {
     for (i <- 0 until action.length) {
       when (i.U === cnt) {
-        io.maxi.readAddr.bits.addr  := action(i).addr.U
-        io.maxi.writeAddr.bits.addr := action(i).addr.U
+        io.maxi.readAddr.valid  := action(i).isRead.B
+        io.maxi.writeAddr.valid := (! action(i).isRead).B
+        action(i).value map { v => w_data := v.U }
       }
     }
-
-    when (state === s_addr) {
-      for (i <- 0 until action.length) {
-        when (i.U === cnt) {
-          io.maxi.readAddr.valid  := action(i).isRead.B
-          io.maxi.writeAddr.valid := (! action(i).isRead).B
-          action(i).value map { v => w_data := v.U }
-        }
-      }
-      when (io.maxi.readAddr.ready && io.maxi.readAddr.valid)   { state := s_rtransfer }
-      when (io.maxi.writeAddr.ready && io.maxi.writeAddr.valid) { state := s_wtransfer }
-      when (cnt === action.length.U)                            { state := s_idle      }
-    }
-
-    when (state === s_rtransfer) {
-      for (i <- 0 until action.length) {
-        val readReady  = action(i).isRead.B && io.maxi.readData.ready && io.maxi.readData.valid
-        when (i.U === cnt && readReady) {
-          q.io.enq.valid := io.maxi.readData.bits.resp === 0.U // response OKAY
-          cnt := cnt + 1.U
-          state := s_addr
-        }
-      }
-    }
-
-    when (state === s_wtransfer) {
-      for (i <- 0 until action.length) {
-        val writeReady = (!action(i).isRead).B && io.maxi.writeData.ready && io.maxi.writeData.valid
-        when (i.U === cnt && writeReady) {
-          cnt := cnt + 1.U
-          state := s_response
-        }
-      }
-    }
-
-    when (state === s_response && io.maxi.writeResp.valid) { state := s_addr }
+    when (io.maxi.readAddr.ready && io.maxi.readAddr.valid)   { state := s_rtransfer }
+    when (io.maxi.writeAddr.ready && io.maxi.writeAddr.valid) { state := s_wtransfer }
+    when (cnt === action.length.U)                            { state := s_idle      }
   }
+
+  when (state === s_rtransfer) {
+    for (i <- 0 until action.length) {
+      val readReady  = action(i).isRead.B && io.maxi.readData.ready && io.maxi.readData.valid
+      when (i.U === cnt && readReady) {
+        q.io.enq.valid := io.maxi.readData.bits.resp === 0.U // response OKAY
+        cnt := cnt + 1.U
+        state := s_addr
+      }
+    }
+  }
+
+  when (state === s_wtransfer) {
+    for (i <- 0 until action.length) {
+      val writeReady = (!action(i).isRead).B && io.maxi.writeData.ready && io.maxi.writeData.valid
+      when (i.U === cnt && writeReady) {
+        cnt := cnt + 1.U
+        state := s_response
+      }
+    }
+  }
+
+  when (state === s_response && io.maxi.writeResp.valid) { state := s_addr }
 }
 

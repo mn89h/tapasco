@@ -36,3 +36,4 @@ lazy val root = (project in file(".")).dependsOn(packaging, miscutils, miscutils
 
 cleanFiles += (baseDirectory.value / "test")
 
+aggregate in test := false
