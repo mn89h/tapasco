@@ -32,7 +32,7 @@ lazy val packaging = project.in(file("packaging"))
 
 lazy val miscutils = project.in(file("miscutils"))
 
-lazy val root = (project in file(".")).dependsOn(packaging, miscutils, miscutils % "test->test")
+lazy val root = (project in file(".")).dependsOn(packaging, miscutils, miscutils % "test->test").aggregate(packaging, miscutils)
 
 cleanFiles += (baseDirectory.value / "test")
 
