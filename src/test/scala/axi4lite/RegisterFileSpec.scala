@@ -21,8 +21,8 @@ class RegFileTest(val size: Int, val off: Int, regs: Map[Int, ControlRegister], 
   val io = IO(new Bundle {
     val out = Decoupled(UInt(axi.dataWidth))
     val finished = Output(Bool())
-    val rresp = Output(UInt(2.W))
-    val wresp = Output(UInt(2.W))
+    val rresp = Output(chisel.axi.Response.okay.cloneType)
+    val wresp = Irrevocable(new chisel.axi.Axi4Lite.WriteResponse)
   })
   val cfg = new RegisterFile.Configuration(regs = regs)
   val saxi = Module(new RegisterFile(cfg))
@@ -32,7 +32,7 @@ class RegFileTest(val size: Int, val off: Int, regs: Map[Int, ControlRegister], 
   io.finished       := m.io.finished
   m.io.w_resp.ready := true.B
   io.rresp          := m.io.maxi.readData.bits.resp
-  io.wresp          := m.io.maxi.writeResp.bits
+  io.wresp          <> saxi.io.saxi.writeResp
 }
 
 /**
@@ -94,11 +94,11 @@ class InvalidReadTester(m: RegFileTest, reads: Int) extends PeekPokeTester(m) {
   println("performing %d invalid reads ...")
   var steps = reads * 10
   for (i <- 1 until reads + 1 if steps > 0) {
-    while (steps > 0 && (peek(m.m.io.maxi.readData.valid) == 0 || peek(m.m.io.maxi.readData.ready) == 0)) {
+    while (steps > 0 && (peek(m.io.out.ready) == 0 || peek(m.io.out.valid) == 0)) {
       steps -= 1
       step(1)
     }
-    val resp = peek(m.m.io.maxi.readData.bits.resp)
+    val resp = peek(m.io.out.bits)
     expect (resp == 2, "read #%d: resp is 0x%x (%d), should be 2 (SLVERR)".format(i, resp, resp))
     step(1)
   }
@@ -116,11 +116,11 @@ class InvalidWriteTester(m: RegFileTest, writes: Int) extends PeekPokeTester(m) 
   println("performing %d invalid writes ...".format(writes))
   var steps = writes * 10
   for (i <- 1 until writes + 1 if steps > 0) {
-    while (steps > 0 && peek(m.m.io.w_resp.valid) == 0) {
+    while (steps > 0 && peek(m.io.wresp.valid) == 0) {
       steps -= 1
       step(1)
     }
-    val resp = peek(m.io.wresp)
+    val resp = peek(m.io.wresp.bits.bresp)
     expect(resp == 2, "write #%d: resp is 0x%x (%d), should be 2 (SLVERR)".format(i, resp, resp))
     step(1)
   }
@@ -128,7 +128,7 @@ class InvalidWriteTester(m: RegFileTest, writes: Int) extends PeekPokeTester(m) 
 }
 
 /** Unit test suite for Axi4LiteRegisterFile module. **/
-class RegisterFileSuite extends ChiselFlatSpec {
+class RegisterFileSpec extends ChiselFlatSpec {
   implicit val logLevel = Logging.Level.Info
   // basic Chisel arguments
   val chiselArgs = Array("--fint-write-vcd")

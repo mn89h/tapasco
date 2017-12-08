@@ -21,7 +21,7 @@ class ProgrammableMaster(action: Seq[MasterAction])
     val maxi     = Axi4Lite.Master(axi)
     val out      = Decoupled(UInt(axi.dataWidth))
     val finished = Output(Bool())
-    val w_resp   = Decoupled(UInt(2.W))
+    val w_resp   = Irrevocable(new chisel.axi.Axi4Lite.WriteResponse)
   })
 
   val cnt = RegInit(UInt(log2Ceil(action.length + 1).W), init = 0.U) // current action; last value indicates completion
