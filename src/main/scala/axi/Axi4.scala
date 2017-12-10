@@ -3,6 +3,10 @@ import  chisel3._
 import  chisel3.util._
 
 object Axi4 {
+  final case class DataWidth(width: Int) extends WidthLike {
+    require (width > 0 && width <= 4096, "dataWidth (%d) must be 0 < dataWidth <= 4096".format(width))
+  }
+
   class Configuration(val addrWidth:   AddrWidth,
                       val dataWidth:   DataWidth,
                       val idWidth:     IdWidth     = IdWidth(1),

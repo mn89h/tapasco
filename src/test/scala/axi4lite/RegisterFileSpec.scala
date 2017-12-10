@@ -1,9 +1,13 @@
 package chisel.axiutils.axi4lite
 import  chisel.axi._
+import  chisel.axi.Axi4Lite, chisel.axi.Axi4Lite._
+import  chisel.axi.generators.Axi4Lite._
 import  chisel.miscutils.Logging
 import  chisel3._
 import  chisel3.util._
 import  chisel3.iotesters.{ChiselFlatSpec, Driver, PeekPokeTester}
+import  org.scalacheck._, org.scalacheck.Prop._
+import  org.scalatest.prop.Checkers
 
 /**
  * Harness for Axi4Lite RegisterFile:
@@ -128,7 +132,7 @@ class InvalidWriteTester(m: RegFileTest, writes: Int) extends PeekPokeTester(m) 
 }
 
 /** Unit test suite for Axi4LiteRegisterFile module. **/
-class RegisterFileSpec extends ChiselFlatSpec {
+class RegisterFileSpec extends ChiselFlatSpec with Checkers {
   implicit val logLevel = Logging.Level.Info
   // basic Chisel arguments
   val chiselArgs = Array("--fint-write-vcd")
@@ -143,7 +147,7 @@ class RegisterFileSpec extends ChiselFlatSpec {
       off * i -> new ConstantRegister(value = BigInt("%02x".format(i) * 4, 16))
     ).toMap
     // read each of the registers in sequence
-    val actions = for (i <- 1 until size + 1) yield MasterAction(true, off * i, None)
+    val actions = for (i <- 1 until size + 1) yield MasterRead(off * i)
     // run test
     Driver.execute(args, () => new RegFileTest(size, off, regs, actions))
       { m => new ReadTester(m) }
@@ -158,10 +162,8 @@ class RegisterFileSpec extends ChiselFlatSpec {
     ).toMap
     // read each of the registers in sequence
     val actions = (for (i <- 1 until size + 1) yield Seq(
-      // first write the register
-      MasterAction(false, off * i, Some(BigInt("%02x".format(i) * (axi.dataWidth/8), 16))),
-      // then read the new value
-      MasterAction(true, off * i, None)
+      MasterWrite(off * i, BigInt("%02x".format(i) * (axi.dataWidth/8), 16)),
+      MasterRead(off * i)
     )) reduce (_++_)
     // run test
     Driver.execute(args, () => new RegFileTest(size, off, regs, actions))
@@ -174,7 +176,7 @@ class RegisterFileSpec extends ChiselFlatSpec {
     // only zero is valid register
     val regs = Map( 0 -> new ConstantRegister(value = 0) )
     // read from increasing addresses (all above 0 are invalid)
-    val actions = for (i <- 1 until reads + 1) yield MasterAction(true, i * (axi.dataWidth / 8), None)
+    val actions = for (i <- 1 until reads + 1) yield MasterRead(i * (axi.dataWidth / 8))
     // run test
     Driver.execute(args, () => new RegFileTest(1, 4, regs, actions))
       { m => new InvalidReadTester(m, reads) }
@@ -186,25 +188,46 @@ class RegisterFileSpec extends ChiselFlatSpec {
     // only zero is valid register
     val regs = Map( 0 -> new ConstantRegister(value = 0) )
     // write from increasing addresses (all above 0 are invalid)
-    val actions = for (i <- 1 until writes + 1) yield MasterAction(false, i * (axi.dataWidth / 8), Some(42))
+    val actions = for (i <- 1 until writes + 1) yield MasterWrite(i * (axi.dataWidth / 8), 42)
     // run test
     Driver.execute(args, () => new RegFileTest(1, 4, regs, actions))
       { m => new InvalidWriteTester(m, writes) }
   }
 
+  private def generateActionsFromRegMap(regs: Map[Int, Option[ControlRegister]]): Seq[MasterAction] = regs map { _ match {
+    case (i, Some(r)) => r match {
+      case c: Register[_]      => Seq(MasterWrite(i, i), MasterRead(i))
+      case c: ConstantRegister => Seq(MasterRead(i))
+      case _                   => Seq()
+    }
+    case (i, None) => Seq(MasterRead(i), MasterWrite(i, i))
+  }} reduce (_ ++ _)
+
+  private def genericTest(width: DataWidth, regs: Map[Int, Option[ControlRegister]]) = {
+    val args = chiselArgs ++ Array("--target-dir", "test/axi4lite/RegisterFileSpec/generic/%d/%d"
+      .format(width: Int, scala.util.Random.nextInt)) // FIXME find a nice name, or output it somehow
+    val actions = generateActionsFromRegMap(regs)
+    Driver.execute(args, () => new RegFileTest(regs.size, width / 8, regs filter { case (_, or) => or.nonEmpty } map { case (i, or) => (i, or.get) }, actions))
+      { m => new InvalidWriteTester(m, regs.size) } // FIXME implement generic Tester
+  }
+
+  "random register files" should "behave as expected at each register" in {
+    check(forAll(dataWidthGen) { w => forAllNoShrink(registerMapGen(w)) { regs => genericTest(w, regs) } })
+  }
+
   /* READ TESTS */
-  "read_255_4" should "be ok" in { readTest(255, 4) }
+  /*"read_255_4" should "be ok" in { readTest(255, 4) }
   "read_16_16" should "be ok" in { readTest(16, 16) }
   "read_4_4" should "be ok" in   { readTest(4, 4) }
-  "read_7_13" should "be ok" in  { readTest(7, 13) }
+  "read_7_13" should "be ok" in  { readTest(7, 13) }*/
 
   /* WRITE TESTS */
-  "write_255_4" should "be ok" in { writeTest(255,   4) }
+  /*"write_255_4" should "be ok" in { writeTest(255,   4) }
   "write_16_16" should "be ok" in { writeTest( 16,  16) }
   "write_4_4" should "be ok" in   { writeTest(  4,   4) }
-  "write_7_13" should "be ok" in  { writeTest(  7,  13) }
+  "write_7_13" should "be ok" in  { writeTest(  7,  13) }*/
 
   /* INVALID R/W TESTS */
-  "invalidReads_16" should "be ok" in  { invalidReads(16) }
-  "invalidWrites_16" should "be ok" in { invalidWrites(16) }
+  /*"invalidReads_16" should "be ok" in  { invalidReads(16) }
+  "invalidWrites_16" should "be ok" in { invalidWrites(16) }*/
 }

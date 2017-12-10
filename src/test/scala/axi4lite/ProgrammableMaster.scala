@@ -8,7 +8,21 @@ import  chisel.axi._
  *  @param addr address to read from.
  *  @param value write value (optional)
  **/
-case class MasterAction(isRead: Boolean = true, addr: Int, value: Option[BigInt])
+sealed abstract trait MasterAction {
+  def isRead: Boolean
+  def address: Int
+  def value: Option[BigInt]
+}
+
+final case class MasterRead(address: Int) extends MasterAction {
+  def isRead: Boolean = true
+  def value: Option[BigInt] = None
+}
+
+final case class MasterWrite(address: Int, v: BigInt) extends MasterAction {
+  def isRead: Boolean = false
+  def value: Option[BigInt] = Some(v)
+}
 
 /** Axi4LiteProgrammableMaster is a testing tool to perform a sequence of master actions.
  *  It automatically performs simple AXI4Lite transactions on slave.
@@ -53,8 +67,8 @@ class ProgrammableMaster(action: Seq[MasterAction])
   // always assign address from current action
   for (i <- 0 until action.length) {
     when (i.U === cnt) {
-      io.maxi.readAddr.bits.addr  := action(i).addr.U
-      io.maxi.writeAddr.bits.addr := action(i).addr.U
+      io.maxi.readAddr.bits.addr  := action(i).address.U
+      io.maxi.writeAddr.bits.addr := action(i).address.U
     }
   }
 

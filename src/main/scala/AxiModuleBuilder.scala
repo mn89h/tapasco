@@ -6,6 +6,7 @@ import  scala.sys.process._
 import  java.nio.file.Paths
 import  chisel3._
 import  chisel.axi._
+import  chisel.axi.Axi4._
 
 class FifoAxiAdapterTest1(dataWidth: Int, size: Int) extends Module {
   val addrWidth = 32

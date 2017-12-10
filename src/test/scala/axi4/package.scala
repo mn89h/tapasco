@@ -1,5 +1,6 @@
 package chisel.axiutils.axi4
 import  chisel.axi._
+import  chisel.axi.Axi4._
 import  chisel.miscutils.generators._
 import  org.scalacheck._
 
