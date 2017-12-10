@@ -1,4 +1,5 @@
-package chisel.axiutils
+package chisel.axi
+
 package object axi4lite {
   /** Tuple-type for bit ranges. */
   sealed case class BitRange(to: Int, from: Int) {

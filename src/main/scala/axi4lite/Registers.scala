@@ -1,4 +1,4 @@
-package chisel.axiutils.axi4lite
+package chisel.axi.axi4lite
 import  Chisel.{Reg, UInt}
 
 /**

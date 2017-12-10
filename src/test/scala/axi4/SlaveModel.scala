@@ -1,4 +1,4 @@
-package chisel.axiutils.axi4
+package chisel.axi.axi4
 import  chisel3._, chisel3.util._
 import  chisel3.iotesters.{PeekPokeTester}
 import  chisel.axi._

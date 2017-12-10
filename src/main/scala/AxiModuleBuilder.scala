@@ -1,5 +1,5 @@
 package chisel.axiutils
-import  chisel.axiutils.axi4lite._, chisel.axiutils.axi4._
+import  chisel.axi.axi4lite._, chisel.axi.axi4._
 import  chisel.packaging._, chisel.packaging.CoreDefinition.root
 import  chisel.miscutils.DecoupledDataSource, chisel.miscutils.Logging
 import  scala.sys.process._

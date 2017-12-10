@@ -1,4 +1,4 @@
-package chisel.axiutils
+package chisel.axi.axi4
 import  chisel.miscutils.{DataWidthConverter, Logging}
 import  chisel.axi._
 import  chisel3._

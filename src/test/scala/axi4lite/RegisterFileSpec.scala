@@ -1,4 +1,4 @@
-package chisel.axiutils.axi4lite
+package chisel.axi.axi4lite
 import  chisel.axi._
 import  chisel.axi.Axi4Lite, chisel.axi.Axi4Lite._
 import  chisel.axi.generators.Axi4Lite._

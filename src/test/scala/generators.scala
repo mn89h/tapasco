@@ -1,5 +1,4 @@
 package chisel.axi
-import  chisel.axi.generators._
 import  chisel.miscutils.generators._
 import  org.scalacheck.{Arbitrary, Gen}
 
@@ -28,7 +27,7 @@ package object generators {
 
   object Axi4Lite {
     import chisel.axi.Axi4Lite._
-    import chisel.axiutils.axi4lite._ // FIXME
+    import chisel.axi.axi4lite._ // FIXME
     import chisel3._
 
     val dataWidthGen: Gen[DataWidth] = Gen.oneOf(Width32, Width64)
