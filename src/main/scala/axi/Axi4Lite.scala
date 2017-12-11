@@ -20,6 +20,13 @@ object Axi4Lite {
     val region = UInt(cfg.regionWidth)
     val user   = UInt(cfg.userWidth)
 
+    def defaults {
+      addr      := "h12345678".U
+      prot.prot := Protection(Protection.Flag.NON_PRIVILEGED, Protection.Flag.NON_SECURE, Protection.Flag.DATA).U
+      region    := 0.U
+      user      := 0.U
+    }
+
     override def cloneType = { new Address()(cfg).asInstanceOf[this.type] }
   }
 
@@ -27,16 +34,31 @@ object Axi4Lite {
     abstract private[axi] class DataChannel(implicit cfg: Configuration) extends Bundle {
       val data  = UInt(cfg.dataWidth)
       val user  = UInt(cfg.userWidth)
+
+      def defaults {
+        data := "hDEADBEEF".U
+        user := "hDEADDEED".U
+      }
     }
 
     class Read(implicit cfg: Configuration) extends DataChannel {
       val resp  = UInt(2.W)
+
+      override def defaults {
+        super.defaults
+        resp := Response.slverr
+      }
 
       override def cloneType = { new Read()(cfg).asInstanceOf[this.type] }
     }
 
     class Write(implicit cfg: Configuration) extends DataChannel {
       val strb  = new Strobe(cfg.dataWidth)
+
+      override def defaults {
+        super.defaults
+        strb.strb := Strobe(0 until cfg.dataWidth / 8:_*)
+      }
 
       override def cloneType = { new Write()(cfg).asInstanceOf[this.type] }
     }
@@ -45,6 +67,11 @@ object Axi4Lite {
   class WriteResponse(implicit cfg: Configuration) extends Bundle {
     val buser = UInt(cfg.userWidth)
     val bresp = UInt(2.W)
+
+    def defaults {
+      buser := 0.U
+      bresp := Response.slverr
+    }
 
     override def cloneType = { new WriteResponse()(cfg).asInstanceOf[this.type] }
   }
