@@ -4,6 +4,7 @@ import  chisel.miscutils.Logging
 import  chisel3._
 import  chisel3.util._
 import  scala.util.Properties.{lineSeparator => NL}
+import  org.scalactic.anyvals.PosInt
 
 object RegisterFile {
   /** Configuration object for RegisterFiles.
@@ -11,7 +12,7 @@ object RegisterFile {
    *  @param width Register data width (in bits).
    *  @param regs Map from offsets in addrGranularity to register implementations.
    **/
-  case class Configuration(addrGranularity: Int = 32, regs: Map[Int, ControlRegister])
+  case class Configuration(addrGranularity: Int = 32, regs: Map[Int, ControlRegister], fifoDepth: PosInt = 2)
                           (implicit axi: Axi4Lite.Configuration) {
     /* internal helpers: */
     private def overlap(p: (BitRange, BitRange)) = p._1.overlapsWith(p._2)
@@ -70,79 +71,85 @@ object RegisterFile {
 class RegisterFile(cfg: RegisterFile.Configuration)
                   (implicit axi: Axi4Lite.Configuration,
                    logLevel: Logging.Level) extends Module with Logging {
-  /** HARDWARE **/
+  class ReadData extends Bundle {
+    val data = io.saxi.readData.bits.data.cloneType
+    val resp = io.saxi.readData.bits.data.cloneType
+    override def cloneType = (new ReadData).asInstanceOf[this.type]
+  }
+
   val io = IO(new RegisterFile.IO(cfg))
 
-  /** states: ready for address, transferring **/
-  val ready :: fetch :: transfer :: response :: Nil = Enum(4)
+  // workaround: code below does not work due to optional elements in bundle
+  //val in_q_ra  = Queue(io.saxi.readAddr,  entries = cfg.fifoDepth, pipe = true)
+  val in_q_ra = Module(new Queue(io.saxi.readAddr.bits.addr.cloneType, entries = cfg.fifoDepth, pipe = true))
+  //val in_q_wa  = Queue(io.saxi.writeAddr, entries = cfg.fifoDepth, pipe = true)
+  val in_q_wa = Module(new Queue(io.saxi.writeAddr.bits.addr.cloneType, entries = cfg.fifoDepth, pipe = true))
+  //val in_q_wd  = Queue(io.saxi.writeData, entries = cfg.fifoDepth, pipe = true)
+  val in_q_wd = Module(new Queue(io.saxi.writeData.bits.data.cloneType, entries = cfg.fifoDepth, pipe = true))
 
-  /** READ PROCESS **/
-  val r_state = RegInit(ready)                               // read state
-  val r_data  = RegInit(UInt(axi.dataWidth), "hDEADBEEF".U)  // read data buffer
-  val r_addr  = RegInit(UInt(axi.addrWidth), 0.U)            // read address
+  val read_reg = Reg((new ReadData).cloneType)
+  val resp_reg = RegInit(io.saxi.writeResp.bits.bresp.cloneType, init = Response.slverr)
 
-  io.saxi.readAddr.ready     := RegNext(r_state === ready, init = false.B)
-  io.saxi.readData.valid     := RegNext(r_state === transfer, init = false.B)
-  io.saxi.readData.bits.data := r_data
-  io.saxi.readData.bits.resp := Response.slverr
+  //val out_q_rd = Module(new Queue(new Axi4Lite.Data.Read, cfg.fifoDepth))
+  val out_q_rd = Module(new Queue((new ReadData).cloneType, cfg.fifoDepth))
+  //val out_q_wr = Module(new Queue(new Axi4Lite.WriteResponse, cfg.fifoDepth))
+  val out_q_wr = Module(new Queue(io.saxi.writeResp.bits.bresp.cloneType, cfg.fifoDepth))
 
-  // assign data from reg
-  for (off <- cfg.regs.keys.toList.sorted) {
-    when (r_addr === off.U) {
-      cfg.regs(off).read() map { v => r_data := v; io.saxi.readData.bits.resp := 0.U }
-    }
-  }
+  when (in_q_ra.io.enq.fire)  { info(p"received read address: ${in_q_ra.io.enq.bits}") }
+  when (in_q_wa.io.enq.fire)  { info(p"received write address: ${in_q_wa.io.enq.bits}") }
+  when (in_q_wd.io.enq.fire)  { info(p"received write data: ${in_q_wd.io.enq.bits}") }
+  when (out_q_rd.io.enq.fire) { info(p"enq read data: ${out_q_rd.io.enq.bits}") }
+  when (out_q_rd.io.deq.fire) { info(p"deq read data: ${out_q_rd.io.enq.bits}") }
+  when (out_q_wr.io.enq.fire) { info(p"enq write resp: ${out_q_wr.io.enq.bits}") }
+  when (out_q_wr.io.deq.fire) { info(p"deq write resp: ${out_q_wr.io.enq.bits}") }
 
-  // address receive state
-  when (r_state === ready && io.saxi.readAddr.valid) {
-    assert(io.saxi.readAddr.bits.prot.prot === 0.U, "RegisterFile: read does not support PROT")
-    r_addr  := io.saxi.readAddr.bits.addr
-    r_state := fetch
-    info(p"received read address 0x${Hexadecimal(io.saxi.readAddr.bits.addr)}")
-  }
+  io.saxi.readData.bits.defaults
+  io.saxi.readData.valid  := false.B
+  io.saxi.writeResp.bits.defaults
+  io.saxi.writeResp.valid := false.B
 
-  // wait one cycle for fetch
-  when (r_state === fetch) { r_state := transfer }
+  in_q_ra.io.enq.bits     := io.saxi.readAddr.bits.addr
+  in_q_ra.io.enq.valid    := io.saxi.readAddr.valid
+  io.saxi.readAddr.ready  := in_q_ra.io.enq.ready
+  in_q_wa.io.enq.bits     := io.saxi.writeAddr.bits.addr
+  in_q_wa.io.enq.valid    := io.saxi.writeAddr.valid
+  io.saxi.writeAddr.ready := in_q_wa.io.enq.ready
+  in_q_wd.io.enq.bits     := io.saxi.writeData.bits.data
+  in_q_wd.io.enq.valid    := io.saxi.writeData.valid
+  io.saxi.writeData.ready := in_q_wd.io.enq.ready
 
-  // data transfer state
-  when (r_state === transfer && io.saxi.readData.ready) {
-    r_state := ready
-    info(p"read 0x${Hexadecimal(r_data)} from address 0x${Hexadecimal(r_addr)}")
-  }
+  out_q_rd.io.enq.bits    := read_reg
+  out_q_rd.io.enq.valid   := false.B
+  out_q_rd.io.deq.ready   := io.saxi.readData.ready
+  io.saxi.readData.bits.data := out_q_rd.io.deq.bits.data
+  io.saxi.readData.bits.resp := out_q_rd.io.deq.bits.resp
 
-  /** WRITE PROCESS **/
-  val w_state = RegInit(ready)                                // write state
-  val w_data  = RegInit(UInt(axi.dataWidth), "hDEADBEEF".U)   // write data buffer
-  val w_addr  = RegInit(UInt(axi.addrWidth), 0.U)             // write address
-  val w_resp  = RegInit(UInt(2.W), Response.slverr)           // write response
+  out_q_wr.io.enq.bits    := resp_reg
+  out_q_wr.io.enq.valid   := false.B
+  out_q_wr.io.deq.ready   := io.saxi.writeResp.ready
+  io.saxi.writeResp.valid := out_q_wr.io.deq.valid
+  io.saxi.writeResp.bits.bresp := out_q_wr.io.deq.bits
 
-  w_resp                       := Response.slverr
-  io.saxi.writeResp.bits.bresp := w_resp
-  io.saxi.writeResp.valid      := RegNext(w_state === response, init = false.B)
-  io.saxi.writeData.ready      := RegNext(w_state === transfer, init = false.B)
-  io.saxi.writeAddr.ready      := RegNext(w_state === ready, init = false.B)
-
-  // address receive state
-  when (w_state === ready) {
-    when (io.saxi.writeAddr.valid) {
-      assert(io.saxi.readAddr.bits.prot.prot === 0.U, "RegisterFile: write does not support PROT")
-      w_addr  := io.saxi.writeAddr.bits.addr
-      w_state := transfer
-      info(p"received write address 0x${Hexadecimal(io.saxi.writeAddr.bits.addr)}")
-    }
-  }
-  // data transfer state
-  when (w_state === transfer && io.saxi.writeData.valid) {
-    // TODO assert strobes; implement logic to return slverr when strobes not set
-    w_state := response
-    // assign data to reg
+  when (in_q_ra.io.deq.valid) {
+    val addr = in_q_ra.io.deq.bits
     for (off <- cfg.regs.keys.toList.sorted) {
-      when (w_addr === off.U) {
-        info(p"writing 0x${Hexadecimal(w_data)} to register with offset ${off.U}")
-        w_resp := Mux(cfg.regs(off).write(io.saxi.writeData.bits.data).B, Response.okay, Response.slverr)
-      }
+      when (addr === off.U) { cfg.regs(off).read() map { v =>
+        info(p"reading from address $addr -> $v")
+        read_reg.data := v
+        read_reg.resp := Response.okay
+      }}
+    }
+    in_q_ra.io.deq.ready := RegNext(out_q_rd.io.enq.ready)
+  }
+
+  when (in_q_wa.io.deq.valid && in_q_wd.io.deq.valid && out_q_wr.io.enq.ready) {
+    val addr = in_q_wa.io.deq.bits
+    for (off <- cfg.regs.keys.toList.sorted) {
+      when (addr === off.U) { cfg.regs(off).read() map { v =>
+        info(p"writing to address $addr -> $v")
+        out_q_wr.io.enq.bits  := { if (cfg.regs(off).write(v)) Response.okay else Response.slverr }
+        out_q_wr.io.enq.valid := true.B
+      }}
     }
   }
-  // write response state
-  when (w_state === response && io.saxi.writeResp.ready) { w_state := ready }
 }
