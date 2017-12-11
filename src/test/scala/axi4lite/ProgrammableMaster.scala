@@ -38,11 +38,11 @@ class ProgrammableMaster(action: Seq[MasterAction])
     val w_resp   = Irrevocable(new chisel.axi.Axi4Lite.WriteResponse)
   })
 
-  val cnt = RegInit(UInt(log2Ceil(action.length + 1).W), init = 0.U) // current action; last value indicates completion
   val s_addr :: s_wtransfer :: s_rtransfer :: s_response :: s_idle :: Nil = Enum(5)
-  val state = RegInit(s_addr)
-  val w_data = Reg(UInt(axi.dataWidth))
-  val r_data = RegNext(io.maxi.readData.bits.data)
+  val cnt    = RegInit(UInt(log2Ceil(action.length + 1).W), init = 0.U) // current action; last value indicates completion
+  val state  = RegInit(s_addr)
+  val w_data = RegInit(UInt(axi.dataWidth), 0.U)
+  val r_data = RegNext(io.maxi.readData.bits.data, init = 0.U)
 
   val q = Module(new Queue(UInt(axi.dataWidth), action.length))
 
@@ -51,9 +51,14 @@ class ProgrammableMaster(action: Seq[MasterAction])
   io.maxi.readData.ready         := q.io.enq.ready
   io.out <> q.io.deq
 
+  io.maxi.writeData.bits.defaults
+  io.maxi.readAddr.bits.defaults
+  io.maxi.writeAddr.bits.defaults
+
   io.maxi.writeData.bits.data    := w_data
   io.maxi.writeData.valid        := state === s_wtransfer
   io.maxi.readAddr.valid         := false.B
+  io.maxi.readData.ready         := state === s_rtransfer
   io.maxi.writeAddr.valid        := false.B
 
   io.maxi.readAddr.bits.addr     := 0.U
