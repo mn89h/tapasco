@@ -30,6 +30,8 @@ package object generators {
     import chisel.axi.axi4lite._ // FIXME
     import chisel3._
 
+    scala.util.Random.setSeed(42)
+
     val dataWidthGen: Gen[DataWidth] = Gen.oneOf(Width32, Width64)
 
     val configurationGen: Gen[chisel.axi.Axi4Lite.Configuration] = for {
@@ -39,22 +41,24 @@ package object generators {
       regionWidth <- regionWidthGen
     } yield chisel.axi.Axi4Lite.Configuration(addrWidth, dataWidth, userWidth, regionWidth)
 
-    def valueGen(width: DataWidth): Gen[BigInt] = BigInt(numbits = width, scala.util.Random)
+    def valueGen(width: DataWidth): Gen[BigInt] = for {
+      v <- Gen.choose(0L, (1L << width) - 1)
+    } yield BigInt(v)
 
     def constRegGen(width: DataWidth): Gen[ConstantRegister] = for {
       v <- valueGen(width)
     } yield new ConstantRegister(value = v)
 
-    def basicRegGen[T <: UInt](width: DataWidth): Gen[Register[T]] = new Register[T](width = width)
+    def basicRegGen(width: DataWidth): Gen[Register] = for {
+      x <- Gen.posNum[Int]
+    } yield new Register(width = width)
 
-    def maybeRegGen[T <: UInt](width: DataWidth): Gen[Option[ControlRegister]] =
-      Gen.option(Gen.oneOf(basicRegGen[T](width), constRegGen(width)))
+    def maybeRegGen(width: DataWidth): () => Gen[Option[ControlRegister]] = () =>
+      Gen.option(Gen.oneOf(basicRegGen(width), constRegGen(width)))
 
-    def registerMapGen[T <: UInt](width: DataWidth): Gen[Map[Int, Option[ControlRegister]]] =
-      Gen.nonEmptyListOf(maybeRegGen[T](width)) 
-        .map (_.zipWithIndex) 
-        .map { _ map { case (or, i) => i * (width / 8) -> or } }
-        .map (_.toMap)
+    def registerMapGen(width: DataWidth): Gen[Map[Int, Option[ControlRegister]]] =
+      Gen.nonEmptyBuildableOf[Seq[Option[ControlRegister]], Option[ControlRegister]](maybeRegGen(width)()) 
+        .map (_.zipWithIndex.map { case (r, i) => (i * (width / 8), r) }.toMap)
         .retryUntil (l => (l map (_._2.nonEmpty) fold false) (_ || _))
   }
 }
