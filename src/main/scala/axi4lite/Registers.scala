@@ -1,4 +1,5 @@
 package chisel.axi.axi4lite
+import  chisel.axi._
 import  Chisel.{Reg, UInt}
 
 /**
@@ -25,7 +26,7 @@ sealed abstract class ControlRegister(_name: Option[String], bitfield: BitfieldM
   }
 
   /** Perform Chisel wiring to value. */
-  def write(v: UInt): Boolean = false
+  def write(v: UInt): UInt = Response.slverr
 
   /** Perform Chisel read on value. **/
   def read(): Option[UInt]
@@ -37,10 +38,11 @@ sealed abstract class ControlRegister(_name: Option[String], bitfield: BitfieldM
  * @param bitfield Bit partitioning of the value (optional).
  * @param value Constant value for the register.
  **/
-class ConstantRegister(name: Option[String] = None, bitfield: BitfieldMap = Map(), value: BigInt)
+class ConstantRegister(name: Option[String] = None, bitfield: BitfieldMap = Map(), val value: BigInt)
     extends ControlRegister(name, bitfield) {
   override def description: String = "%s - _const:_ 0x%x (%d)".format(super.description, value, value)
   def read(): Option[UInt] = Some(UInt(value))
+  override lazy val toString: String = s"%s: 0x%x (%d)".format(name getOrElse "const", value, value)
 }
 
 /**
@@ -48,13 +50,13 @@ class ConstantRegister(name: Option[String] = None, bitfield: BitfieldMap = Map(
  * @param name Name of the register (optional).
  * @param bitfield Bit partitioning of the value (optional).
  **/
-class Register[T <: UInt](name: Option[String] = None, bitfield: BitfieldMap = Map(), width: Int)
+class Register(name: Option[String] = None, bitfield: BitfieldMap = Map(), width: Int)
     extends ControlRegister(name, bitfield) {
   private lazy val _r = Reg(UInt(width = width))
   def read(): Option[UInt] = Some(_r)
   override def write(v: UInt) = {
     _r := v
-    true
+    Response.okay
   }
 }
 
@@ -68,7 +70,7 @@ class Register[T <: UInt](name: Option[String] = None, bitfield: BitfieldMap = M
 class VirtualRegister(name: Option[String] = None,
                       bitfield: BitfieldMap = Map(),
                       onRead: () => Option[UInt],
-                      onWrite: UInt => Boolean) extends ControlRegister(name, bitfield) {
+                      onWrite: UInt => UInt) extends ControlRegister(name, bitfield) {
   def read() = onRead()
   override def write(v: UInt) = onWrite(v)
 }

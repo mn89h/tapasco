@@ -2,12 +2,9 @@ package chisel.axi.axi4lite
 import  chisel3._
 import  chisel3.util._
 import  chisel.axi._
+import  chisel.miscutils.Logging
 
-/** AXI4Lite master transaction model.
- *  @param isRead true for read transactions.
- *  @param addr address to read from.
- *  @param value write value (optional)
- **/
+/** AXI4Lite master transaction model. */
 sealed abstract trait MasterAction {
   def isRead: Boolean
   def address: Int
@@ -29,88 +26,70 @@ final case class MasterWrite(address: Int, v: BigInt) extends MasterAction {
  *  @param action Sequence of transactions, executed sequentially without delay.
  *  @param axi implicit AXI configuration.
  **/
-class ProgrammableMaster(action: Seq[MasterAction])
-                        (implicit axi: Axi4Lite.Configuration) extends Module {
+ class ProgrammableMaster(action: Seq[MasterAction])
+                         (implicit axi: Axi4Lite.Configuration, logLevel: Logging.Level) extends Module with Logging {
+  cinfo(s"AXI configuration = $axi")
   val io = IO(new Bundle {
     val maxi     = Axi4Lite.Master(axi)
     val out      = Decoupled(UInt(axi.dataWidth))
+    val w_resp   = Decoupled(new chisel.axi.Axi4Lite.WriteResponse)
     val finished = Output(Bool())
-    val w_resp   = Irrevocable(new chisel.axi.Axi4Lite.WriteResponse)
   })
 
-  val s_addr :: s_wtransfer :: s_rtransfer :: s_response :: s_idle :: Nil = Enum(5)
-  val cnt    = RegInit(UInt(log2Ceil(action.length + 1).W), init = 0.U) // current action; last value indicates completion
-  val state  = RegInit(s_addr)
-  val w_data = RegInit(UInt(axi.dataWidth), 0.U)
-  val r_data = RegNext(io.maxi.readData.bits.data, init = 0.U)
+  val cnt = RegInit(UInt(log2Ceil(action.length + 1).W), init = 0.U)
+  io.finished := cnt === action.length.U
 
-  val q = Module(new Queue(UInt(axi.dataWidth), action.length))
+  val ra_valid = RegInit(false.B)
+  val rd_ready = RegInit(false.B)
+  val wa_valid = RegInit(false.B)
+  val wd_valid = RegInit(false.B)
+  val wr_ready = RegInit(false.B)
+  val signals  = Vec(ra_valid, rd_ready, wa_valid, wd_valid, wr_ready)
 
-  q.io.enq.valid                 := false.B
-  q.io.enq.bits                  := io.maxi.readData.bits.data
-  io.maxi.readData.ready         := q.io.enq.ready
-  io.out <> q.io.deq
+  val ra = RegInit(io.maxi.readAddr.bits.addr.cloneType, init = 0.U)
+  val wa = RegInit(io.maxi.writeAddr.bits.addr.cloneType, init = 0.U)
+  val wd = RegInit(io.maxi.writeData.bits.data.cloneType, init = 0.U)
 
-  io.maxi.writeData.bits.defaults
   io.maxi.readAddr.bits.defaults
   io.maxi.writeAddr.bits.defaults
+  io.maxi.writeData.bits.defaults
 
-  io.maxi.writeData.bits.data    := w_data
-  io.maxi.writeData.valid        := state === s_wtransfer
-  io.maxi.readAddr.valid         := false.B
-  io.maxi.readData.ready         := state === s_rtransfer
-  io.maxi.writeAddr.valid        := false.B
+  io.out.valid := io.maxi.readData.valid
+  io.out.bits  := io.maxi.readData.bits.data
 
-  io.maxi.readAddr.bits.addr     := 0.U
-  io.maxi.writeAddr.bits.addr    := 0.U
+  io.w_resp.valid := io.maxi.writeResp.valid
+  io.w_resp.bits  <> io.maxi.writeResp.bits
 
-  io.w_resp <> io.maxi.writeResp
-  io.maxi.writeResp.ready        := true.B
+  io.maxi.readAddr.valid  := ra_valid
+  io.maxi.writeAddr.valid := wa_valid
+  io.maxi.writeData.valid := wd_valid
+  io.maxi.readData.ready  := rd_ready
+  io.maxi.writeResp.ready := wr_ready
 
-  io.finished                    := cnt === action.length.U
+  io.maxi.readAddr.bits.addr  := ra
+  io.maxi.writeAddr.bits.addr := wa
+  io.maxi.writeData.bits.data := wd
 
-  // always assign address from current action
-  for (i <- 0 until action.length) {
-    when (i.U === cnt) {
-      io.maxi.readAddr.bits.addr  := action(i).address.U
-      io.maxi.writeAddr.bits.addr := action(i).address.U
-    }
-  }
+  when (io.maxi.readAddr.fire)  { ra_valid := false.B }
+  when (io.maxi.readData.fire)  { rd_ready := false.B }
+  when (io.maxi.writeAddr.fire) { wa_valid := false.B }
+  when (io.maxi.writeData.fire) { wd_valid := false.B }
+  when (io.maxi.writeResp.fire) { wr_ready := false.B }
 
-  when (state === s_addr) {
+  when (!signals.reduce(_ || _)) {
     for (i <- 0 until action.length) {
       when (i.U === cnt) {
-        io.maxi.readAddr.valid  := action(i).isRead.B
-        io.maxi.writeAddr.valid := (! action(i).isRead).B
-        action(i).value map { v => w_data := v.U }
-      }
-    }
-    when (io.maxi.readAddr.ready && io.maxi.readAddr.valid)   { state := s_rtransfer }
-    when (io.maxi.writeAddr.ready && io.maxi.writeAddr.valid) { state := s_wtransfer }
-    when (cnt === action.length.U)                            { state := s_idle      }
-  }
-
-  when (state === s_rtransfer) {
-    for (i <- 0 until action.length) {
-      val readReady  = action(i).isRead.B && io.maxi.readData.ready && io.maxi.readData.valid
-      when (i.U === cnt && readReady) {
-        q.io.enq.valid := io.maxi.readData.bits.resp === 0.U // response OKAY
+        //info(s"Starting action #$i: ${action(i)}")
+        ra := action(i).address.U
+        wa := action(i).address.U
+        wd := action(i).value.getOrElse(BigInt(0)).U
+        ra_valid := action(i).isRead.B
+        rd_ready := action(i).isRead.B
+        wa_valid := (!action(i).isRead).B
+        wd_valid := (!action(i).isRead).B
+        wr_ready := (!action(i).isRead).B
         cnt := cnt + 1.U
-        state := s_addr
       }
     }
   }
-
-  when (state === s_wtransfer) {
-    for (i <- 0 until action.length) {
-      val writeReady = (!action(i).isRead).B && io.maxi.writeData.ready && io.maxi.writeData.valid
-      when (i.U === cnt && writeReady) {
-        cnt := cnt + 1.U
-        state := s_response
-      }
-    }
-  }
-
-  when (state === s_response && io.maxi.writeResp.valid) { state := s_addr }
 }
-

@@ -73,7 +73,7 @@ class RegisterFile(cfg: RegisterFile.Configuration)
                    logLevel: Logging.Level) extends Module with Logging {
   class ReadData extends Bundle {
     val data = io.saxi.readData.bits.data.cloneType
-    val resp = io.saxi.readData.bits.data.cloneType
+    val resp = io.saxi.readData.bits.resp.cloneType
     override def cloneType = (new ReadData).asInstanceOf[this.type]
   }
 
@@ -88,20 +88,20 @@ class RegisterFile(cfg: RegisterFile.Configuration)
   val in_q_wd = Module(new Queue(io.saxi.writeData.bits.data.cloneType, entries = cfg.fifoDepth, pipe = true))
 
   val read_reg = Reg((new ReadData).cloneType)
-  val resp_reg = RegInit(io.saxi.writeResp.bits.bresp.cloneType, init = Response.slverr)
+  val resp_reg = RegNext(Response.slverr, init = Response.slverr)
 
   //val out_q_rd = Module(new Queue(new Axi4Lite.Data.Read, cfg.fifoDepth))
   val out_q_rd = Module(new Queue((new ReadData).cloneType, cfg.fifoDepth))
   //val out_q_wr = Module(new Queue(new Axi4Lite.WriteResponse, cfg.fifoDepth))
   val out_q_wr = Module(new Queue(io.saxi.writeResp.bits.bresp.cloneType, cfg.fifoDepth))
 
-  when (in_q_ra.io.enq.fire)  { info(p"received read address: ${in_q_ra.io.enq.bits}") }
-  when (in_q_wa.io.enq.fire)  { info(p"received write address: ${in_q_wa.io.enq.bits}") }
-  when (in_q_wd.io.enq.fire)  { info(p"received write data: ${in_q_wd.io.enq.bits}") }
-  when (out_q_rd.io.enq.fire) { info(p"enq read data: ${out_q_rd.io.enq.bits}") }
-  when (out_q_rd.io.deq.fire) { info(p"deq read data: ${out_q_rd.io.enq.bits}") }
-  when (out_q_wr.io.enq.fire) { info(p"enq write resp: ${out_q_wr.io.enq.bits}") }
-  when (out_q_wr.io.deq.fire) { info(p"deq write resp: ${out_q_wr.io.enq.bits}") }
+  /*when (in_q_ra.io.enq.fire)  { info(p"received read address: 0x${Hexadecimal(in_q_ra.io.enq.bits)} (${in_q_ra.io.enq.bits})") }
+  when (in_q_wa.io.enq.fire)  { info(p"received write address: 0x${Hexadecimal(in_q_wa.io.enq.bits)} (${in_q_wa.io.enq.bits})") }
+  when (in_q_wd.io.enq.fire)  { info(p"received write data: 0x${Hexadecimal(in_q_wd.io.enq.bits)} (${in_q_wd.io.enq.bits})") }
+  when (out_q_rd.io.enq.fire) { info(p"enq read data: 0x${Hexadecimal(out_q_rd.io.enq.bits.data)} (${out_q_rd.io.enq.bits.data})") }
+  when (out_q_rd.io.deq.fire) { info(p"deq read data: 0x${Hexadecimal(out_q_rd.io.deq.bits.data)} (${out_q_rd.io.deq.bits.data})") }
+  when (out_q_wr.io.enq.fire) { info(p"enq write resp: 0x${Hexadecimal(out_q_wr.io.enq.bits)} (${out_q_wr.io.enq.bits})") }
+  when (out_q_wr.io.deq.fire) { info(p"deq write resp: 0x${Hexadecimal(out_q_wr.io.deq.bits)} (${out_q_wr.io.deq.bits})") }*/
 
   io.saxi.readData.bits.defaults
   io.saxi.readData.valid  := false.B
@@ -118,38 +118,49 @@ class RegisterFile(cfg: RegisterFile.Configuration)
   in_q_wd.io.enq.valid    := io.saxi.writeData.valid
   io.saxi.writeData.ready := in_q_wd.io.enq.ready
 
+  val out_q_rd_enq_valid = RegNext(false.B, init = false.B)
   out_q_rd.io.enq.bits    := read_reg
-  out_q_rd.io.enq.valid   := false.B
+  out_q_rd.io.enq.valid   := out_q_rd_enq_valid
   out_q_rd.io.deq.ready   := io.saxi.readData.ready
   io.saxi.readData.bits.data := out_q_rd.io.deq.bits.data
   io.saxi.readData.bits.resp := out_q_rd.io.deq.bits.resp
+  io.saxi.readData.valid     := out_q_rd.io.deq.valid
 
+  val out_q_wr_enq_valid = RegNext(false.B, init = false.B)
   out_q_wr.io.enq.bits    := resp_reg
-  out_q_wr.io.enq.valid   := false.B
+  out_q_wr.io.enq.valid   := out_q_wr_enq_valid
   out_q_wr.io.deq.ready   := io.saxi.writeResp.ready
   io.saxi.writeResp.valid := out_q_wr.io.deq.valid
   io.saxi.writeResp.bits.bresp := out_q_wr.io.deq.bits
 
-  when (in_q_ra.io.deq.valid) {
+  in_q_ra.io.deq.ready    := out_q_rd.io.enq.ready
+
+  when (in_q_ra.io.deq.fire) {
     val addr = in_q_ra.io.deq.bits
+    read_reg.resp := Response.slverr
     for (off <- cfg.regs.keys.toList.sorted) {
       when (addr === off.U) { cfg.regs(off).read() map { v =>
-        info(p"reading from address $addr -> $v")
+        info(p"reading from address 0x${Hexadecimal(addr)} ($addr) -> 0x${Hexadecimal(v)} ($v)")
         read_reg.data := v
         read_reg.resp := Response.okay
       }}
     }
-    in_q_ra.io.deq.ready := RegNext(out_q_rd.io.enq.ready)
+    out_q_rd_enq_valid := true.B
   }
 
-  when (in_q_wa.io.deq.valid && in_q_wd.io.deq.valid && out_q_wr.io.enq.ready) {
+  in_q_wa.io.deq.ready := in_q_wd.io.deq.valid && out_q_wr.io.enq.ready
+  in_q_wd.io.deq.ready := in_q_wa.io.deq.valid && out_q_wr.io.enq.ready
+
+  when (in_q_wa.io.deq.fire) {
     val addr = in_q_wa.io.deq.bits
+    val v = in_q_wd.io.deq.bits
     for (off <- cfg.regs.keys.toList.sorted) {
-      when (addr === off.U) { cfg.regs(off).read() map { v =>
-        info(p"writing to address $addr -> $v")
-        out_q_wr.io.enq.bits  := { if (cfg.regs(off).write(v)) Response.okay else Response.slverr }
-        out_q_wr.io.enq.valid := true.B
-      }}
+      when (addr === off.U) {
+        val r = cfg.regs(off).write(v)
+        info(p"writing to address 0x${Hexadecimal(addr)} ($addr) -> 0x${Hexadecimal(v)} ($v): 0x${Hexadecimal(r)} ($r)")
+        resp_reg := r
+      }
     }
+    out_q_wr_enq_valid := true.B
   }
 }
