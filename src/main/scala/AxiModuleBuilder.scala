@@ -50,6 +50,10 @@ object AxiModuleBuilder extends ModuleBuilder {
     ))
   ))(Axi4Lite.Configuration(AddrWidth(32), Axi4Lite.Width32))
 
+  val largeRegisterFile = new axi4lite.RegisterFile.Configuration(addressWordBits = 8, regs = (0 until 256 map { i =>
+    i * 4 -> new Register(Some(s"ConfigReg_$i"), width = Axi4Lite.Width32)
+  }).toMap)(Axi4Lite.Configuration(AddrWidth(32), Axi4Lite.Width32))
+
   val modules: Seq[ModuleDef] = Seq(
       ModuleDef( // test module with fixed data
         None,
@@ -126,6 +130,21 @@ object AxiModuleBuilder extends ModuleBuilder {
           vendor = "esa.cs.tu-darmstadt.de",
           library = "chisel",
           version = "0.1",
+          root = root("RegisterFile"),
+          postBuildActions = Seq(_ match {
+            case Some(cfg: RegisterFile.Configuration) => cfg.dumpAddressMap(root("RegisterFile"))
+            case _ => ()
+          })
+        )
+      ),
+      ModuleDef( // large AXI Register File
+        Some(largeRegisterFile),
+        () => new RegisterFile(largeRegisterFile),
+        CoreDefinition.withActions(
+          name = "LargeRegisterFile",
+          vendor = "esa.cs.tu-darmstadt.de",
+          library = "chisel",
+          version = "0.2",
           root = root("RegisterFile"),
           postBuildActions = Seq(_ match {
             case Some(cfg: RegisterFile.Configuration) => cfg.dumpAddressMap(root("RegisterFile"))
