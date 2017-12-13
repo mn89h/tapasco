@@ -58,6 +58,7 @@ class FifoAxiAdapter(fifoDepth: Int,
   io.count                           := fifo.io.count
 
   // AXI boilerplate
+  io.maxi.writeAddr.bits.defaults
   io.maxi.writeAddr.bits.addr        := maxi_waddr
   io.maxi.writeAddr.bits.burst.size  := (if (axi.dataWidth > 8) log2Ceil(axi.dataWidth / 8) else 0).U
   io.maxi.writeAddr.bits.burst.len   := (bsz - 1).U
@@ -67,10 +68,12 @@ class FifoAxiAdapter(fifoDepth: Int,
   io.maxi.writeAddr.bits.cache.cache := Axi4.Cache.Write.WRITE_THROUGH_RW_ALLOCATE
   io.maxi.writeAddr.bits.prot.prot   := 0.U
   io.maxi.writeAddr.bits.qos         := 0.U
+  io.maxi.writeData.bits.defaults
   io.maxi.writeData.bits.strb.strb   := ("b" + ("1" * (axi.dataWidth / 8))).U
   io.maxi.writeResp.ready            := 1.U // ignore responses
 
   // read channel tie-offs
+  io.maxi.readAddr.bits.defaults
   io.maxi.readAddr.valid             := false.B
   io.maxi.readData.ready             := false.B
 
