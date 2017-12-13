@@ -8,26 +8,27 @@ import  org.scalactic.anyvals.PosInt
 
 object RegisterFile {
   /** Configuration object for RegisterFiles.
-   *  @param addrGranularity Smallest addressable bit width (default: 8, e.g., 1 byte).
+   *  @param addressWordBits Smallest addressable bit width (default: 8, e.g., 1 byte).
    *  @param width Register data width (in bits).
    *  @param regs Map from offsets in addrGranularity to register implementations.
    **/
-  case class Configuration(addrGranularity: Int = 32, regs: Map[Int, ControlRegister], fifoDepth: PosInt = 2)
+  case class Configuration(addressWordBits: Int = 8, regs: Map[Int, ControlRegister], fifoDepth: PosInt = 2)
                           (implicit axi: Axi4Lite.Configuration) {
     /* internal helpers: */
     private def overlap(p: (BitRange, BitRange)) = p._1.overlapsWith(p._2)
     private def makeRange(a: Int): BitRange =
-      BitRange(a * addrGranularity + axi.dataWidth.toInt - 1, a * addrGranularity)
+      BitRange(a * addressWordBits + axi.dataWidth.toInt - 1, a * addressWordBits)
     private lazy val m = regs.keys.toList.sorted map makeRange
-    private lazy val o: Seq[Boolean] = (m.take(m.length - 1) zip m.tail) map overlap
+    private lazy val o = (m.take(m.length - 1) zip m.tail) map { case (r1, r2) => ((r1, r2), r1.overlapsWith(r2)) }
+    o filter (_._2) foreach { case ((r1, r2), _) => require(!r1.overlapsWith(r2), s"$r1 and $r2 must not overlap") }
 
     /* constraint checking */
     require (regs.size > 0, "regs must not be empty")
-    require (regs.size == 1 || !(o reduce (_||_)), "ranges must not overlap: " + regs)
+    require (regs.size == 1 || !(o map (_._2) reduce (_ || _)), "ranges must not overlap: " + regs)
 
     /** Minimum bit width of address lines. */
     lazy val minAddrWidth: AddrWidth = AddrWidth(Seq(if (regs.size * axi.dataWidth.toInt >= regs.keys.max) {
-      log2Ceil((regs.size * axi.dataWidth.toInt) / addrGranularity)
+      log2Ceil((regs.size * axi.dataWidth.toInt) / addressWordBits)
     } else {
       log2Ceil(regs.keys.max)
     }, 1).max)
