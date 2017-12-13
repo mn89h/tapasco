@@ -92,6 +92,10 @@ class AxiFifoAdapter(cfg: AxiFifoAdapter.Configuration)
   fifo.io.enq.valid                 := io.maxi.readData.valid
 
   // AXI boilerplate
+  io.maxi.readAddr.bits.defaults
+  io.maxi.writeAddr.bits.defaults
+  io.maxi.writeData.bits.defaults
+
   io.maxi.readAddr.bits.addr        := maxi_raddr
   io.maxi.readAddr.bits.burst.size  := (if (axi.dataWidth > 8) log2Ceil(axi.dataWidth / 8) else 0).U
   io.maxi.readAddr.bits.burst.len   := (bsz - 1).U
