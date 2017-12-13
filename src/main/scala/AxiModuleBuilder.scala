@@ -38,7 +38,7 @@ object AxiModuleBuilder extends ModuleBuilder {
                                         IdWidth(1))
   implicit val axilite = Axi4Lite.Configuration(AddrWidth(32),
                                                 Axi4Lite.Width32)
-  val exampleRegisterFile = new axi4lite.RegisterFile.Configuration(addrGranularity = 8, regs = Map(
+  val exampleRegisterFile = new axi4lite.RegisterFile.Configuration(addressWordBits = 8, regs = Map(
     0  -> new ConstantRegister(value = BigInt("10101010", 16)),
     4  -> new ConstantRegister(value = BigInt("20202020", 16)),
     8  -> new ConstantRegister(value = BigInt("30303030", 16)),
