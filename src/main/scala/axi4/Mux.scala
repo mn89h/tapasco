@@ -37,6 +37,7 @@ class AxiMux(n: Int)(implicit axi: Configuration) extends Module {
     /* READ ADDR */
     s.readAddr.ready     := false.B
     /* READ DATA */
+    s.readData.bits.defaults
     s.readData.valid     := false.B
     s.readData.bits.data := 0.U
     s.readData.bits.id   := 0.U
@@ -46,6 +47,9 @@ class AxiMux(n: Int)(implicit axi: Configuration) extends Module {
     s.writeAddr.ready    := false.B
     /* WRITE DATA */
     s.writeData.ready    := false.B
+    /* WRITE RESP */
+    s.writeResp.valid    := false.B
+    s.writeResp.bits.defaults
   }
 
   /* wiring for currently selected slaves */
@@ -60,14 +64,21 @@ class AxiMux(n: Int)(implicit axi: Configuration) extends Module {
   io.saxi(r_curr).readData.bits := io.maxi.readData.bits
 
   /* WRITE ADDRESS */
+  io.maxi.writeAddr.bits.defaults
   io.saxi(w_curr).writeAddr.ready := io.maxi.writeAddr.ready
   io.maxi.writeAddr.valid         := io.saxi(w_curr).writeAddr.valid
   io.maxi.writeAddr.bits          := io.saxi(w_curr).writeAddr.bits
 
   /* WRITE DATA */
+  io.maxi.writeData.bits.defaults
   io.saxi(w_curr).writeData.ready := io.maxi.writeData.ready
   io.maxi.writeData.valid         := io.saxi(w_curr).writeData.valid
   io.maxi.writeData.bits          := io.saxi(w_curr).writeData.bits
+
+  /* WRITE RESP */
+  io.maxi.writeResp.ready := io.saxi(r_curr).writeResp.ready
+  io.saxi(r_curr).writeResp.valid := io.maxi.writeResp.valid
+  io.saxi(r_curr).writeResp.bits  := io.maxi.writeResp.bits
 
   when (r_state === waiting) {
     when (io.saxi(r_curr).readAddr.valid) { r_state := in_burst }
