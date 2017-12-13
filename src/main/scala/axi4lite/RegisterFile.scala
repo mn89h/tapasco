@@ -27,7 +27,7 @@ object RegisterFile {
     require (regs.size == 1 || !(o map (_._2) reduce (_ || _)), "ranges must not overlap: " + regs)
 
     /** Minimum bit width of address lines. */
-    lazy val minAddrWidth: AddrWidth = AddrWidth(Seq(if (regs.size * axi.dataWidth.toInt >= regs.keys.max) {
+    lazy val minAddrWidth: AddrWidth = AddrWidth(Seq(if (regs.size * axi.dataWidth.toInt / addressWordBits >= regs.keys.max) {
       log2Ceil((regs.size * axi.dataWidth.toInt) / addressWordBits)
     } else {
       log2Ceil(regs.keys.max)
@@ -55,7 +55,7 @@ object RegisterFile {
    **/
   class IO(cfg: Configuration)(implicit axi: Axi4Lite.Configuration) extends Bundle {
     val addrWidth: AddrWidth = AddrWidth(Seq(cfg.minAddrWidth:Int, axi.addrWidth:Int).max)
-    val saxi = Axi4Lite.Slave(axi)
+    val saxi = Axi4Lite.Slave(axi.copy(addrWidth = addrWidth))
 
     override def cloneType = new IO(cfg)(axi).asInstanceOf[this.type]
   }
@@ -78,6 +78,7 @@ class RegisterFile(cfg: RegisterFile.Configuration)
     override def cloneType = (new ReadData).asInstanceOf[this.type]
   }
 
+  cinfo(s"AXI config: $axi")
   val io = IO(new RegisterFile.IO(cfg))
 
   // workaround: code below does not work due to optional elements in bundle

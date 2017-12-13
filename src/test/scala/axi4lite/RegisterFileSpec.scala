@@ -59,7 +59,7 @@ class RegisterFileSpec extends ChiselFlatSpec with Checkers {
     val args = chiselArgs ++ Array("--target-dir", testDir)
     val actions = generateActionsFromRegMap(regs)
     Driver.execute(args, () => new RegFileTest(regs.size, width / 8, regs filter { case (_, or) => or.nonEmpty } map { case (i, or) => (i, or.get) }, actions))
-      { m => new GenericTester(width, regs, m) } // FIXME implement generic Tester
+      { m => new GenericTester(width, regs, m) }
   }
 
   private class GenericTester(width: DataWidth, regs: Map[Int, Option[ControlRegister]], m: RegFileTest) extends PeekPokeTester(m) {
@@ -147,10 +147,13 @@ class RegisterFileSpec extends ChiselFlatSpec with Checkers {
     }}
   }
 
-  "random register files" should "behave as expected at each register" in {
-    check(forAll(chisel.axi.generators.Axi4Lite.configurationGen) { cfg => {
-      implicit val axi = cfg
-      forAll(dataWidthGen) { w => forAllNoShrink(registerMapGen(w)) { regs => genericTest(w, regs) } }
-    }})
-  }
+  behavior of "RegisterFile"
+
+  it should "behave correctly for arbitrary configurations" in
+    check(forAll(chisel.axi.generators.Axi4Lite.configurationGen) { cfg =>
+      forAllNoShrink(registerMapGen(cfg.dataWidth)) { regs =>
+        implicit val axi = cfg.copy(addrWidth = chisel.axi.AddrWidth(32))
+        genericTest(cfg.dataWidth, regs)
+      }
+    }, minSuccessful(100))
 }
