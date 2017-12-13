@@ -17,6 +17,10 @@ package object axi {
 
   class Protection extends Bundle {
     val prot = UInt(3.W)
+
+    def defaults {
+      prot := Protection(Protection.Flag.NON_PRIVILEGED, Protection.Flag.NON_SECURE).U
+    }
   }
 
   object Protection {
@@ -38,6 +42,10 @@ package object axi {
 
   class Strobe(dataWidth: Int) extends Bundle {
     val strb = UInt((dataWidth / 8).W)
+
+    def defaults {
+      strb := Strobe(0 until dataWidth / 8 :_*)
+    }
 
     override def cloneType = { new Strobe(dataWidth).asInstanceOf[this.type] }
   }

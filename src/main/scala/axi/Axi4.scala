@@ -34,6 +34,12 @@ object Axi4 {
     val burst = UInt(2.W)
     val len   = UInt(8.W)
     val size  = UInt(3.W)
+
+    def defaults {
+      burst := Burst.Type.incr
+      len   := 0.U
+      size  := Burst.Size.s1
+    }
   }
 
   object Burst extends Bundle {
@@ -47,6 +53,10 @@ object Axi4 {
 
   class Lock extends Bundle {
     val lock = UInt(2.W)
+
+    def defaults {
+      lock := Lock.Access.normal
+    }
   }
 
   object Lock extends Bundle {
@@ -57,6 +67,10 @@ object Axi4 {
 
   class Cache extends Bundle {
     val cache = UInt(4.W)
+
+    def defaults {
+      cache := 0.U
+    }
   }
 
   object Cache {
@@ -102,6 +116,18 @@ object Axi4 {
     val qos    = if (cfg.hasQoS) UInt(4.W) else UInt(1.W)
     val region = if (cfg.regionWidth > 0) UInt(cfg.regionWidth) else UInt(1.W)
     val user   = if (cfg.userWidth > 0) UInt(cfg.userWidth) else UInt(1.W)
+
+    def defaults {
+      burst.defaults
+      lock.defaults
+      cache.defaults
+      prot.defaults
+      id     := 0.U
+      addr   := "hDEADBEEF".U
+      qos    := 0.U
+      region := 0.U
+      user   := 0.U
+    }
 
     override def cloneType = { new Address()(cfg).asInstanceOf[this.type] }
   }
@@ -161,16 +187,33 @@ object Axi4 {
       val data  = if (cfg.dataWidth > 0) UInt(cfg.dataWidth) else UInt(1.W)
       val last  = Bool()
       val user  = if (cfg.userWidth > 0) UInt(cfg.userWidth) else UInt(1.W)
+
+      def defaults {
+        id   := 0.U
+        data := "hDEADBEEF".U
+        last := true.B
+        user := 0.U
+      }
     }
 
     class Read(implicit cfg: Configuration) extends DataChannel {
       val resp  = UInt(2.W)
+
+      override def defaults {
+        super.defaults
+        resp := Response.slverr
+      }
 
       override def cloneType = { new Read()(cfg).asInstanceOf[this.type] }
     }
 
     class Write(implicit cfg: Configuration) extends DataChannel {
       val strb  = new Strobe(cfg.dataWidth)
+
+      override def defaults {
+        super.defaults
+        strb.defaults
+      }
 
       override def cloneType = { new Write()(cfg).asInstanceOf[this.type] }
     }
@@ -180,6 +223,12 @@ object Axi4 {
     val bid   = UInt(cfg.idWidth)
     val buser = UInt(cfg.userWidth)
     val bresp = UInt(2.W)
+
+    def defaults {
+      bid   := 0.U
+      buser := 0.U
+      bresp := Response.slverr
+    }
 
     override def cloneType = { new WriteResponse()(cfg).asInstanceOf[this.type] }
   }
