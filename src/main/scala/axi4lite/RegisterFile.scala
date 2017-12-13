@@ -163,4 +163,12 @@ class RegisterFile(cfg: RegisterFile.Configuration)
     }
     out_q_wr_enq_valid := true.B
   }
+
+  when (reset.toBool) { // this is required for AXI compliance; apparently Queues start working while reset is high
+    io.saxi.readAddr.ready  := false.B
+    io.saxi.readData.valid  := false.B
+    io.saxi.writeAddr.ready := false.B
+    io.saxi.writeData.ready := false.B
+    io.saxi.writeResp.valid := false.B
+  }
 }
