@@ -31,6 +31,9 @@ class FifoAxiAdapterTest1(dataWidth: Int, size: Int) extends Module {
   fad.io.maxi <> io.maxi
 }
 
+class LargeRegisterFile(cfg: RegisterFile.Configuration)(implicit axi: Axi4Lite.Configuration, logLevel: Logging.Level)
+    extends RegisterFile(cfg)(axi, logLevel)
+
 object AxiModuleBuilder extends ModuleBuilder {
   implicit val logLevel = Logging.Level.Info
   implicit val axi = Axi4.Configuration(AddrWidth(32),
@@ -129,27 +132,29 @@ object AxiModuleBuilder extends ModuleBuilder {
           name = "RegisterFile",
           vendor = "esa.cs.tu-darmstadt.de",
           library = "chisel",
-          version = "0.1",
-          root = root("RegisterFile"),
-          postBuildActions = Seq(_ match {
-            case Some(cfg: RegisterFile.Configuration) => cfg.dumpAddressMap(root("RegisterFile"))
-            case _ => ()
-          })
-        )
-      ),
-      ModuleDef( // large AXI Register File
-        Some(largeRegisterFile),
-        () => new RegisterFile(largeRegisterFile),
-        CoreDefinition.withActions(
-          name = "LargeRegisterFile",
-          vendor = "esa.cs.tu-darmstadt.de",
-          library = "chisel",
           version = "0.2",
           root = root("RegisterFile"),
           postBuildActions = Seq(_ match {
             case Some(cfg: RegisterFile.Configuration) => cfg.dumpAddressMap(root("RegisterFile"))
             case _ => ()
-          })
+          }),
+          interfaces = Seq(Interface(name = "saxi", kind = "axi4slave"))
+        )
+      ),
+      ModuleDef( // large AXI Register File
+        Some(largeRegisterFile),
+        () => new LargeRegisterFile(largeRegisterFile),
+        CoreDefinition.withActions(
+          name = "LargeRegisterFile",
+          vendor = "esa.cs.tu-darmstadt.de",
+          library = "chisel",
+          version = "0.3",
+          root = root("LargeRegisterFile"),
+          postBuildActions = Seq(_ match {
+            case Some(cfg: RegisterFile.Configuration) => cfg.dumpAddressMap(root("LargeRegisterFile"))
+            case _ => ()
+          }),
+          interfaces = Seq(Interface(name = "saxi", kind = "axi4slave"))
         )
       )
     )
