@@ -11,7 +11,11 @@ import  Chisel.{Reg, UInt}
 sealed abstract class ControlRegister(_name: Option[String], bitfield: BitfieldMap = Map()) {
   /** Format description string for bitfield (if any). */
   private def bf: String = bitfield.toList.sortWith((a, b) => a._2.to > b._2.to) map (e =>
-      "_%d-%d:_ %s".format(e._2.to, e._2.from, e._1)
+      if (e._2.to == e._2.from) {
+        "_%d:_ %s".format(e._2.to, e._1)
+      } else {
+        "_%d-%d:_ %s".format(e._2.to, e._2.from, e._1)
+      }
     ) mkString (" ")
 
   /** Name of the register. */
