@@ -59,6 +59,95 @@ object RegisterFile {
 
     override def cloneType = new IO(cfg)(axi).asInstanceOf[this.type]
   }
+
+  def behavior(cfg: RegisterFile.Configuration, io: RegisterFile.IO)
+              (implicit axi: Axi4Lite.Configuration, logger: Logging, logLevel: Logging.Level) {
+    class ReadData extends Bundle {
+      val data = io.saxi.readData.bits.data.cloneType
+      val resp = io.saxi.readData.bits.resp.cloneType
+      override def cloneType = (new ReadData).asInstanceOf[this.type]
+    }
+    val in_q_ra = Module(new Queue(io.saxi.readAddr.bits.addr.cloneType, entries = cfg.fifoDepth, pipe = true))
+    val in_q_wa = Module(new Queue(io.saxi.writeAddr.bits.addr.cloneType, entries = cfg.fifoDepth, pipe = true))
+    val in_q_wd = Module(new Queue(io.saxi.writeData.bits.data.cloneType, entries = cfg.fifoDepth, pipe = true))
+
+    val read_reg = Reg((new ReadData).cloneType)
+    val resp_reg = RegNext(Response.slverr, init = Response.slverr)
+
+    val out_q_rd = Module(new Queue((new ReadData).cloneType, cfg.fifoDepth))
+    val out_q_wr = Module(new Queue(io.saxi.writeResp.bits.bresp.cloneType, cfg.fifoDepth))
+
+    io.saxi.readData.bits.defaults
+    io.saxi.readData.valid  := false.B
+    io.saxi.writeResp.bits.defaults
+    io.saxi.writeResp.valid := false.B
+
+    in_q_ra.io.enq.bits     := io.saxi.readAddr.bits.addr
+    in_q_ra.io.enq.valid    := io.saxi.readAddr.valid
+    io.saxi.readAddr.ready  := in_q_ra.io.enq.ready
+    in_q_wa.io.enq.bits     := io.saxi.writeAddr.bits.addr
+    in_q_wa.io.enq.valid    := io.saxi.writeAddr.valid
+    io.saxi.writeAddr.ready := in_q_wa.io.enq.ready
+    in_q_wd.io.enq.bits     := io.saxi.writeData.bits.data
+    in_q_wd.io.enq.valid    := io.saxi.writeData.valid
+    io.saxi.writeData.ready := in_q_wd.io.enq.ready
+
+    val out_q_rd_enq_valid = RegNext(false.B, init = false.B)
+    out_q_rd.io.enq.bits    := read_reg
+    out_q_rd.io.enq.valid   := out_q_rd_enq_valid
+    out_q_rd.io.deq.ready   := io.saxi.readData.ready
+    io.saxi.readData.bits.data := out_q_rd.io.deq.bits.data
+    io.saxi.readData.bits.resp := out_q_rd.io.deq.bits.resp
+    io.saxi.readData.valid     := out_q_rd.io.deq.valid
+
+    val out_q_wr_enq_valid = RegNext(false.B, init = false.B)
+    out_q_wr.io.enq.bits    := resp_reg
+    out_q_wr.io.enq.valid   := out_q_wr_enq_valid
+    out_q_wr.io.deq.ready   := io.saxi.writeResp.ready
+    io.saxi.writeResp.valid := out_q_wr.io.deq.valid
+    io.saxi.writeResp.bits.bresp := out_q_wr.io.deq.bits
+
+    in_q_ra.io.deq.ready    := out_q_rd.io.enq.ready
+
+    when (in_q_ra.io.deq.fire) {
+      val addr = in_q_ra.io.deq.bits
+      read_reg.resp := Response.slverr
+      for (off <- cfg.regs.keys.toList.sorted) {
+        when (addr === off.U) { cfg.regs(off).read() map { v =>
+          logger.info(p"reading from address 0x${Hexadecimal(addr)} ($addr) -> 0x${Hexadecimal(v)} ($v)")
+          read_reg.data := v
+          read_reg.resp := Response.okay
+        }}
+      }
+      out_q_rd_enq_valid := true.B
+    }
+
+    in_q_wa.io.deq.ready := in_q_wd.io.deq.valid && out_q_wr.io.enq.ready
+    in_q_wd.io.deq.ready := in_q_wa.io.deq.valid && out_q_wr.io.enq.ready
+
+    when (in_q_wa.io.deq.fire) {
+      val addr = in_q_wa.io.deq.bits
+      val v = in_q_wd.io.deq.bits
+      for (off <- cfg.regs.keys.toList.sorted) {
+        when (addr === off.U) {
+          val r = cfg.regs(off).write(v)
+          logger.info(p"writing to address 0x${Hexadecimal(addr)} ($addr) -> 0x${Hexadecimal(v)} ($v): 0x${Hexadecimal(r)} ($r)")
+          resp_reg := r
+        }
+      }
+      out_q_wr_enq_valid := true.B
+    }
+  }
+
+  def resetBehavior(io: RegisterFile.IO)(implicit module: Module) {
+    when (module.reset.toBool) { // this is required for AXI compliance; apparently Queues start working while reset is high
+      io.saxi.readAddr.ready  := false.B
+      io.saxi.readData.valid  := false.B
+      io.saxi.writeAddr.ready := false.B
+      io.saxi.writeData.ready := false.B
+      io.saxi.writeResp.valid := false.B
+    }
+  }
 }
 
 /**
@@ -72,105 +161,9 @@ object RegisterFile {
 class RegisterFile(cfg: RegisterFile.Configuration)
                   (implicit axi: Axi4Lite.Configuration,
                    logLevel: Logging.Level) extends Module with Logging {
-  class ReadData extends Bundle {
-    val data = io.saxi.readData.bits.data.cloneType
-    val resp = io.saxi.readData.bits.resp.cloneType
-    override def cloneType = (new ReadData).asInstanceOf[this.type]
-  }
-
+  implicit val logger: Logging = this
   cinfo(s"AXI config: $axi")
   val io = IO(new RegisterFile.IO(cfg))
-
-  // workaround: code below does not work due to optional elements in bundle
-  //val in_q_ra  = Queue(io.saxi.readAddr,  entries = cfg.fifoDepth, pipe = true)
-  val in_q_ra = Module(new Queue(io.saxi.readAddr.bits.addr.cloneType, entries = cfg.fifoDepth, pipe = true))
-  //val in_q_wa  = Queue(io.saxi.writeAddr, entries = cfg.fifoDepth, pipe = true)
-  val in_q_wa = Module(new Queue(io.saxi.writeAddr.bits.addr.cloneType, entries = cfg.fifoDepth, pipe = true))
-  //val in_q_wd  = Queue(io.saxi.writeData, entries = cfg.fifoDepth, pipe = true)
-  val in_q_wd = Module(new Queue(io.saxi.writeData.bits.data.cloneType, entries = cfg.fifoDepth, pipe = true))
-
-  val read_reg = Reg((new ReadData).cloneType)
-  val resp_reg = RegNext(Response.slverr, init = Response.slverr)
-
-  //val out_q_rd = Module(new Queue(new Axi4Lite.Data.Read, cfg.fifoDepth))
-  val out_q_rd = Module(new Queue((new ReadData).cloneType, cfg.fifoDepth))
-  //val out_q_wr = Module(new Queue(new Axi4Lite.WriteResponse, cfg.fifoDepth))
-  val out_q_wr = Module(new Queue(io.saxi.writeResp.bits.bresp.cloneType, cfg.fifoDepth))
-
-  /*when (in_q_ra.io.enq.fire)  { info(p"received read address: 0x${Hexadecimal(in_q_ra.io.enq.bits)} (${in_q_ra.io.enq.bits})") }
-  when (in_q_wa.io.enq.fire)  { info(p"received write address: 0x${Hexadecimal(in_q_wa.io.enq.bits)} (${in_q_wa.io.enq.bits})") }
-  when (in_q_wd.io.enq.fire)  { info(p"received write data: 0x${Hexadecimal(in_q_wd.io.enq.bits)} (${in_q_wd.io.enq.bits})") }
-  when (out_q_rd.io.enq.fire) { info(p"enq read data: 0x${Hexadecimal(out_q_rd.io.enq.bits.data)} (${out_q_rd.io.enq.bits.data})") }
-  when (out_q_rd.io.deq.fire) { info(p"deq read data: 0x${Hexadecimal(out_q_rd.io.deq.bits.data)} (${out_q_rd.io.deq.bits.data})") }
-  when (out_q_wr.io.enq.fire) { info(p"enq write resp: 0x${Hexadecimal(out_q_wr.io.enq.bits)} (${out_q_wr.io.enq.bits})") }
-  when (out_q_wr.io.deq.fire) { info(p"deq write resp: 0x${Hexadecimal(out_q_wr.io.deq.bits)} (${out_q_wr.io.deq.bits})") }*/
-
-  io.saxi.readData.bits.defaults
-  io.saxi.readData.valid  := false.B
-  io.saxi.writeResp.bits.defaults
-  io.saxi.writeResp.valid := false.B
-
-  in_q_ra.io.enq.bits     := io.saxi.readAddr.bits.addr
-  in_q_ra.io.enq.valid    := io.saxi.readAddr.valid
-  io.saxi.readAddr.ready  := in_q_ra.io.enq.ready
-  in_q_wa.io.enq.bits     := io.saxi.writeAddr.bits.addr
-  in_q_wa.io.enq.valid    := io.saxi.writeAddr.valid
-  io.saxi.writeAddr.ready := in_q_wa.io.enq.ready
-  in_q_wd.io.enq.bits     := io.saxi.writeData.bits.data
-  in_q_wd.io.enq.valid    := io.saxi.writeData.valid
-  io.saxi.writeData.ready := in_q_wd.io.enq.ready
-
-  val out_q_rd_enq_valid = RegNext(false.B, init = false.B)
-  out_q_rd.io.enq.bits    := read_reg
-  out_q_rd.io.enq.valid   := out_q_rd_enq_valid
-  out_q_rd.io.deq.ready   := io.saxi.readData.ready
-  io.saxi.readData.bits.data := out_q_rd.io.deq.bits.data
-  io.saxi.readData.bits.resp := out_q_rd.io.deq.bits.resp
-  io.saxi.readData.valid     := out_q_rd.io.deq.valid
-
-  val out_q_wr_enq_valid = RegNext(false.B, init = false.B)
-  out_q_wr.io.enq.bits    := resp_reg
-  out_q_wr.io.enq.valid   := out_q_wr_enq_valid
-  out_q_wr.io.deq.ready   := io.saxi.writeResp.ready
-  io.saxi.writeResp.valid := out_q_wr.io.deq.valid
-  io.saxi.writeResp.bits.bresp := out_q_wr.io.deq.bits
-
-  in_q_ra.io.deq.ready    := out_q_rd.io.enq.ready
-
-  when (in_q_ra.io.deq.fire) {
-    val addr = in_q_ra.io.deq.bits
-    read_reg.resp := Response.slverr
-    for (off <- cfg.regs.keys.toList.sorted) {
-      when (addr === off.U) { cfg.regs(off).read() map { v =>
-        info(p"reading from address 0x${Hexadecimal(addr)} ($addr) -> 0x${Hexadecimal(v)} ($v)")
-        read_reg.data := v
-        read_reg.resp := Response.okay
-      }}
-    }
-    out_q_rd_enq_valid := true.B
-  }
-
-  in_q_wa.io.deq.ready := in_q_wd.io.deq.valid && out_q_wr.io.enq.ready
-  in_q_wd.io.deq.ready := in_q_wa.io.deq.valid && out_q_wr.io.enq.ready
-
-  when (in_q_wa.io.deq.fire) {
-    val addr = in_q_wa.io.deq.bits
-    val v = in_q_wd.io.deq.bits
-    for (off <- cfg.regs.keys.toList.sorted) {
-      when (addr === off.U) {
-        val r = cfg.regs(off).write(v)
-        info(p"writing to address 0x${Hexadecimal(addr)} ($addr) -> 0x${Hexadecimal(v)} ($v): 0x${Hexadecimal(r)} ($r)")
-        resp_reg := r
-      }
-    }
-    out_q_wr_enq_valid := true.B
-  }
-
-  when (reset.toBool) { // this is required for AXI compliance; apparently Queues start working while reset is high
-    io.saxi.readAddr.ready  := false.B
-    io.saxi.readData.valid  := false.B
-    io.saxi.writeAddr.ready := false.B
-    io.saxi.writeData.ready := false.B
-    io.saxi.writeResp.valid := false.B
-  }
+  RegisterFile.behavior(cfg, io)(axi, logger, logLevel)
+  RegisterFile.resetBehavior(io)(this)
 }
