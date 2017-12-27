@@ -73,8 +73,8 @@ class Register(name: Option[String] = None, bitfield: BitfieldMap = Map(), width
  **/
 class VirtualRegister(name: Option[String] = None,
                       bitfield: BitfieldMap = Map(),
-                      onRead: () => Option[UInt],
-                      onWrite: UInt => UInt) extends ControlRegister(name, bitfield) {
+                      var onRead: () => Option[UInt] = () => None,
+                      var onWrite: UInt => UInt = v => v) extends ControlRegister(name, bitfield) {
   def read() = onRead()
   override def write(v: UInt) = onWrite(v)
 }
