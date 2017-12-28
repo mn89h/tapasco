@@ -26,7 +26,7 @@ final case class MasterWrite(address: Int, v: BigInt) extends MasterAction {
  *  @param action Sequence of transactions, executed sequentially without delay.
  *  @param axi implicit AXI configuration.
  **/
- class ProgrammableMaster(action: Seq[MasterAction])
+ class ProgrammableMaster(action: Seq[MasterAction], startable: Boolean = false)
                          (implicit axi: Axi4Lite.Configuration, logLevel: Logging.Level) extends Module with Logging {
   cinfo(s"AXI configuration = $axi")
   val io = IO(new Bundle {
@@ -34,6 +34,7 @@ final case class MasterWrite(address: Int, v: BigInt) extends MasterAction {
     val out      = Decoupled(UInt(axi.dataWidth))
     val w_resp   = Decoupled(new chisel.axi.Axi4Lite.WriteResponse)
     val finished = Output(Bool())
+    val start    = Input(UInt(if (startable) 1.W else 0.W))
   })
 
   val cnt = RegInit(UInt(log2Ceil(action.length + 1).W), init = 0.U)
@@ -76,19 +77,21 @@ final case class MasterWrite(address: Int, v: BigInt) extends MasterAction {
   when (io.maxi.writeData.fire) { wd_valid := false.B }
   when (io.maxi.writeResp.fire) { wr_ready := false.B }
 
-  when (!signals.reduce(_ || _)) {
-    for (i <- 0 until action.length) {
-      when (i.U === cnt) {
-        //info(s"Starting action #$i: ${action(i)}")
-        ra := action(i).address.U
-        wa := action(i).address.U
-        wd := action(i).value.getOrElse(BigInt(0)).U
-        ra_valid := action(i).isRead.B
-        rd_ready := action(i).isRead.B
-        wa_valid := (!action(i).isRead).B
-        wd_valid := (!action(i).isRead).B
-        wr_ready := (!action(i).isRead).B
-        cnt := cnt + 1.U
+  when ((if (startable) RegNext(io.start(0), init = false.B) else true.B)) {
+    when (!signals.reduce(_ || _)) {
+      for (i <- 0 until action.length) {
+        when (i.U === cnt) {
+          //info(s"Starting action #$i: ${action(i)}")
+          ra := action(i).address.U
+          wa := action(i).address.U
+          wd := action(i).value.getOrElse(BigInt(0)).U
+          ra_valid := action(i).isRead.B
+          rd_ready := action(i).isRead.B
+          wa_valid := (!action(i).isRead).B
+          wd_valid := (!action(i).isRead).B
+          wr_ready := (!action(i).isRead).B
+          cnt := cnt + 1.U
+        }
       }
     }
   }
