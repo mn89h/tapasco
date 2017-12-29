@@ -43,6 +43,7 @@ struct tapasco_status {
 typedef enum {
   TAPASCO_CAP0_ATSPRI 					   	= (1 << 0),
   TAPASCO_CAP0_ATSCHECK 					= (1 << 1),
+  TAPASCO_CAP0_PE_LOCAL_MEM 					= (1 << 2),
 } tapasco_capabilities_0_t;
 
 #define TAPASCO_VERSION_MAJOR(v) 				((v) >> 16)
