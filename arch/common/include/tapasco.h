@@ -42,6 +42,8 @@
 //!		License along with Tapasco.  If not, see
 //!		<http://www.gnu.org/licenses/>.
 //! @details	### Change Log ###
+//!		- Version 1.4 (jk)
+//!		  + added support for pe-local memories
 //!		- Version 1.3 (jk)
 //!		  + added device capabilities
 //!		- Version 1.2.1 (jk)
@@ -115,7 +117,9 @@ typedef enum {
 /** Flags for memory allocation (implementation defined). **/
 typedef enum {
 	/** no flags **/
-	TAPASCO_DEVICE_ALLOC_FLAGS_NONE 		= 0
+	TAPASCO_DEVICE_ALLOC_FLAGS_NONE 		= 0,
+	/** PE-local, i.e., only accessible from scheduled PE **/
+	TAPASCO_DEVICE_ALLOC_FLAGS_PE_LOCAL             = 1,
 } tapasco_device_alloc_flag_t;
 
 /** Flags for bitstream loading (implementation defined). **/
@@ -170,7 +174,7 @@ typedef enum {
  *  @{
  **/
 
-#define TAPASCO_API_VERSION					"1.3"
+#define TAPASCO_API_VERSION					"1.4"
 
 /**
  * Returns the version string of the library.
