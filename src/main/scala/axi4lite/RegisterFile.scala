@@ -125,7 +125,7 @@ object RegisterFile {
     in_q_wa.io.deq.ready := in_q_wd.io.deq.valid && out_q_wr.io.enq.ready
     in_q_wd.io.deq.ready := in_q_wa.io.deq.valid && out_q_wr.io.enq.ready
 
-    when (in_q_wa.io.deq.fire) {
+    when (in_q_wa.io.deq.fire) { // ready/valid handshakes locked with in_q_wd above
       val addr = in_q_wa.io.deq.bits
       val v = in_q_wd.io.deq.bits
       for (off <- cfg.regs.keys.toList.sorted) {

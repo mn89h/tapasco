@@ -45,11 +45,11 @@ class RegisterFileSpec extends ChiselFlatSpec with Checkers {
   private def generateActionsFromRegMap(regs: Map[Long, Option[ControlRegister]]): Seq[MasterAction] =
     regs.toSeq.sortBy(_._1) map { _ match {
       case (i, Some(r)) => r match {
-        case c: Register         => Seq(MasterWrite(i, i), MasterRead(i))
+        case c: Register         => Seq(MasterWrite(i, i + 1), MasterRead(i))
         case c: ConstantRegister => Seq(MasterRead(i))
         case _                   => Seq()
       }
-      case (i, None) => Seq(MasterRead(i), MasterWrite(i, i))
+      case (i, None) => Seq(MasterRead(i), MasterWrite(i, i + 1))
     }} reduce (_ ++ _)
 
   private def genericTest(width: DataWidth, regs: Map[Long, Option[ControlRegister]])
@@ -105,7 +105,7 @@ class RegisterFileSpec extends ChiselFlatSpec with Checkers {
       val resp = peek(m.io.rdata.bits.resp)
       expect (m.io.rdata.bits.resp, Response.okay, s"[$off] read response is 0x%x (%d), should be 0 (OKAY)".format(resp, resp))
       val data = peek(m.io.rdata.bits.data)
-      expect (m.io.rdata.bits.data, off, s"[$off] read data is 0x%x (%d), should be %d".format(data, data, off))
+      expect (m.io.rdata.bits.data, off + 1, s"[$off] read data is 0x%x (%d), should be %d".format(data, data, off + 1))
     }
 
     def test(r: ConstantRegister, off: Int) {

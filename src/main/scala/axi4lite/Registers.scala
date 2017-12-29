@@ -55,9 +55,9 @@ class ConstantRegister(name: Option[String] = None, bitfield: BitfieldMap = Map(
  * @param name Name of the register (optional).
  * @param bitfield Bit partitioning of the value (optional).
  **/
-class Register(name: Option[String] = None, bitfield: BitfieldMap = Map(), width: Int)
+class Register(name: Option[String] = None, bitfield: BitfieldMap = Map(), width: Axi4Lite.DataWidth)
     extends ControlRegister(name, bitfield) {
-  private lazy val _r = RegInit(0.U(width))
+  private lazy val _r = RegInit(0.U(width = width))
   def read(): Option[UInt] = Some(_r)
   override def write(v: UInt) = {
     _r := v
