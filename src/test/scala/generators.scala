@@ -56,9 +56,9 @@ package object generators {
     def maybeRegGen(width: DataWidth): () => Gen[Option[ControlRegister]] = () =>
       Gen.option(Gen.oneOf(basicRegGen(width), constRegGen(width)))
 
-    def registerMapGen(width: DataWidth): Gen[Map[Int, Option[ControlRegister]]] =
+    def registerMapGen(width: DataWidth): Gen[Map[Long, Option[ControlRegister]]] =
       Gen.nonEmptyBuildableOf[Seq[Option[ControlRegister]], Option[ControlRegister]](maybeRegGen(width)()) 
-        .map (_.zipWithIndex.map { case (r, i) => (i * (width / 8), r) }.toMap)
+        .map (_.zipWithIndex.map { case (r, i) => (i.toLong * (width / 8), r) }.toMap)
         .retryUntil (l => (l map (_._2.nonEmpty) fold false) (_ || _))
   }
 }

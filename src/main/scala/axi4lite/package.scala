@@ -2,7 +2,7 @@ package chisel.axi
 
 package object axi4lite {
   /** Tuple-type for bit ranges. */
-  sealed case class BitRange(to: Int, from: Int) {
+  sealed case class BitRange(to: Long, from: Long) {
     require (to >= from && from >= 0, "BitRange: invalid range (%d, %d)".format(to, from))
     def overlapsWith(other: BitRange): Boolean = !(to < other.from || from > other.to)
   }

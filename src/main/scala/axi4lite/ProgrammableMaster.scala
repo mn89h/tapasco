@@ -7,16 +7,16 @@ import  chisel.miscutils.Logging
 /** AXI4Lite master transaction model. */
 sealed abstract trait MasterAction {
   def isRead: Boolean
-  def address: Int
+  def address: Long
   def value: Option[BigInt]
 }
 
-final case class MasterRead(address: Int) extends MasterAction {
+final case class MasterRead(address: Long) extends MasterAction {
   def isRead: Boolean = true
   def value: Option[BigInt] = None
 }
 
-final case class MasterWrite(address: Int, v: BigInt) extends MasterAction {
+final case class MasterWrite(address: Long, v: BigInt) extends MasterAction {
   def isRead: Boolean = false
   def value: Option[BigInt] = Some(v)
 }
@@ -39,7 +39,7 @@ final case class MasterWrite(address: Int, v: BigInt) extends MasterAction {
   })
 
   val cnt = RegInit(UInt(log2Ceil(action.length + 1).W), init = 0.U)
-  io.finished := cnt === action.length.U
+  io.finished := RegNext(cnt === action.length.U)
 
   val ra_valid = RegInit(false.B)
   val rd_ready = RegInit(false.B)

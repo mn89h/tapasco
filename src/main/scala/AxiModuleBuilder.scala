@@ -42,10 +42,10 @@ object AxiModuleBuilder extends ModuleBuilder {
   implicit val axilite = Axi4Lite.Configuration(AddrWidth(32),
                                                 Axi4Lite.Width32)
   val exampleRegisterFile = new axi4lite.RegisterFile.Configuration(addressWordBits = 8, regs = Map(
-    0  -> new ConstantRegister(value = BigInt("10101010", 16)),
-    4  -> new ConstantRegister(value = BigInt("20202020", 16)),
-    8  -> new ConstantRegister(value = BigInt("30303030", 16)),
-    16 -> new ConstantRegister(value = BigInt("40404040", 16), bitfield = Map(
+    0L  -> new ConstantRegister(value = BigInt("10101010", 16)),
+    4L  -> new ConstantRegister(value = BigInt("20202020", 16)),
+    8L  -> new ConstantRegister(value = BigInt("30303030", 16)),
+    16L -> new ConstantRegister(value = BigInt("40404040", 16), bitfield = Map(
       "Byte #3" -> BitRange(31, 24),
       "Byte #2" -> BitRange(23, 16),
       "Byte #1" -> BitRange(15, 8),
@@ -53,7 +53,7 @@ object AxiModuleBuilder extends ModuleBuilder {
     ))
   ))(Axi4Lite.Configuration(AddrWidth(32), Axi4Lite.Width32))
 
-  val largeRegisterFile = new axi4lite.RegisterFile.Configuration(addressWordBits = 8, regs = (0 until 256 map { i =>
+  val largeRegisterFile = new axi4lite.RegisterFile.Configuration(addressWordBits = 8, regs = (0L until 256L map { i =>
     i * 4 -> new Register(Some(s"ConfigReg_$i"), width = Axi4Lite.Width32)
   }).toMap)(Axi4Lite.Configuration(AddrWidth(32), Axi4Lite.Width32))
 

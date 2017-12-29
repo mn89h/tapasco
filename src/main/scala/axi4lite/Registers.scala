@@ -1,4 +1,5 @@
 package chisel.axi.axi4lite
+import  chisel3._
 import  chisel.axi._
 import  Chisel.{Reg, UInt}
 
@@ -56,7 +57,7 @@ class ConstantRegister(name: Option[String] = None, bitfield: BitfieldMap = Map(
  **/
 class Register(name: Option[String] = None, bitfield: BitfieldMap = Map(), width: Int)
     extends ControlRegister(name, bitfield) {
-  private lazy val _r = Reg(UInt(width = width))
+  private lazy val _r = RegInit(0.U(width))
   def read(): Option[UInt] = Some(_r)
   override def write(v: UInt) = {
     _r := v

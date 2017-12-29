@@ -20,7 +20,7 @@ import  org.scalatest.prop.Checkers
  * @param regs register map for register file
  * @param actions master actions to perform
  **/
-class RegFileTest(val size: Int, val off: Int, regs: Map[Int, ControlRegister], actions: Seq[MasterAction])
+class RegFileTest(val size: Int, val off: Int, regs: Map[Long, ControlRegister], actions: Seq[MasterAction])
                  (implicit axi: Axi4Lite.Configuration, logLevel: Logging.Level) extends Module {
   val cfg = new RegisterFile.Configuration(regs = regs)
   val saxi = Module(new RegisterFile(cfg))
@@ -42,7 +42,7 @@ class RegisterFileSpec extends ChiselFlatSpec with Checkers {
   // basic Chisel arguments
   val chiselArgs = Array("--fint-write-vcd")
 
-  private def generateActionsFromRegMap(regs: Map[Int, Option[ControlRegister]]): Seq[MasterAction] =
+  private def generateActionsFromRegMap(regs: Map[Long, Option[ControlRegister]]): Seq[MasterAction] =
     regs.toSeq.sortBy(_._1) map { _ match {
       case (i, Some(r)) => r match {
         case c: Register         => Seq(MasterWrite(i, i), MasterRead(i))
@@ -52,7 +52,7 @@ class RegisterFileSpec extends ChiselFlatSpec with Checkers {
       case (i, None) => Seq(MasterRead(i), MasterWrite(i, i))
     }} reduce (_ ++ _)
 
-  private def genericTest(width: DataWidth, regs: Map[Int, Option[ControlRegister]])
+  private def genericTest(width: DataWidth, regs: Map[Long, Option[ControlRegister]])
                          (implicit axi: Axi4Lite.Configuration) = {
     val testDir = "test/axi4lite/RegisterFileSpec/generic/%d/%d".format(width: Int, scala.util.Random.nextInt)
     println(s"Test results here: $testDir, width = $width")
@@ -62,7 +62,7 @@ class RegisterFileSpec extends ChiselFlatSpec with Checkers {
       { m => new GenericTester(width, regs, m) }
   }
 
-  private class GenericTester(width: DataWidth, regs: Map[Int, Option[ControlRegister]], m: RegFileTest) extends PeekPokeTester(m) {
+  private class GenericTester(width: DataWidth, regs: Map[Long, Option[ControlRegister]], m: RegFileTest) extends PeekPokeTester(m) {
     def waitForReadData {
       if (peek(m.io.rdata.valid) != 0) {
         println("read data is still valid at start of waitForReadData, waiting ...")
