@@ -312,11 +312,17 @@ namespace eval platform {
       set offset 0x43C00000
       set pen 0
       foreach pe $pes {
-        set usrs [lsort [get_bd_addr_segs $pe/*]]
+        set usrs [lsort [get_bd_addr_segs $pe/* -filter { USAGE != memory }]]
         for {set i 0} {$i < [llength $usrs]} {incr i; incr offset 0x10000} {
           set range [get_property RANGE [lindex $usrs $i]]
           puts [format "  PE $pe ([get_property VLNV $pe]) at 0x%08x (range: 0x%08x) of $host_addr_space" $offset $range]
-          create_bd_addr_seg -range $range -offset $offset $host_addr_space [lindex $usrs $i] "USR_${pen}_SEG$i"
+          create_bd_addr_seg -range $range -offset $offset $host_addr_space [lindex $usrs $i] "PE_${pen}_SEG$i"
+        }
+        set usrs [lsort [get_bd_addr_segs $pe/* -filter { USAGE == memory }]]
+        for {set i 0} {$i < [llength $usrs]} {incr i; incr offset 0x10000} {
+          set range [get_property RANGE [lindex $usrs $i]]
+          puts [format "  PE $pe ([get_property VLNV $pe]) at 0x%08x (range: 0x%08x) of $host_addr_space" $offset $range]
+          create_bd_addr_seg -range $range -offset $offset $host_addr_space [lindex $usrs $i] "PE_MEM_${pen}_SEG$i"
         }
         incr pen
       }
