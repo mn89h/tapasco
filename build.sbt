@@ -31,6 +31,6 @@ lazy val packaging = project.in(file("packaging"))
 
 lazy val tapascostatus = (project in file(".")).dependsOn(packaging, axiutils, axiutils % "test->test").aggregate(packaging)
 
-cleanFiles += (baseDirectory.value / "test")
+cleanFiles ++= Seq((baseDirectory.value / "test"), (baseDirectory.value / "ip"))
 
 aggregate in test := false

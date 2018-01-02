@@ -24,7 +24,7 @@ package object tapasco_status {
       require(release > 0, s"release $release is invalid, must be > 0")
       def year: Int
       def release: Int
-      def toHex: String = "0x%04x%04x".format(year, release)
+      def toHex: String = "%04x%04x".format(year, release)
       def unapply: (String, Int, Int)
     }
     final case class Tapasco(year: Int, release: Int) extends Version {
