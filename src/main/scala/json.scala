@@ -6,6 +6,7 @@ import  play.api.libs.json.Reads._
 import  play.api.libs.functional.syntax._
 
 package object json {
+  /** @{ Id formats */
   implicit object SlotIdFormats extends Format[SlotId] {
     def reads(json: JsValue): JsResult[SlotId] = json match {
       case JsNumber(n) => JsSuccess(SlotId(n.toInt))
@@ -29,7 +30,9 @@ package object json {
     }
     def writes(sz: Size): JsValue = Json.toJson(sz: Int)
   }
+  /** Id formats @} */
 
+  /** @{ Slot.Kernel */
   implicit val kernelWrites: Writes[Kernel] = (
     (JsPath \ "Type").write[String] ~
     (JsPath \ "SlotId").write[SlotId] ~
@@ -41,7 +44,9 @@ package object json {
     (JsPath \ "SlotId").read[SlotId] ~
     (JsPath \ "Kernel").read[KernelId]
   ) (Kernel.apply _)
+  /** Slot.Kernel @} */
 
+  /** @{ Slot.Memory */
   implicit val memoryWrites: Writes[Memory] = (
     (JsPath \ "Type").write[String] ~
     (JsPath \ "SlotId").write[SlotId] ~
@@ -53,7 +58,9 @@ package object json {
     (JsPath \ "SlotId").read[SlotId] ~
     (JsPath \ "Bytes").read[Size]
   ) (Memory.apply _)
+  /** Slot.Memory @} */
 
+  /** @{ Slot */
   implicit val slotReads: Reads[Slot] = kernelReads | memoryReads
 
   implicit object SlotWrites extends Writes[Slot] {
@@ -62,7 +69,9 @@ package object json {
       case m: Memory => memoryWrites.writes(m)
     }
   }
+  /** Slot @} */
 
+  /** @{ Versions */
   implicit val versionWrites: Writes[Versions.Version] = (
     (JsPath \ "Software").write[String] ~
     (JsPath \ "Year").write[Int] ~
@@ -106,7 +115,9 @@ package object json {
     }
     def writes(v: Versions): JsValue = Json.toJson(Seq(v.vivado, v.tapasco))
   }
+  /** Versions @} */
 
+  /** @{ Clocks */
   implicit val freqWrites: Writes[Clocks.Frequency] = (
     (JsPath \ "Domain").write[String] ~
     (JsPath \ "Frequency").write[Double]
@@ -140,7 +151,9 @@ package object json {
     }
     def writes(c: Clocks): JsValue = Json.toJson(Seq(c.host, c.design, c.memory))
   }
+  /** Clocks @} */
 
+  /** @{ Status */
   implicit val statusFormat: Format[Status] = (
     (JsPath \ "Composition").format[Seq[Slot]] ~
     (JsPath \ "Timestamp").format[Int] ~
@@ -148,4 +161,6 @@ package object json {
     (JsPath \ "Versions").format[Versions] ~
     (JsPath \ "Clocks").format[Clocks]
   ) (Status.apply _, unlift(Status.unapply _))
+  /** Status @} */
 }
+// vim: foldmethod=marker foldmarker=@{,@} foldlevel=0
