@@ -6,7 +6,7 @@ REPO_URLS=`for r in $REPOS; do echo $URL/$r.git; done`
 
 echo "Installing Chisel3 dependencies in $DIR ..."
 
-if [ $1 == "clean" ]; then
+if [ "$1" = "clean" ]; then
 	rm -rf $DIR
 else
 	mkdir -p $DIR
