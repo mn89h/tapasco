@@ -21,7 +21,7 @@ libraryDependencies ++= (Seq("chisel3","chisel-iotesters").map {
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.4" % "test",
   "org.scalacheck" %% "scalacheck" % "1.13.5" % "test",
-  "com.typesafe.play" %% "play-json" % "2.6.3",
+  "com.typesafe.play" %% "play-json" % "2.6.8",
   "org.scalactic" %% "scalactic" % "3.0.4"
 )
 
