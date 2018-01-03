@@ -42,6 +42,18 @@ class RegisterFileSpec extends ChiselFlatSpec with Checkers {
   // basic Chisel arguments
   val chiselArgs = Array("--fint-write-vcd")
 
+  behavior of "RegisterFile"
+
+  it should "behave correctly for arbitrary configurations" in
+    check(forAll(chisel.axi.generators.Axi4Lite.configurationGen) { cfg =>
+      forAllNoShrink(registerMapGen(cfg.dataWidth)) { regs =>
+        implicit val axi = cfg.copy(addrWidth = chisel.axi.AddrWidth(32))
+        RegisterFileSpec.genericTest(chiselArgs, cfg.dataWidth, regs)
+      }
+    }, minSuccessful(100))
+}
+
+object RegisterFileSpec {
   private def generateActionsFromRegMap(regs: Map[Long, Option[ControlRegister]]): Seq[MasterAction] =
     regs.toSeq.sortBy(_._1) map { _ match {
       case (i, Some(r)) => r match {
@@ -52,8 +64,8 @@ class RegisterFileSpec extends ChiselFlatSpec with Checkers {
       case (i, None) => Seq(MasterRead(i), MasterWrite(i, i + 1))
     }} reduce (_ ++ _)
 
-  private def genericTest(width: DataWidth, regs: Map[Long, Option[ControlRegister]])
-                         (implicit axi: Axi4Lite.Configuration) = {
+  def genericTest(chiselArgs: Array[String], width: DataWidth, regs: Map[Long, Option[ControlRegister]])
+                 (implicit axi: Axi4Lite.Configuration, logLevel: Logging.Level) = {
     val testDir = "test/axi4lite/RegisterFileSpec/generic/%d/%d".format(width: Int, scala.util.Random.nextInt)
     println(s"Test results here: $testDir, width = $width")
     val args = chiselArgs ++ Array("--target-dir", testDir)
@@ -62,7 +74,9 @@ class RegisterFileSpec extends ChiselFlatSpec with Checkers {
       { m => new GenericTester(width, regs, m) }
   }
 
-  private class GenericTester(width: DataWidth, regs: Map[Long, Option[ControlRegister]], m: RegFileTest) extends PeekPokeTester(m) {
+  private class GenericTester(width: DataWidth,
+                              regs: Map[Long, Option[ControlRegister]],
+                              m: RegFileTest) extends PeekPokeTester(m) {
     def waitForReadData {
       if (peek(m.io.rdata.valid) != 0) {
         println("read data is still valid at start of waitForReadData, waiting ...")
@@ -146,14 +160,4 @@ class RegisterFileSpec extends ChiselFlatSpec with Checkers {
       }
     }}
   }
-
-  behavior of "RegisterFile"
-
-  it should "behave correctly for arbitrary configurations" in
-    check(forAll(chisel.axi.generators.Axi4Lite.configurationGen) { cfg =>
-      forAllNoShrink(registerMapGen(cfg.dataWidth)) { regs =>
-        implicit val axi = cfg.copy(addrWidth = chisel.axi.AddrWidth(32))
-        genericTest(cfg.dataWidth, regs)
-      }
-    }, minSuccessful(100))
 }
