@@ -1,0 +1,32 @@
+{
+  "Composition" : [ {
+    "Type" : "Kernel",
+    "SlotId" : 0,
+    "Kernel" : 12
+  }, {
+    "Type" : "Memory",
+    "SlotId" : 1,
+    "Bytes" : 8192
+  } ],
+  "Timestamp" : 12,
+  "Interrupt Controllers" : 1,
+  "Versions" : [ {
+    "Software" : "Vivado",
+    "Year" : 2017,
+    "Release" : 2
+  }, {
+    "Software" : "TaPaSCo",
+    "Year" : 2018,
+    "Release" : 1
+  } ],
+  "Clocks" : [ {
+    "Domain" : "Host",
+    "Frequency" : 50
+  }, {
+    "Domain" : "Design",
+    "Frequency" : 100
+  }, {
+    "Domain" : "Memory",
+    "Frequency" : 200
+  } ]
+}
