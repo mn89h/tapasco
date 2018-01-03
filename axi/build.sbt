@@ -4,7 +4,7 @@ organization := "esa.cs.tu-darmstadt.de"
 
 version := "0.4-SNAPSHOT"
 
-scalaVersion := "2.11.11"
+scalaVersion := "2.11.12"
 
 resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
