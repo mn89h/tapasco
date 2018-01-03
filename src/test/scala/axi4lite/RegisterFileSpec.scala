@@ -30,6 +30,10 @@ class RegFileTest(val size: Int, val off: Int, regs: Map[Long, ControlRegister],
     val wresp = Irrevocable(new chisel.axi.Axi4Lite.WriteResponse)
     val finished = Output(Bool())
   })
+  m.io.start        := 0.U
+  m.io.restart      := 0.U
+  m.io.out.ready    := true.B
+  m.io.w_resp.ready := true.B
   m.io.maxi         <> saxi.io.saxi
   io.finished       := m.io.finished
   io.wresp          <> saxi.io.saxi.writeResp
