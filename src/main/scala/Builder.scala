@@ -25,7 +25,7 @@ object Builder {
     )
   }
 
-  private def makeConfiguration(status: Status): RegisterFile.Configuration = RegisterFile.Configuration(
+  def makeConfiguration(status: Status): RegisterFile.Configuration = RegisterFile.Configuration(
     regs = (Seq[(Long, ControlRegister)](
       0x00L -> new ConstantRegister(Some("Magic ID"), value = BigInt("E5AE1337", 16)),
       0x04L -> new ConstantRegister(Some("Int Count"), value = BigInt(status.interruptControllers)),
