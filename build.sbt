@@ -2,9 +2,9 @@ name := "tapasco-status"
 
 organization := "esa.cs.tu-darmstadt.de"
 
-version := "0.1-SNAPSHOT"
+version := "1.0-SNAPSHOT"
 
-scalaVersion := "2.11.11"
+scalaVersion := "2.11.12"
 
 resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
@@ -34,3 +34,12 @@ lazy val tapascostatus = (project in file(".")).dependsOn(packaging, axiutils, a
 cleanFiles ++= Seq((baseDirectory.value / "test"), (baseDirectory.value / "ip"))
 
 aggregate in test := false
+
+lazy val chiselSetupTask = TaskKey[Unit]("chiselSetup", "Build latest chisel libs from source")
+
+chiselSetupTask := {
+  import sys.process._
+  "./chiselSetup.sh" !
+}
+
+compile in Compile <<= (compile in Compile).dependsOn(chiselSetupTask)
