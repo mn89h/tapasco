@@ -40,7 +40,7 @@ object Builder {
     regs = (Seq[(Long, ControlRegister)](
       0x00L -> new ConstantRegister(Some("Magic ID"), value = BigInt("E5AE1337", 16)),
       0x04L -> new ConstantRegister(Some("Int Count"), value = BigInt(status.interruptControllers)),
-      0x08L -> new ConstantRegister(Some("Capabilities_0"), value = BigInt(0)), // FIXME CAPABILITIES_0
+      0x08L -> new ConstantRegister(Some("Capabilities_0"), value = BigInt(status.capabilities.cap0)),
       0x10L -> new ConstantRegister(Some("Vivado Version"), value = BigInt(status.versions.vivado.toHex, 16)),
       0x14L -> new ConstantRegister(Some("Vivado Version"), value = BigInt(status.versions.tapasco.toHex, 16)),
       0x18L -> new ConstantRegister(Some("Bitstream Timestamp"), value = BigInt(status.timestamp)),
