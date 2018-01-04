@@ -54,12 +54,11 @@ package object tapasco_status {
     }
   }
 
-  sealed trait Slot {
-    def slot: SlotId
-  }
+  sealed trait Slot { def slot: SlotId }
   object Slot {
     final case class Kernel(slot: SlotId, kernel: KernelId) extends Slot
     final case class Memory(slot: SlotId, size: Size) extends Slot
+    final case class Empty (slot: SlotId) extends Slot
   }
 
   final case class Status(config: Seq[Slot],

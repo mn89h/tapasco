@@ -14,15 +14,26 @@ object Builder {
   implicit val axi: Axi4Lite.Configuration = Axi4Lite.Configuration(dataWidth = Axi4Lite.Width32,
                                                                     addrWidth = AddrWidth(12))
 
+  private final val emptySlot = new ConstantRegister(Some("Empty Slot"), value = BigInt(0))
+
   private def makeRegister(s: Slot): Seq[(Long, ControlRegister)] = s match {
     case k: Slot.Kernel => Seq(
-      256L + s.slot * 16L -> new ConstantRegister(Some("Slot ${s.slot} Kernel ID"), value = BigInt(k.kernel)),
-      260L + s.slot * 16L -> new ConstantRegister(Some("Slot ${s.slot} Local Mem"), value = BigInt(0))
+      256L + s.slot * 16L -> new ConstantRegister(Some(s"Slot ${s.slot} Kernel ID"), value = BigInt(k.kernel)),
+      260L + s.slot * 16L -> new ConstantRegister(Some(s"Slot ${s.slot} Local Mem"), value = BigInt(0))
     )
     case m: Slot.Memory => Seq(
-      256L + s.slot * 16L -> new ConstantRegister(Some("Slot ${s.slot} Kernel ID"), value = BigInt(0)),
-      260L + s.slot * 16L -> new ConstantRegister(Some("Slot ${s.slot} Local Mem"), value = BigInt(m.size))
+      256L + s.slot * 16L -> new ConstantRegister(Some(s"Slot ${s.slot} Kernel ID"), value = BigInt(0)),
+      260L + s.slot * 16L -> new ConstantRegister(Some(s"Slot ${s.slot} Local Mem"), value = BigInt(m.size))
     )
+    case k: Slot.Empty  => Seq(
+      256L + s.slot * 16L -> emptySlot,
+      260L + s.slot * 16L -> emptySlot
+    )
+  }
+
+  private def fillEmptySlots(ss: Seq[Slot]): Seq[Slot] = {
+    val slotIds: Set[Int] = (ss map (_.slot: Int)).toSet
+    ss ++ (for (x <- 0 until NUM_SLOTS if !(slotIds.contains(x))) yield Slot.Empty(x))
   }
 
   def makeConfiguration(status: Status): RegisterFile.Configuration = RegisterFile.Configuration(
@@ -36,45 +47,49 @@ object Builder {
       0x1CL -> new ConstantRegister(Some("Host Clock (Hz)"), value = BigInt(status.clocks.host.frequency.toLong)),
       0x20L -> new ConstantRegister(Some("Design Clock (Hz)"), value = BigInt(status.clocks.design.frequency.toLong)),
       0x24L -> new ConstantRegister(Some("Memory Clock (Hz)"), value = BigInt(status.clocks.memory.frequency.toLong))
-    ) ++ ((status.config map (makeRegister _) fold Seq()) (_ ++ _))).toMap
+    ) ++ ((fillEmptySlots(status.config) map (makeRegister _) fold Seq()) (_ ++ _))).toMap
   )
 
-  private def makeBuilder(status: Status): chisel.packaging.ModuleBuilder = new chisel.packaging.ModuleBuilder {
+  private def makeBuilder(base: Path, status: Status): chisel.packaging.ModuleBuilder = new chisel.packaging.ModuleBuilder {
     val configuration = makeConfiguration(status)
     val modules: Seq[ModuleDef] = Seq(
       ModuleDef(
-        None,
-        () => new RegisterFile(configuration),
-        CoreDefinition(
+        Some(configuration),
+        () => new RegisterFile(configuration) { override def desiredName = "tapasco_status" },
+        CoreDefinition.withActions(
           name = "tapasco_status",
           vendor = "esa.cs.tu-darmstadt.de",
           library = "tapasco",
           version = "1.2",
-          root = makePath(status).toString,
-          interfaces = Seq(Interface(name = "saxi", kind = "axi4slave"))
+          root = makePath(base, status).toString,
+          interfaces = Seq(Interface(name = "s_axi", kind = "axi4slave")),
+          postBuildActions = Seq(_ match {
+            case Some(cfg: RegisterFile.Configuration) => cfg.dumpAddressMap(makePath(base, status).toString)
+            case _ => ()
+          })
         )
       )
     )
   }
 
-  private def makePath(status: Status): Path =
-    Paths.get(".").toAbsolutePath.resolve("ip").resolve("%08x".format(status.hashCode)).normalize
+  private def makePath(base: Path, status: Status): Path = base.resolve("%08x".format(status.hashCode))
 
   def main(args: Array[String]) {
-    require (args.length == 1, "expected exactly one argument: the name of the json configuration file")
+    require (args.length == 2, "expected exactly two arguments: the base path for IP cores and the name of the json configuration file")
     try {
-      val json = Json.parse(Source.fromFile(args(0)).getLines mkString " ")
+      val base = Paths.get(args(0)).toAbsolutePath.normalize
+      val json = Json.parse(Source.fromFile(args(1)).getLines mkString " ")
       val status: Status = Json.fromJson[Status](json).get
       val hash = "%08x".format(status.hashCode)
-      val path = makePath(status)
+      val path = makePath(base, status)
       println("Read configuration:")
       println(Json.prettyPrint(json))
       println("Status:")
       println(status)
-      if (makePath(status).toFile.exists) {
+      if (path.toFile.exists) {
         println(s"IP for configuration 0x$hash already exists, no need to build")
       } else {
-        makeBuilder(status).main(Array("tapasco_status"))
+        makeBuilder(base, status).main(Array(base.toString, "tapasco_status"))
       }
       println(s"Finished, IP Core is located in $path")
     } catch {

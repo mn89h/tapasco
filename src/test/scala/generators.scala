@@ -50,8 +50,13 @@ package object generators {
     k <- genSize
   } yield Slot.Memory(slotId getOrElse s, k)
 
+  implicit def genEmpty(slotId: Option[SlotId] = None): Gen[Slot.Empty] = for {
+    s <- genSlotId
+  } yield Slot.Empty(slotId getOrElse s)
+
   implicit def genSlot(slotId: Option[SlotId] = None): Gen[Slot] = Gen.oneOf(genKernel(slotId),
-                                                                             genMemory(slotId))
+                                                                             genMemory(slotId),
+                                                                             genEmpty(slotId))
 
   val genInterruptControllers: Gen[Int] = Gen.choose(1, 4)
 

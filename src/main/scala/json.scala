@@ -60,13 +60,26 @@ package object json {
   ) (Memory.apply _)
   /** Slot.Memory @} */
 
+  /** @{ Slot.Empty */
+  implicit val emptyWrites: Writes[Empty] = (
+    (JsPath \ "Type").write[String] ~
+    (JsPath \ "SlotId").write[SlotId]
+  ) (e => ("Empty", e.slot))
+
+  val emptyReads: Reads[Slot] = (
+    (JsPath \ "Type").read[String] (verifying[String](_.toLowerCase equals "empty")) ~>
+    (JsPath \ "SlotId").read[SlotId]
+  ) .fmap(Empty.apply _)
+  /** Slot.Empty @} */
+
   /** @{ Slot */
-  implicit val slotReads: Reads[Slot] = kernelReads | memoryReads
+  implicit val slotReads: Reads[Slot] = kernelReads | memoryReads | emptyReads
 
   implicit object SlotWrites extends Writes[Slot] {
     def writes(c: Slot): JsValue = c match {
       case k: Kernel => kernelWrites.writes(k)
       case m: Memory => memoryWrites.writes(m)
+      case e: Empty  => emptyWrites.writes(e)
     }
   }
   /** Slot @} */
