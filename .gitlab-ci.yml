@@ -28,4 +28,5 @@ before_script:
 test:
   script:
     # Execute your projects tests
+    - ./chiselSetup.sh
     - sbt clean test
