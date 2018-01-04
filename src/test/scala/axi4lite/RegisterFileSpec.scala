@@ -26,7 +26,7 @@ class RegFileTest(val size: Int, val off: Int, regs: Map[Long, ControlRegister],
   val saxi = Module(new RegisterFile(cfg))
   val m = Module(new ProgrammableMaster(actions))
   val io = IO(new Bundle {
-    val rdata = Irrevocable(saxi.io.saxi.readData.bits.cloneType)
+    val rdata = Irrevocable(saxi.io.s_axi.readData.bits.cloneType)
     val wresp = Irrevocable(new chisel.axi.Axi4Lite.WriteResponse)
     val finished = Output(Bool())
   })
@@ -34,10 +34,10 @@ class RegFileTest(val size: Int, val off: Int, regs: Map[Long, ControlRegister],
   m.io.restart      := 0.U
   m.io.out.ready    := true.B
   m.io.w_resp.ready := true.B
-  m.io.maxi         <> saxi.io.saxi
+  m.io.maxi         <> saxi.io.s_axi
   io.finished       := m.io.finished
-  io.wresp          <> saxi.io.saxi.writeResp
-  io.rdata          <> saxi.io.saxi.readData
+  io.wresp          <> saxi.io.s_axi.writeResp
+  io.rdata          <> saxi.io.s_axi.readData
 }
 
 /** Unit test suite for Axi4LiteRegisterFile module. **/
