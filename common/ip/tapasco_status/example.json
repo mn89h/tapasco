@@ -28,5 +28,8 @@
   }, {
     "Domain" : "Memory",
     "Frequency" : 200
-  } ]
+  } ],
+  "Capabilities" : {
+    "Capabilities 0" : 1
+  }
 }
