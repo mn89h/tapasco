@@ -42,4 +42,7 @@ chiselSetupTask := {
   "./chiselSetup.sh" !
 }
 
-compile in Compile <<= (compile in Compile).dependsOn(chiselSetupTask)
+(compile in Compile) := {
+  val x = chiselSetupTask.value
+  (compile in Compile).value
+}
