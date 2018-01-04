@@ -9,7 +9,7 @@ package object tapasco_status {
   }
 
   final case class KernelId(id: Int) {
-    require (id > 0, s"kernel id $id is invalid, must be > 0")
+    require (id >= 0, s"kernel id $id is invalid, must be >= 0")
   }
 
   final case class Size(size: Int) {

@@ -27,6 +27,7 @@ namespace eval platform {
   namespace eval zynq {
     namespace export create
     namespace export max_masters
+    namespace export get_address_map
 
     # check if TAPASCO_HOME env var is set
     if {![info exists ::env(TAPASCO_HOME)]} {
@@ -40,6 +41,29 @@ namespace eval platform {
 
     proc max_masters {} {
       return [list 64 64]
+    }
+
+    proc get_address_map {} {
+      set ret [list]
+      set pes [lsort [arch::get_processing_elements]]
+      set offset 0x43C00000
+      foreach pe $pes {
+        set usrs [lsort [get_bd_addr_segs $pe/* -filter { USAGE != memory }]]
+        for {set i 0} {$i < [llength $usrs]} {incr i; incr offset 0x10000} {
+          set seg [lindex $usrs $i]
+          set intf [get_bd_intf_pins -of_objects $seg]
+          set range [get_property RANGE $seg]
+          lappend ret "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind register"
+        }
+        set usrs [lsort [get_bd_addr_segs $pe/* -filter { USAGE == memory }]]
+        for {set i 0} {$i < [llength $usrs]} {incr i; incr offset 0x10000} {
+          set seg [lindex $usrs $i]
+          set intf [get_bd_intf_pins -of_objects $seg]
+          set range [get_property RANGE $seg]
+          lappend ret "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind memory"
+        }
+      }
+      return $ret
     }
 
     # Setup the clock network.
@@ -396,13 +420,14 @@ namespace eval platform {
       set gp0_out [tapasco::create_interconnect_tree "gp0_out" 2 false]
       connect_bd_intf_net [get_bd_intf_pins "$ss_host/M_AXI_GP0"] [get_bd_intf_pins "$gp0_out/S000_AXI"]
       connect_bd_intf_net [get_bd_intf_pins "$gp0_out/M000_AXI"] [get_bd_intf_pins "/uArch/S_AXI"]
-      connect_bd_intf_net [get_bd_intf_pins "$gp0_out/M001_AXI"] [get_bd_intf_pins "$tapasco_status/S00_AXI"]
+      connect_bd_intf_net [get_bd_intf_pins "$gp0_out/M001_AXI"] [get_bd_intf_pins "$tapasco_status/s_axi"]
       connect_bd_net [get_bd_pins "$ss_cnr/host_aclk"] \
           [get_bd_pins -filter {TYPE == clk && DIR == I} -of_objects $tapasco_status] \
           [get_bd_pins -filter {TYPE == clk && DIR == I} -of_objects $gp0_out]
       connect_bd_net [get_bd_pins "$ss_cnr/host_peripheral_aresetn"] \
-          [get_bd_pins -filter {TYPE == rst && DIR == I} -of_objects $tapasco_status] \
           [get_bd_pins -filter {DIR == I && NAME =~ "*peripheral_aresetn"} -of_objects $gp0_out]
+      connect_bd_net [get_bd_pins -hier -of_objects $ss_cnr -filter {TYPE == rst && DIR == O && CONFIG.POLARITY == ACTIVE_HIGH && PATH =~ *host*peripheral* }] \
+          [get_bd_pins -filter {TYPE == rst && DIR == I} -of_objects $tapasco_status]
       connect_bd_net [get_bd_pins "$ss_cnr/host_interconnect_aresetn"] \
           [get_bd_pins -filter {DIR == I && NAME =~ "*interconnect_aresetn"} -of_objects $gp0_out]
 

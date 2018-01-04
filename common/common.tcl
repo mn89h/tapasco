@@ -20,6 +20,9 @@
 # @brief	Common Vivado Tcl helper procs to create block designs.
 # @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 #
+source -notrace "$::env(TAPASCO_HOME)/common/json_write.tcl"
+package require json::write
+
 namespace eval tapasco {
   namespace export createBinaryCounter
   namespace export createClockingWizard
@@ -47,6 +50,9 @@ namespace eval tapasco {
   namespace export get_number_of_processors
   namespace export get_speed_grade
   namespace export get_wns_from_timing_report
+  namespace export get_capabilities_flags
+  namespace export set_capabilities_flags
+  namespace export add_capabilities_flag
 
   namespace export create_interconnect_tree
 
@@ -353,62 +359,45 @@ namespace eval tapasco {
   # @param ids  List of kernel IDs.
   proc createTapascoStatus {name {ids {}}} {
     variable stdcomps
+    set json [make_status_config_json]
+    set json_file "[file normalize [pwd]]/tapasco_status.json"
     puts "Creating TPC Status ..."
     puts "  VLNV: [dict get $stdcomps tapasco_status vlnv]"
     puts "  IDs : $ids"
-
-    # check if ids are given, otherwise fetch automatically
-    if {[llength $ids] > 0} {
-      set c $ids
-    } {
-      set c [list]
-      set composition [tapasco::get_composition]
-      set no_kinds [llength [dict keys $composition]]
-      for {set i 0} {$i < $no_kinds} {incr i} {
-        set no_inst [dict get $composition $i count]
-        for {set j 0} {$j < $no_inst} {incr j} {
-          lappend c [dict get $composition $i id]
-        }
-      }
+    puts "  Status: $json_file $json"
+    if {[catch {open $json_file "w"} f]} {
+      error "could not open file $json_file!"
+    } else {
+      puts -nonewline $f $json
+      close $f
     }
 
-    # make map of IDs -> number of slave interfaces
-    set composition [tapasco::get_composition]
-    set no_kinds [llength [dict keys $composition]]
-    set no_slaves [list]
-    for {set i 0} {$i < $no_kinds} {incr i} {
-      lappend no_slaves [dict get $composition $i id]
-      lappend no_slaves [llength [arch::get_aximm_interfaces $i 0 "Slave"]]
+    # generate core
+    set old_pwd [pwd]
+    cd $::env(TAPASCO_HOME)/common/ip/tapasco_status 
+    if {[catch {exec -ignorestderr which sbt} sbt]} {
+      error "could not find sbt"
+    } else {
+      puts "  SBT: $sbt"
     }
-    puts "  Slvs: $no_slaves"
+    if {[catch {exec -ignorestderr $sbt "run $::env(TAPASCO_HOME)/tapasco-status-cache $json_file" | tee ${json_file}.log >@stdout 2>@1}]} {
+      puts stderr "Building TaPaSCO status core failed, see ${json_file}.log:"
+      puts stderr [read [open ${json_file}.log r]]
+      error "Could not build status core."
+    }
+    cd $old_pwd
+
+    # parse log and add custom IP path to IP_REPO_PATHS
+    set log [read [open ${json_file}.log r]]
+    set ip_path [regsub {.*Finished, IP Core is located in ([^ \n\t]*).*} $log {\1}]
+    puts "  Path to custom IP: $ip_path"
+    set ip_repo_paths [get_property IP_REPO_PATHS [current_project]]
+    lappend ip_repo_paths $ip_path
+    set_property IP_REPO_PATHS $ip_repo_paths [current_project]
+    update_ip_catalog
 
     # create the IP core
-    set inst [create_bd_cell -type ip -vlnv [dict get $stdcomps tapasco_status vlnv] $name]
-    # make properties list
-    set props [list]
-    set slot 0
-    foreach i $c {
-      puts "  slot #$slot = $i"
-      if {$slot < 128} {
-        lappend props "[format CONFIG.C_SLOT_KERNEL_ID_%d [expr $slot + 1]]" "$i"
-      }
-      incr slot [dict get $no_slaves $i]
-    }
-    # get version strings
-    set vversion [split [version -short] {.}]
-    set tversion [split [tapasco::get_tapasco_version] {.}]
-
-    lappend props "CONFIG.C_INTC_COUNT" "[expr [llength $c] > 96 ? 4 : ([llength $c] > 64 ? 3 : ([llength $c] > 32 ? 2 : 1))]"
-    lappend props "CONFIG.C_GEN_TS" "[clock seconds]"
-    lappend props "CONFIG.C_VIVADO_VERSION" [format "0x%04x%04x" [expr [lindex $vversion 0]] [expr [lindex $vversion 1]]]
-    lappend props "CONFIG.C_TAPASCO_VERSION" [format "0x%04x%04x" [expr [lindex $tversion 0]] [expr [lindex $tversion 1]]]
-    lappend props "CONFIG.C_HOST_CLK_MHZ" [format "%d" [tapasco::get_host_frequency]]
-    lappend props "CONFIG.C_MEM_CLK_MHZ" [format "%d" [tapasco::get_mem_frequency]]
-    lappend props "CONFIG.C_DESIGN_CLK_MHZ" [format "%d" [tapasco::get_design_frequency]]
-
-    puts "  properties: $props"
-    set_property -dict $props $inst
-    return $inst
+    return [create_bd_cell -type ip -vlnv [dict get $stdcomps tapasco_status vlnv] $name]
   }
 
   # Instantiates an AXI protocol converter.
@@ -982,5 +971,67 @@ namespace eval tapasco {
   # Returns the speed grade of the FPGA part in the current design.
   proc get_speed_grade {} {
     return [get_property SPEED [get_parts [get_property PART [current_project]]]]
+  }
+
+  set capabilities_0 0
+
+  # Returns the value of the CAPABILITIES_0 bitfield as currently configured.
+  proc get_capabilities_flags {} {
+    variable capabilities_0
+    return $capabilities_0
+  }
+
+  # Sets the value of the CAPABILITIES_0 bitfield.
+  proc set_capabilities_flags {flags} {
+    variable capabilities_0
+    puts [format "Setting Capability bitfield to new value 0x%08x (%d)." $flags $flags]
+    set capabilities_0 $flags
+  }
+
+  # Adds a specific bit to the CAPABILITIES_0 bitfield.
+  proc add_capabilities_flag {bit} {
+    variable capabilities_0
+    if {$bit < 0 || $bit > 31} { error "Invalid bit index: $bit" }
+    set flags [get_capabilities_flags]
+    set nflags [expr "$flags | (1 << $bit)"]
+    puts [format "Adding bit #$bit to capability bitfield: 0x%08x (%d) -> 0x%08x (%d)." $flags $flags $nflags $nflags]
+    set capabilities_0 $nflags
+  }
+
+  # Generate JSON configuration for the status core.
+  proc make_status_config_json {} {
+    set addr [platform::get_address_map]
+    set slots [list]
+    set slot_id 0
+    foreach a $addr {
+      if {[dict get $a "kind"] != "memory"} {
+        set kind [format "%d" [regsub {.*target_ip_([0-9][0-9]).*} [dict get $a "interface"] {\1}]]
+        set kid [dict get [tapasco::get_composition] $kind id]
+        lappend slots [json::write object "Type" [json::write string "Kernel"] "SlotId" $slot_id "Kernel" $kid]
+      } else {
+        lappend slots [json::write object "Type" [json::write string "Memory"] "SlotId" $slot_id "Bytes" [format "%d" [dict get $a "range"]]]
+      }
+      incr slot_id
+    }
+
+    set regex {([0-9][0-9][0-9][0-9]).([0-9][0-9]*)}
+    set no_pes [llength [arch::get_processing_elements]]
+    set no_intc [expr "$no_pes > 96 ? 4 : ($no_pes > 64 ? 3 : ($no_pes > 32 ? 2 : 1))"]
+
+    return [json::write object \
+      "Composition" [json::write array {*}$slots] \
+      "Timestamp" [clock seconds] \
+      "Interrupt Controllers" $no_intc \
+      "Versions" [json::write array \
+        [json::write object "Software" [json::write string "Vivado"] "Year" [regsub $regex [version -short] {\1}] "Release" [regsub $regex [version -short] {\2}]] \
+        [json::write object "Software" [json::write string "TaPaSCo"] "Year" [regsub $regex [tapasco::get_tapasco_version] {\1}] "Release" [regsub $regex [tapasco::get_tapasco_version] {\2}]] \
+      ] \
+      "Clocks" [json::write array \
+        [json::write object "Domain" [json::write string "Host"] "Frequency" [tapasco::get_host_frequency]] \
+        [json::write object "Domain" [json::write string "Design"] "Frequency" [tapasco::get_design_frequency]] \
+        [json::write object "Domain" [json::write string "Memory"] "Frequency" [tapasco::get_host_frequency]] \
+      ] \
+      "Capabilities" [json::write object "Capabilities 0" [get_capabilities_flags]] \
+    ]
   }
 }

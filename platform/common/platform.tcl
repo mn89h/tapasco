@@ -22,6 +22,15 @@
 #
 namespace eval platform {
   namespace export generate
+  namespace export get_address_map
+
+  # Returns the address map of the current composition.
+  # Format: <SLAVE INTF> <BASE ADDR> <RANGE> <KIND>
+  # Kind is either Mem or Register, depending on the usage.
+  # Must be implemented by Platforms.
+  proc get_address_map {} {
+    error "Platform does not implement get_address_map!"
+  }
 
   # Checks all current runs at given step for errors, outputs their log files in case.
   # @param synthesis Checks synthesis runs if true, implementation runs otherwise.

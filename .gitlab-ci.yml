@@ -15,8 +15,8 @@ before_script:
   - curl -s "https://get.sdkman.io" | bash
   - source "/root/.sdkman/bin/sdkman-init.sh"
   - sdk install sbt
-  # Log the sbt version
-  - sbt version
+  # Log the sbt version and TaPaSCo version
+  - sbt sbtVersion version
 
 test:
   script:

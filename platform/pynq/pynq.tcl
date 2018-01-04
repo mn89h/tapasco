@@ -21,6 +21,7 @@ source -notrace $::env(TAPASCO_HOME)/platform/zynq/zynq.tcl
 namespace eval platform {
   namespace export create
   namespace export max_masters
+  namespace export get_address_map
   namespace export create_clock_port
   namespace export createZynqPS
 
@@ -31,6 +32,10 @@ namespace eval platform {
 
   proc max_masters {} {
     return [zynq::max_masters]
+  }
+
+  proc get_address_map {} {
+    return [zynq::get_address_map]
   }
 
   proc create {} {
