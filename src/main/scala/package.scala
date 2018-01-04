@@ -61,11 +61,15 @@ package object tapasco_status {
     final case class Empty (slot: SlotId) extends Slot
   }
 
+  type CapBits = Long
+  final case class Capabilities(cap0: CapBits)
+
   final case class Status(config: Seq[Slot],
                           timestamp: Int,
                           interruptControllers: Int,
                           versions: Versions,
-                          clocks: Clocks) {
+                          clocks: Clocks,
+                          capabilities: Capabilities) {
     require (config.nonEmpty, "a status configuration must not be empty")
     require ((config map (_.slot)).toSet.size == config.length, "slot ids must be unique")
   }

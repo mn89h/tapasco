@@ -166,13 +166,31 @@ package object json {
   }
   /** Clocks @} */
 
+  /** @{ Capabilities **/
+  implicit object CapBitsWrites extends Writes[CapBits] {
+    def reads(json: JsValue): JsResult[CapBits] = json match {
+      case JsNumber(d) => JsSuccess(d.toLong)
+      case _           => JsError(Seq(JsPath() -> Seq(JsonValidationError("validation.error.expected.jsnumber"))))
+    }
+    def writes(cs: CapBits): JsValue = JsNumber(cs)
+  }
+
+  implicit val capabilitiesReads: Reads[Capabilities] =
+    (JsPath \ "Capabilities 0").read[CapBits] fmap (Capabilities.apply _)
+
+  implicit object CapabilitiesWrites extends Writes[Capabilities] {
+    def writes(cs: Capabilities): JsValue = JsObject(Seq("Capabilities 0" -> Json.toJson(cs.cap0)))
+  }
+  /** Capabilities @} */
+
   /** @{ Status */
   implicit val statusFormat: Format[Status] = (
     (JsPath \ "Composition").format[Seq[Slot]] ~
     (JsPath \ "Timestamp").format[Int] ~
     (JsPath \ "Interrupt Controllers").format[Int] ~
     (JsPath \ "Versions").format[Versions] ~
-    (JsPath \ "Clocks").format[Clocks]
+    (JsPath \ "Clocks").format[Clocks] ~
+    (JsPath \ "Capabilities").format[Capabilities]
   ) (Status.apply _, unlift(Status.unapply _))
   /** Status @} */
 }
