@@ -4,6 +4,13 @@
 # but an image with a JVM speeds up the build a bit.
 image: java:8
 
+cache:
+        paths:
+                - .ivy2/
+
+variables:
+        SBT_OPTS: "-Divy.home=.ivy2/ -Dsbt.ivy.home=.ivy2/ -Xss16M"
+
 before_script:
   # Enable the usage of sources over https
   - apt-get update -yqq
@@ -21,5 +28,4 @@ before_script:
 test:
   script:
     # Execute your projects tests
-    - ./chiselSetup.sh
     - sbt clean test
