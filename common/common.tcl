@@ -50,11 +50,13 @@ namespace eval tapasco {
   namespace export get_number_of_processors
   namespace export get_speed_grade
   namespace export get_wns_from_timing_report
+  namespace export get_vlnv
   namespace export get_capabilities_flags
   namespace export set_capabilities_flags
   namespace export add_capabilities_flag
 
   namespace export create_interconnect_tree
+
 
   # check if we're running inside Vivado
   if {[llength [info commands version]] > 0} {
@@ -68,6 +70,13 @@ namespace eval tapasco {
     }
   } {
     puts "Skipping IP catalog."
+  }
+
+  # Returns the VLNV for a given abstract TaPaSCo name.
+  proc get_vlnv {name} {
+    variable stdcomps
+    if {! [dict exists $stdcomps $name]} { error "VLNV for $name was not found in IP catalog!" }
+    return [dict get $stdcomps $name vlnv]
   }
 
   # Returns the Tapasco version.
