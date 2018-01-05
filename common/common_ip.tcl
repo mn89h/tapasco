@@ -1,5 +1,4 @@
 # create a dictionary of compatible VLNVs
-source $::env(TAPASCO_HOME)/common/common_ip.tcl
 dict set stdcomps axi_ic vlnv "xilinx.com:ip:axi_interconnect:2.1"
 dict set stdcomps ps vlnv "xilinx.com:ip:processing_system7:5.5"
 dict set stdcomps ps_bfm vlnv "xilinx.com:ip:processing_system7_bfm:2.0"
@@ -11,7 +10,7 @@ dict set stdcomps xlconst vlnv "xilinx.com:ip:xlconstant:1.1"
 dict set stdcomps rst_gen vlnv "xilinx.com:ip:proc_sys_reset:5.0"
 dict set stdcomps proto_conv vlnv "xilinx.com:ip:axi_protocol_converter:2.1"
 dict set stdcomps bincnt vlnv "xilinx.com:ip:c_counter_binary:12.0"
-dict set stdcomps dualdma vlnv "esa.informatik.tu-darmstadt.de:user:dual_dma:1.8"
+dict set stdcomps dualdma vlnv "esa.informatik.tu-darmstadt.de:user:dual_dma:1.9"
 dict set stdcomps oled_ctrl vlnv "esa.cs.tu-darmstadt.de:user:oled_pc:1.0"
 dict set stdcomps mm_to_lite vlnv "esa.cs.tu-darmstadt.de:user:mm_to_lite:1.0"
 dict set stdcomps system_cache vlnv "xilinx.com:ip:system_cache:3.1"
@@ -23,3 +22,7 @@ dict set stdcomps msix_intr_ctrl vlnv "esa.informatik.tu-darmstadt.de:user:MSIXI
 dict set stdcomps axi_reg_slice vlnv "xilinx.com:ip:axi_register_slice:2.1"
 dict set stdcomps dwidth_conv vlnv "xilinx.com:ip:axi_dwidth_converter:2.1"
 dict set stdcomps system_ila vlnv "xilinx.com:ip:system_ila:1.0"
+dict set stdcomps aximm_intf vlnv "xilinx.com:interface:aximm_rtl:1.0"
+dict set stdcomps tapasco_clocks_resets vlnv "esa.cs.tu-darmstadt.de:tapasco:tapasco_clocks_resets_rtl:1.0"
+dict set stdcomps clocks_resets_m vlnv "esa.cs.tu-darmstadt.de:tapasco:clocks_resets_master_bridge:1.0"
+dict set stdcomps clocks_resets_s vlnv "esa.cs.tu-darmstadt.de:tapasco:clocks_resets_slave_bridge:1.0"

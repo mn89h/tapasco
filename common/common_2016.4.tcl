@@ -1,4 +1,5 @@
 # create a dictionary of compatible VLNVs
+source $::env(TAPASCO_HOME)/common/common_ip.tcl
 dict set stdcomps axi_ic vlnv "xilinx.com:ip:axi_interconnect:2.1"
 dict set stdcomps ps vlnv "xilinx.com:ip:processing_system7:5.5"
 dict set stdcomps ps_bfm vlnv "xilinx.com:ip:processing_system7_bfm:2.0"
