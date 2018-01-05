@@ -72,22 +72,6 @@
       </spirit:wire>
     </spirit:port>
     <spirit:port>
-      <spirit:logicalName>design_interconnect_reset</spirit:logicalName>
-      <spirit:description>Interconnect active-high reset synced to design clock.</spirit:description>
-      <spirit:wire>
-        <spirit:qualifier>
-          <spirit:isReset>true</spirit:isReset>
-        </spirit:qualifier>
-        <spirit:onMaster>
-          <spirit:width>1</spirit:width>
-        </spirit:onMaster>
-        <spirit:onSlave>
-          <spirit:width>1</spirit:width>
-          <spirit:direction>in</spirit:direction>
-        </spirit:onSlave>
-      </spirit:wire>
-    </spirit:port>
-    <spirit:port>
       <spirit:logicalName>host_clk</spirit:logicalName>
       <spirit:description>Host clock (i.e., clock of host interfaces).</spirit:description>
       <spirit:wire>
@@ -152,22 +136,6 @@
       </spirit:wire>
     </spirit:port>
     <spirit:port>
-      <spirit:logicalName>host_interconnect_reset</spirit:logicalName>
-      <spirit:description>Interconnect active-high reset synced to host clock.</spirit:description>
-      <spirit:wire>
-        <spirit:qualifier>
-          <spirit:isReset>true</spirit:isReset>
-        </spirit:qualifier>
-        <spirit:onMaster>
-          <spirit:width>1</spirit:width>
-        </spirit:onMaster>
-        <spirit:onSlave>
-          <spirit:width>1</spirit:width>
-          <spirit:direction>in</spirit:direction>
-        </spirit:onSlave>
-      </spirit:wire>
-    </spirit:port>
-    <spirit:port>
       <spirit:logicalName>mem_clk</spirit:logicalName>
       <spirit:description>Memory clock (i.e., base clock for memory subsystem).</spirit:description>
       <spirit:wire>
@@ -218,22 +186,6 @@
     <spirit:port>
       <spirit:logicalName>mem_interconnect_resetn</spirit:logicalName>
       <spirit:description>Interconnect active-low reset synced to mem clock.</spirit:description>
-      <spirit:wire>
-        <spirit:qualifier>
-          <spirit:isReset>true</spirit:isReset>
-        </spirit:qualifier>
-        <spirit:onMaster>
-          <spirit:width>1</spirit:width>
-        </spirit:onMaster>
-        <spirit:onSlave>
-          <spirit:width>1</spirit:width>
-          <spirit:direction>in</spirit:direction>
-        </spirit:onSlave>
-      </spirit:wire>
-    </spirit:port>
-    <spirit:port>
-      <spirit:logicalName>mem_interconnect_reset</spirit:logicalName>
-      <spirit:description>Interconnect active-high reset synced to mem clock.</spirit:description>
       <spirit:wire>
         <spirit:qualifier>
           <spirit:isReset>true</spirit:isReset>

@@ -7,6 +7,5 @@
   <spirit:directConnection>true</spirit:directConnection>
   <spirit:isAddressable>false</spirit:isAddressable>
   <spirit:maxMasters>1</spirit:maxMasters>
-  <spirit:maxSlaves>1</spirit:maxSlaves>
   <spirit:description>Clock and reset ports of the three core clock systems: Host, Design and Memory.</spirit:description>
 </spirit:busDefinition>
