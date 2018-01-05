@@ -21,15 +21,176 @@
 # @author	J. Korinth, TU Darmstadt (jk@esa.tu-darmstadt.de)
 #
 namespace eval platform {
+  namespace export create
   namespace export generate
   namespace export get_address_map
+
+  # Creates the platform infrastructure, consisting of a number of subsystems.
+  # Subsystems "host", "clocks_and_resets", "memory", "intc" and "tapasco" are
+  # mandatory, their wiring pre-defined. Custom subsystems can be instantiated
+  # by implementing a "create_custom_subsystem_<NAME>" proc in platform::, where
+  # <NAME> is a placeholder for the name of the subsystem.
+  proc create {} {
+    set instance [current_bd_instance]
+    # create mandatory subsystems
+    set ss_host    [create_subsystem "host"]
+    set ss_cnrs    [create_subsystem "clocks_and_resets" false true]
+    set ss_mem     [create_subsystem "memory"]
+    set ss_intc    [create_subsystem "intc"]
+    set ss_tapasco [create_subsystem "tapasco"]
+
+    set sss [list $ss_cnrs $ss_host $ss_intc $ss_mem $ss_tapasco]
+
+    foreach ss $sss {
+      set name [string trim $ss "/"]
+      set cmd  "create_subsystem_$name"
+      puts "Creating subsystem $name ..."
+      if {[llength [info commands $cmd]] == 0} {
+        error "Platform does not implement mandatory command $cmd!"
+      }
+      current_bd_instance $ss
+      eval $cmd
+      current_bd_instance $instance
+    }
+
+    for {set i 1} {$i < [llength $sss]} {incr i} {
+      connect_bd_intf_net [get_bd_intf_pins [lindex $sss [expr "$i - 1"]]/M_CLOCKS_RESETS] \
+        [get_bd_intf_pins [lindex $sss $i]/S_CLOCKS_RESETS]
+    }
+    connect_bd_intf_net [get_bd_intf_pins [lindex $sss end]/M_CLOCKS_RESETS] \
+      [get_bd_intf_pins -of_objects [get_bd_cells "/uArch"] -filter "VLNV == [tapasco::get_vlnv "tapasco_clocks_resets"] && MODE == Slave"]
+
+    
+    # create custom subsystems
+    foreach ss [info commands create_custom_subsystem_*] {
+      set name [regsub {.*create_custom_subsystem_(.*)} $ss {\1}]
+      puts "Creating custom subsystem $name ..."
+      current_bd_instance [create_subsystem $name]
+      eval $ss
+      current_bd_instance $instance
+    }
+
+    wire_subsystem_wires
+    wire_subsystem_intfs
+  }
+
+  # Creates a hierarchical cell with given name and instantiates either a
+  # ClocksResetsBridgeMaster or ClocksResetsBridgeSlave, depending on whether
+  # is_reset is true or false, respectively. get_clock_reset_port can be used
+  # to access the pins in this component.
+  proc create_subsystem {name {has_slave true} {has_master true}} {
+    set instance [current_bd_instance]
+    set cell [create_bd_cell -type hier $name]
+    set intf_vlnv [tapasco::get_vlnv "tapasco_clocks_resets"]
+    current_bd_instance $cell
+
+    if {$has_master} {
+      set m_port [create_bd_intf_pin -vlnv $intf_vlnv -mode Master "M_CLOCKS_RESETS"]
+      set m_cnrs [create_bd_cell -type ip -vlnv [tapasco::get_vlnv "clocks_resets_m"] "m_cnrs"]
+      connect_bd_intf_net [get_bd_intf_pins -of_objects $m_cnrs -filter "VLNV == $intf_vlnv"] $m_port
+    }
+
+    if {$has_slave} {
+      set s_port [create_bd_intf_pin -vlnv $intf_vlnv -mode Slave "S_CLOCKS_RESETS"]
+      set s_cnrs [create_bd_cell -type ip -vlnv [tapasco::get_vlnv "clocks_resets_s"] "s_cnrs"]
+      connect_bd_intf_net $s_port [get_bd_intf_pins -of_objects $s_cnrs -filter "VLNV == $intf_vlnv"]
+    }
+
+    if {$has_master && $has_slave} {
+      # directly connect all wires
+      foreach p [get_bd_pins -of_objects $m_cnrs -filter { NAME =~ i_* }] {
+        set oname [regsub {i_} [get_property NAME $p] {o_}]
+        set op [get_bd_pins -of_objects $s_cnrs -filter "NAME == $oname"]
+        puts "  connecting $p to $op ..."
+        connect_bd_net $p $op
+      }
+    }
+
+    current_bd_instance $instance
+    return $cell
+  }
+
+  # Returns pin with given name  on the clocks and resets bridge component in
+  # the current subsystem.
+  proc get_clock_reset_port {name} {
+    set cells [get_bd_cells -filter "VLNV == [tapasco::get_vlnv clocks_resets_s] || VLNV == [tapasco::get_vlnv clocks_resets_m]"]
+    return [get_bd_pins -of_objects $cells -filter "NAME == $name && INTF == false"]
+  }
+
+  proc get_pe_base_address {} {
+    error "Platform does not implement mandatory proc get_pe_base_address!"
+  }
+
+  proc create_subsystem_tapasco {} {
+    set port [create_bd_intf_pin -vlnv [tapasco::get_vlnv "aximm_intf"] -mode Slave "S_TAPASCO"]
+    set tapasco_status [tapasco::createTapascoStatus "tapasco_status"]
+    connect_bd_intf_net $port [get_bd_intf_pins -of_objects $tapasco_status -filter "VLNV == [tapasco::get_vlnv aximm_intf] && MODE == Slave"]
+    connect_bd_net [get_clock_reset_port "o_design_clk"] [get_bd_pins -of_objects $tapasco_status -filter {TYPE == clk && DIR == I}]
+    connect_bd_net [get_clock_reset_port "o_design_peripheral_reset"] [get_bd_pins -of_objects $tapasco_status -filter {TYPE == rst && DIR == I}]
+  }
+
+  proc wire_subsystem_wires {} {
+    foreach p [get_bd_pins -of_objects [get_bd_cells] -filter {INTF == false && DIR == I}] {
+      if {[llength [get_bd_nets -of_objects $p]] == 0} {
+        set name [get_property NAME $p]
+        set type [get_property TYPE $p]
+        puts "Looking for matching source for $p ($name) with type $type ..."
+        set src [get_bd_pins -of_objects [get_bd_cells] -filter "NAME == $name && TYPE == $type && INTF == false && DIR == O"]
+        if {[llength $src] > 0} {
+          puts "  found pin: $src, connecting $p -> $src"
+          connect_bd_net $src $p
+        } else {
+          puts "  found no matching pin for $p"
+        }
+      }
+    }
+  }
+
+  proc wire_subsystem_intfs {} {
+    foreach p [get_bd_intf_pins -of_objects [get_bd_cells] -filter {MODE == Slave}] {
+      if {[llength [get_bd_intf_nets -of_objects $p]] == 0} {
+        set name [regsub {^S_} [get_property NAME $p] {M_}]
+        set vlnv [get_property VLNV $p]
+        puts "Looking for matching source for $p ($name) with VLNV $vlnv ..."
+        set srcs [lsort [get_bd_intf_pins -of_objects [get_bd_cells] -filter "NAME == $name && VLNV == $vlnv && MODE == Master"]]
+        foreach src $srcs {
+          if {[llength [get_bd_intf_nets -of_objects $src]] == 0} {
+            puts "  found pin: $src, connecting $p -> $src"
+            connect_bd_intf_net $src $p
+            break
+          } else {
+            puts "  found no matching pin for $p"
+          }
+        }
+      }
+    }
+  }
 
   # Returns the address map of the current composition.
   # Format: <SLAVE INTF> <BASE ADDR> <RANGE> <KIND>
   # Kind is either Mem or Register, depending on the usage.
   # Must be implemented by Platforms.
-  proc get_address_map {} {
-    error "Platform does not implement get_address_map!"
+  proc get_address_map {offset} {
+    set ret [list]
+    set pes [lsort [arch::get_processing_elements]]
+    #set offset 0x00300000
+    foreach pe $pes {
+      set usrs [lsort [get_bd_addr_segs $pe/* -filter { USAGE != memory }]]
+      for {set i 0} {$i < [llength $usrs]} {incr i; incr offset 0x10000} {
+        set seg [lindex $usrs $i]
+        set intf [get_bd_intf_pins -of_objects $seg]
+        set range [get_property RANGE $seg]
+        lappend ret "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind register"
+      }
+      set usrs [lsort [get_bd_addr_segs $pe/* -filter { USAGE == memory }]]
+      for {set i 0} {$i < [llength $usrs]} {incr i; incr offset 0x10000} {
+        set seg [lindex $usrs $i]
+        set intf [get_bd_intf_pins -of_objects $seg]
+        set range [get_property RANGE $seg]
+        lappend ret "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind memory"
+      }
+    }
+    return $ret
   }
 
   # Checks all current runs at given step for errors, outputs their log files in case.

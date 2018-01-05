@@ -43,27 +43,8 @@ namespace eval platform {
       return [list 64 64]
     }
 
-    proc get_address_map {} {
-      set ret [list]
-      set pes [lsort [arch::get_processing_elements]]
-      set offset 0x43C00000
-      foreach pe $pes {
-        set usrs [lsort [get_bd_addr_segs $pe/* -filter { USAGE != memory }]]
-        for {set i 0} {$i < [llength $usrs]} {incr i; incr offset 0x10000} {
-          set seg [lindex $usrs $i]
-          set intf [get_bd_intf_pins -of_objects $seg]
-          set range [get_property RANGE $seg]
-          lappend ret "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind register"
-        }
-        set usrs [lsort [get_bd_addr_segs $pe/* -filter { USAGE == memory }]]
-        for {set i 0} {$i < [llength $usrs]} {incr i; incr offset 0x10000} {
-          set seg [lindex $usrs $i]
-          set intf [get_bd_intf_pins -of_objects $seg]
-          set range [get_property RANGE $seg]
-          lappend ret "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind memory"
-        }
-      }
-      return $ret
+    proc get_pe_base_address {} {
+      return 0x43C00000
     }
 
     # Setup the clock network.

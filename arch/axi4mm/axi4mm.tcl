@@ -40,7 +40,7 @@ namespace eval arch {
   # Returns a list of the bd_cells of slave interfaces of the threadpool.
   proc get_slaves {} {
     set inst [current_bd_instance]
-    current_bd_instance "uArch"
+    current_bd_instance "/uArch"
     set r [list [get_bd_intf_pins -of [get_bd_cells "in1"] -filter { MODE == "Slave" }]]
     current_bd_instance $inst
     return $r
@@ -53,7 +53,7 @@ namespace eval arch {
   }
 
   proc get_processing_elements {} {
-    return [get_bd_cells "uArch/target*"]
+    return [get_bd_cells "/uArch/target*"]
   }
 
   # Returns a list of interrupt lines from the threadpool.
@@ -178,7 +178,7 @@ namespace eval arch {
     set ic_ports [list]
     set mdist [list]
     for {set i 0} {$i < [llength $outs] && $i < $no_masters} {incr i} {
-      lappend ic_ports [create_bd_intf_pin -mode Master -vlnv "xilinx.com:interface:aximm_rtl:1.0" [format "M_AXI_MEM_%02d" $i]]
+      lappend ic_ports [create_bd_intf_pin -mode Master -vlnv "xilinx.com:interface:aximm_rtl:1.0" [format "M_MEM_%d" $i]]
       lappend mdist 0
     }
 
@@ -224,7 +224,7 @@ namespace eval arch {
     puts "Creating interconnects toward peripherals ..."
     puts "  $ic_s slaves to connect to host"
 
-    set out_port [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI]
+    set out_port [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_ARCH"]
     connect_bd_intf_net $out_port [get_bd_intf_pins -of_objects $in1 -filter {NAME == "S000_AXI"}]
 
     return $in1
@@ -347,13 +347,13 @@ namespace eval arch {
 
   # Connect internal clock lines.
   proc arch_connect_clocks {} {
-    set host_aclk [create_bd_pin -type clk -dir I "host_aclk"]
+    set host_aclk [platform::get_clock_reset_port "o_host_clk"]
     connect_bd_net $host_aclk [get_bd_pins -filter { NAME == "s_aclk" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
-    set design_aclk [create_bd_pin -type clk -dir I "design_aclk"]
+    set design_aclk [platform::get_clock_reset_port "o_design_clk"]
     connect_bd_net $design_aclk [get_bd_pins -filter { NAME == "m_aclk" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
     connect_bd_net $design_aclk [get_bd_pins -filter { TYPE == clk && DIR == I } -of_objects [get_bd_cells -filter {NAME =~ "target_ip_*"}]]
     puts "  creating clock lines ..."
-    set memory_aclk [create_bd_pin -type clk -dir I "memory_aclk"]
+    set memory_aclk [platform::get_clock_reset_port "o_mem_clk"]
     if {[llength [get_bd_cells -filter {NAME =~ "out*"}]] > 0} {
       connect_bd_net $design_aclk [get_bd_pins -filter { NAME == "s_aclk" } -of_objects [get_bd_cells -filter {NAME =~ "out*"}]]
       connect_bd_net $memory_aclk [get_bd_pins -filter { NAME == "m_aclk" } -of_objects [get_bd_cells -filter {NAME =~ "out*"}]]
@@ -363,21 +363,21 @@ namespace eval arch {
   # Connect internal reset lines.
   proc arch_connect_resets {} {
    # create hierarchical ports for host interconnect and peripheral resets
-   set host_ic_arstn [create_bd_pin -type rst -dir I "host_interconnect_aresetn"]
-   set host_p_arstn  [create_bd_pin -type rst -dir I "host_peripheral_aresetn"]
+   set host_ic_arstn [platform::get_clock_reset_port "o_host_interconnect_resetn"]
+   set host_p_arstn  [platform::get_clock_reset_port "o_host_peripheral_resetn"]
    connect_bd_net $host_ic_arstn [get_bd_pins -filter { NAME == "s_interconnect_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
    connect_bd_net $host_p_arstn [get_bd_pins -filter { NAME == "s_peripheral_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
 
    # create hierarchical ports for design interconnect and peripheral resets
-   set design_ic_arstn [create_bd_pin -type rst -dir I "design_interconnect_aresetn"]
-   set design_p_arstn  [create_bd_pin -type rst -dir I "design_peripheral_aresetn"]
+   set design_ic_arstn [platform::get_clock_reset_port "o_design_interconnect_resetn"]
+   set design_p_arstn  [platform::get_clock_reset_port "o_design_peripheral_resetn"]
    connect_bd_net $design_ic_arstn [get_bd_pins -filter { NAME == "m_interconnect_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
    connect_bd_net $design_p_arstn [get_bd_pins -filter { NAME == "m_peripheral_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
    connect_bd_net $design_p_arstn [get_bd_pins -filter { TYPE == rst && DIR == I } -of_objects [get_bd_cells -filter {NAME =~ "target_ip*"}]]
 
    # create hierarchical ports for memory interconnect and peripheral resets
-   set memory_ic_arstn [create_bd_pin -type rst -dir I "memory_interconnect_aresetn"]
-   set memory_p_arstn  [create_bd_pin -type rst -dir I "memory_peripheral_aresetn"]
+   set memory_ic_arstn [platform::get_clock_reset_port "o_mem_interconnect_resetn"]
+   set memory_p_arstn  [platform::get_clock_reset_port "o_mem_peripheral_resetn"]
    if {[llength [get_bd_cells -filter {NAME =~ "out*"}]] > 0} {
      set outs [get_bd_cells -filter {NAME =~ "out*"}]
      connect_bd_net $design_ic_arstn [get_bd_pins -filter { NAME == "s_interconnect_aresetn" } -of_objects $outs]
@@ -397,7 +397,7 @@ namespace eval arch {
     }
 
     # create hierarchical group
-    set group [create_bd_cell -type hier "uArch"]
+    set group [platform::create_subsystem "uArch" true false]
     set instance [current_bd_instance .]
     current_bd_instance $group
 

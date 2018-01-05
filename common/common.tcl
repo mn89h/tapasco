@@ -1009,7 +1009,7 @@ namespace eval tapasco {
 
   # Generate JSON configuration for the status core.
   proc make_status_config_json {} {
-    set addr [platform::get_address_map]
+    set addr [platform::get_address_map [platform::get_pe_base_address]]
     set slots [list]
     set slot_id 0
     foreach a $addr {
