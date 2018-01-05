@@ -20,9 +20,6 @@
 # @brief	Common Vivado Tcl helper procs to create block designs.
 # @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 #
-source -notrace "$::env(TAPASCO_HOME)/common/json_write.tcl"
-package require json::write
-
 namespace eval tapasco {
   namespace export createBinaryCounter
   namespace export createClockingWizard
@@ -368,6 +365,9 @@ namespace eval tapasco {
   # @param ids  List of kernel IDs.
   proc createTapascoStatus {name {ids {}}} {
     variable stdcomps
+    source -notrace "$::env(TAPASCO_HOME)/common/json_write.tcl"
+    package require json::write
+
     set json [make_status_config_json]
     set json_file "[file normalize [pwd]]/tapasco_status.json"
     puts "Creating TPC Status ..."
