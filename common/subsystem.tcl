@@ -1,0 +1,79 @@
+#
+# Copyright (C) 2017 Jens Korinth, TU Darmstadt
+#
+# This file is part of Tapasco (TPC).
+#
+# Tapasco is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Tapasco is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+#
+# @file		subsystem.tcl
+# @brief	Subsystem block creation helpers.
+# @author	J. Korinth, TU Darmstadt (jk@esa.tu-darmstadt.de)
+#
+namespace eval subsystem {
+  namespace export create
+  namespace export get_port
+
+  # Creates a hierarchical cell with given name and interface ports for clocks
+  # and resets of the three base clocks in TaPaSCo designs.
+  # @param is_source if true, will create output ports, otherwise input ports
+  proc create {name {is_source false} {prefix ""}} {
+    set instance [current_bd_instance]
+    set cell [create_bd_cell -type hier $name]
+    set intf_vlnv [tapasco::get_vlnv "tapasco_clocks_resets"]
+    current_bd_instance $cell
+    set d [expr "{$is_source} ? {O} : {I}"]
+
+    foreach c {host design mem} {
+      puts "  creating $c connections ..."
+      set clk   [create_bd_pin -type clk -dir $d "${prefix}${c}_clk"]
+      set prstn [create_bd_pin -type rst -dir $d "${prefix}${c}_peripheral_aresetn"]
+      set prst  [create_bd_pin -type rst -dir $d "${prefix}${c}_peripheral_areset"]
+      set irstn [create_bd_pin -type rst -dir $d "${prefix}${c}_interconnect_aresetn"]
+      set_property CONFIG.POLARITY ACTIVE_LOW $prstn $irstn
+    }
+
+    current_bd_instance $instance
+    return $cell
+  }
+
+  proc get_ports {} {
+    set d [dict create]
+    foreach c {host design mem} {
+      set clk   [get_bd_pins -of_objects [current_bd_instance .] -filter "NAME == ${c}_clk && TYPE == clk"]
+      set prstn [get_bd_pins -of_objects [current_bd_instance .] -filter "NAME == ${c}_peripheral_aresetn && TYPE == rst"]
+      set prst  [get_bd_pins -of_objects [current_bd_instance .] -filter "NAME == ${c}_peripheral_areset && TYPE == rst"]
+      set irstn [get_bd_pins -of_objects [current_bd_instance .] -filter "NAME == ${c}_interconnect_aresetn && TYPE == rst"]
+      dict set d $c "clk" $clk
+      dict set d $c "rst" "peripheral" "resetn" $prstn
+      dict set d $c "rst" "peripheral" "reset" $prst
+      dict set d $c "rst" "interconnect" "resetn" $irstn
+    }
+    return $d
+  }
+
+  # Returns pin of given type on the sub-block interface of the current instance.
+  proc get_port {args} {
+    if {[catch {dict get [get_ports] {*}$args} err]} {
+      puts "ERROR: $err"
+      error "get_port: invalid args $args"
+    }
+    set r [dict get [get_ports] {*}$args]
+    if {[llength $r] == 0 || [llength $r] > 1} {
+      if {[catch {error "get_port: incomplete args $args: $r"} err]} {
+        puts "ERROR: $::errorInfo"
+      }
+    }
+    return $r
+  }
+}

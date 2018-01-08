@@ -33,11 +33,11 @@ namespace eval platform {
   proc create {} {
     set instance [current_bd_instance]
     # create mandatory subsystems
-    set ss_host    [create_subsystem "host"]
-    set ss_cnrs    [create_subsystem "clocks_and_resets" false true]
-    set ss_mem     [create_subsystem "memory"]
-    set ss_intc    [create_subsystem "intc"]
-    set ss_tapasco [create_subsystem "tapasco"]
+    set ss_host    [tapasco::subsystem::create "host"]
+    set ss_cnrs    [tapasco::subsystem::create "clocks_and_resets" false true]
+    set ss_mem     [tapasco::subsystem::create "memory"]
+    set ss_intc    [tapasco::subsystem::create "intc"]
+    set ss_tapasco [tapasco::subsystem::create "tapasco"]
 
     set sss [list $ss_cnrs $ss_host $ss_intc $ss_mem $ss_tapasco]
 
@@ -65,56 +65,13 @@ namespace eval platform {
     foreach ss [info commands create_custom_subsystem_*] {
       set name [regsub {.*create_custom_subsystem_(.*)} $ss {\1}]
       puts "Creating custom subsystem $name ..."
-      current_bd_instance [create_subsystem $name]
+      current_bd_instance [tapasco::subsystem::create $name]
       eval $ss
       current_bd_instance $instance
     }
 
     wire_subsystem_wires
     wire_subsystem_intfs
-  }
-
-  # Creates a hierarchical cell with given name and instantiates either a
-  # ClocksResetsBridgeMaster or ClocksResetsBridgeSlave, depending on whether
-  # is_reset is true or false, respectively. get_clock_reset_port can be used
-  # to access the pins in this component.
-  proc create_subsystem {name {has_slave true} {has_master true}} {
-    set instance [current_bd_instance]
-    set cell [create_bd_cell -type hier $name]
-    set intf_vlnv [tapasco::get_vlnv "tapasco_clocks_resets"]
-    current_bd_instance $cell
-
-    if {$has_master} {
-      set m_port [create_bd_intf_pin -vlnv $intf_vlnv -mode Master "M_CLOCKS_RESETS"]
-      set m_cnrs [create_bd_cell -type ip -vlnv [tapasco::get_vlnv "clocks_resets_m"] "m_cnrs"]
-      connect_bd_intf_net [get_bd_intf_pins -of_objects $m_cnrs -filter "VLNV == $intf_vlnv"] $m_port
-    }
-
-    if {$has_slave} {
-      set s_port [create_bd_intf_pin -vlnv $intf_vlnv -mode Slave "S_CLOCKS_RESETS"]
-      set s_cnrs [create_bd_cell -type ip -vlnv [tapasco::get_vlnv "clocks_resets_s"] "s_cnrs"]
-      connect_bd_intf_net $s_port [get_bd_intf_pins -of_objects $s_cnrs -filter "VLNV == $intf_vlnv"]
-    }
-
-    if {$has_master && $has_slave} {
-      # directly connect all wires
-      foreach p [get_bd_pins -of_objects $m_cnrs -filter { NAME =~ i_* }] {
-        set oname [regsub {i_} [get_property NAME $p] {o_}]
-        set op [get_bd_pins -of_objects $s_cnrs -filter "NAME == $oname"]
-        puts "  connecting $p to $op ..."
-        connect_bd_net $p $op
-      }
-    }
-
-    current_bd_instance $instance
-    return $cell
-  }
-
-  # Returns pin with given name  on the clocks and resets bridge component in
-  # the current subsystem.
-  proc get_clock_reset_port {name} {
-    set cells [get_bd_cells -filter "VLNV == [tapasco::get_vlnv clocks_resets_s] || VLNV == [tapasco::get_vlnv clocks_resets_m]"]
-    return [get_bd_pins -of_objects $cells -filter "NAME == $name && INTF == false"]
   }
 
   proc get_pe_base_address {} {
@@ -125,8 +82,8 @@ namespace eval platform {
     set port [create_bd_intf_pin -vlnv [tapasco::get_vlnv "aximm_intf"] -mode Slave "S_TAPASCO"]
     set tapasco_status [tapasco::createTapascoStatus "tapasco_status"]
     connect_bd_intf_net $port [get_bd_intf_pins -of_objects $tapasco_status -filter "VLNV == [tapasco::get_vlnv aximm_intf] && MODE == Slave"]
-    connect_bd_net [get_clock_reset_port "o_design_clk"] [get_bd_pins -of_objects $tapasco_status -filter {TYPE == clk && DIR == I}]
-    connect_bd_net [get_clock_reset_port "o_design_peripheral_reset"] [get_bd_pins -of_objects $tapasco_status -filter {TYPE == rst && DIR == I}]
+    connect_bd_net [tapasco::subsystem::get_port "design" "clk"] [get_bd_pins -of_objects $tapasco_status -filter {TYPE == clk && DIR == I}]
+    connect_bd_net [tapasco::subsystem::get_port "design" "peripheral" "rst" false] [get_bd_pins -of_objects $tapasco_status -filter {TYPE == rst && DIR == I}]
   }
 
   proc wire_subsystem_wires {} {

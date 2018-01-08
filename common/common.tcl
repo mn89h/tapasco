@@ -21,6 +21,9 @@
 # @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 #
 namespace eval tapasco {
+  if {[info commands version] != ""} \
+    { source -notrace $::env(TAPASCO_HOME)/common/subsystem.tcl } \
+    { source $::env(TAPASCO_HOME)/common/subsystem.tcl }
   namespace export createBinaryCounter
   namespace export createClockingWizard
   namespace export createConcat
