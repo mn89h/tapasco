@@ -34,15 +34,3 @@ lazy val tapascostatus = (project in file(".")).dependsOn(packaging, axiutils, a
 cleanFiles ++= Seq((baseDirectory.value / "test"), (baseDirectory.value / "ip"), (baseDirectory.value / "chisel3"))
 
 aggregate in test := false
-
-lazy val chiselSetupTask = TaskKey[Unit]("chiselSetup", "Build latest chisel libs from source")
-
-chiselSetupTask := {
-  import sys.process._
-  "./chiselSetup.sh" !
-}
-
-(compile in Compile) := {
-  val x = chiselSetupTask.value
-  (compile in Compile).value
-}
