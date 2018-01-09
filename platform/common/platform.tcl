@@ -34,7 +34,7 @@ namespace eval platform {
     set instance [current_bd_instance]
     # create mandatory subsystems
     set ss_host    [tapasco::subsystem::create "host"]
-    set ss_cnrs    [tapasco::subsystem::create "clocks_and_resets" false true]
+    set ss_cnrs    [tapasco::subsystem::create "clocks_and_resets" true]
     set ss_mem     [tapasco::subsystem::create "memory"]
     set ss_intc    [tapasco::subsystem::create "intc"]
     set ss_tapasco [tapasco::subsystem::create "tapasco"]

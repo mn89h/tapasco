@@ -23,11 +23,12 @@
 namespace eval subsystem {
   namespace export create
   namespace export get_port
+  namespace export get_ports
 
   # Creates a hierarchical cell with given name and interface ports for clocks
   # and resets of the three base clocks in TaPaSCo designs.
   # @param is_source if true, will create output ports, otherwise input ports
-  proc create {name {is_source false} {prefix ""}} {
+  proc create {name {is_source false}} {
     set instance [current_bd_instance]
     set cell [create_bd_cell -type hier $name]
     set intf_vlnv [tapasco::get_vlnv "tapasco_clocks_resets"]
@@ -36,10 +37,10 @@ namespace eval subsystem {
 
     foreach c {host design mem} {
       puts "  creating $c connections ..."
-      set clk   [create_bd_pin -type clk -dir $d "${prefix}${c}_clk"]
-      set prstn [create_bd_pin -type rst -dir $d "${prefix}${c}_peripheral_aresetn"]
-      set prst  [create_bd_pin -type rst -dir $d "${prefix}${c}_peripheral_areset"]
-      set irstn [create_bd_pin -type rst -dir $d "${prefix}${c}_interconnect_aresetn"]
+      set clk   [create_bd_pin -type clk -dir $d "${c}_clk"]
+      set prstn [create_bd_pin -type rst -dir $d "${c}_peripheral_aresetn"]
+      set prst  [create_bd_pin -type rst -dir $d "${c}_peripheral_areset"]
+      set irstn [create_bd_pin -type rst -dir $d "${c}_interconnect_aresetn"]
       set_property CONFIG.POLARITY ACTIVE_LOW $prstn $irstn
     }
 
@@ -50,14 +51,14 @@ namespace eval subsystem {
   proc get_ports {} {
     set d [dict create]
     foreach c {host design mem} {
-      set clk   [get_bd_pins -of_objects [current_bd_instance .] -filter "NAME == ${c}_clk && TYPE == clk"]
+      set clk   [get_bd_pins -of_objects [current_bd_instance .] -filter "NAME == ${c}_clk"]
       set prstn [get_bd_pins -of_objects [current_bd_instance .] -filter "NAME == ${c}_peripheral_aresetn && TYPE == rst"]
       set prst  [get_bd_pins -of_objects [current_bd_instance .] -filter "NAME == ${c}_peripheral_areset && TYPE == rst"]
       set irstn [get_bd_pins -of_objects [current_bd_instance .] -filter "NAME == ${c}_interconnect_aresetn && TYPE == rst"]
       dict set d $c "clk" $clk
       dict set d $c "rst" "peripheral" "resetn" $prstn
       dict set d $c "rst" "peripheral" "reset" $prst
-      dict set d $c "rst" "interconnect" "resetn" $irstn
+      dict set d $c "rst" "interconnect" $irstn
     }
     return $d
   }
@@ -65,14 +66,14 @@ namespace eval subsystem {
   # Returns pin of given type on the sub-block interface of the current instance.
   proc get_port {args} {
     if {[catch {dict get [get_ports] {*}$args} err]} {
-      puts "ERROR: $err"
+      puts "ERROR: $err $::errorInfo"
       error "get_port: invalid args $args"
     }
     set r [dict get [get_ports] {*}$args]
     if {[llength $r] == 0 || [llength $r] > 1} {
-      if {[catch {error "get_port: incomplete args $args: $r"} err]} {
-        puts "ERROR: $::errorInfo"
-      }
+      catch {error "get_port: incomplete args $args"}
+      puts "get_ports: [get_ports]"
+      error "$::errorInfo"
     }
     return $r
   }

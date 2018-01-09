@@ -57,9 +57,9 @@ namespace eval platform {
     puts "Connecting [llength $irqs] interrupts .."
     # create hierarchical ports
     set s_axi [create_bd_intf_pin -mode Slave -vlnv [tapasco::get_vlnv "aximm_intf"] "S_INTC"]
-    set aclk [get_clock_reset_port "o_host_clk"]
-    set ic_aresetn [get_clock_reset_port "o_host_interconnect_resetn"]
-    set p_aresetn [get_clock_reset_port "o_host_peripheral_resetn"]
+    set aclk [tapasco::subsystem::get_port "host" "clk"]
+    set ic_aresetn [tapasco::subsystem::get_port "host" "rst" "interconnect"]
+    set p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
     set dma_irq [create_bd_pin -type "intr" -dir I "dma_irq"]
 
     set msix_fail [create_bd_pin -dir "I" "msix_fail"]
@@ -129,16 +129,16 @@ namespace eval platform {
     # create hierarchical ports: clocks
     set ddr_aclk [create_bd_pin -type "clk" -dir "O" "ddr_aclk"]
     set design_clk [create_bd_pin -type "clk" -dir "O" "design_aclk"]
-    set pcie_aclk [get_clock_reset_port "o_host_clk"]
-    set design_aclk [get_clock_reset_port "o_design_clk"]
+    set pcie_aclk [tapasco::subsystem::get_port "host" "clk"]
+    set design_aclk [tapasco::subsystem::get_port "design" "clk"]
 
     # create hierarchical ports: resets
     set ddr_aresetn [create_bd_pin -type "rst" -dir "O" "ddr_aresetn"]
     set design_aresetn [create_bd_pin -type "rst" -dir "O" "design_aresetn"]
-    set pcie_p_aresetn [get_clock_reset_port "o_host_peripheral_resetn"]
-    set ddr_ic_aresetn [get_clock_reset_port "o_mem_interconnect_resetn"]
-    set ddr_p_aresetn  [get_clock_reset_port "o_mem_peripheral_resetn"]
-    set design_p_aresetn [get_clock_reset_port "o_design_peripheral_resetn"]
+    set pcie_p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
+    set ddr_ic_aresetn [tapasco::subsystem::get_port "mem" "rst" "interconnect"]
+    set ddr_p_aresetn  [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"]
+    set design_p_aresetn [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
 
     set irq [create_bd_pin -type "intr" -dir "O" "dma_irq"]
 
@@ -185,7 +185,7 @@ namespace eval platform {
 
     # connect DDR clock and reset
     set ddr_clk [get_bd_pins mig/ui_clk]
-    connect_bd_net [get_clock_reset_port "o_mem_clk"] \
+    connect_bd_net [tapasco::subsystem::get_port "mem" "clk"] \
       [get_bd_pins mig_ic/ACLK] \
       [get_bd_pins mig_ic/M00_ACLK] \
       [get_bd_pins mig_ic/S00_ACLK] \
@@ -271,24 +271,24 @@ namespace eval platform {
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M02_AXI}] $m_tapasco
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M03_AXI}] $m_dma
 
-    connect_bd_net [get_clock_reset_port "o_host_clk"] \
+    connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
       [get_bd_pins $out_ic/ACLK] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ S0* && TYPE == clk}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == clk}]
-    connect_bd_net [get_clock_reset_port "o_design_clk"] \
+    connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == clk}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M02_* && TYPE == clk}]
-    connect_bd_net [get_clock_reset_port "o_mem_clk"] \
+    connect_bd_net [tapasco::subsystem::get_port "mem" "clk"] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == clk}]
 
-    connect_bd_net [get_clock_reset_port "o_host_peripheral_resetn"] \
+    connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] \
       [get_bd_pins $out_ic/ARESETN] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ S0* && TYPE == rst}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == rst}]
-    connect_bd_net [get_clock_reset_port "o_design_peripheral_resetn"] \
+    connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == rst}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M02_* && TYPE == rst}]
-    connect_bd_net [get_clock_reset_port "o_mem_peripheral_resetn"] \
+    connect_bd_net [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == rst}]
 
     set version [lindex [split [get_property VLNV [get_bd_cells axi_pcie3_0]] :] end]
@@ -309,7 +309,7 @@ namespace eval platform {
 
     # forward PCIe clock to external ports
     connect_bd_net [get_bd_pins axi_pcie3_0/axi_aclk] $pcie_aclk
-    connect_bd_net [get_clock_reset_port "o_host_clk"] \
+    connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
       [get_bd_pins mm_to_lite_dwidth/s_axi_aclk] \
       [get_bd_pins mm_to_lite_proto/aclk] \
       [get_bd_pins mm_to_lite_slice_before/aclk] \
@@ -317,7 +317,7 @@ namespace eval platform {
       [get_bd_pins mm_to_lite_slice_after/aclk]
 
     connect_bd_net [get_bd_pins axi_pcie3_0/axi_aresetn] $pcie_aresetn
-    connect_bd_net [get_clock_reset_port "o_host_peripheral_resetn"] \
+    connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] \
       [get_bd_pins mm_to_lite_dwidth/s_axi_aresetn] \
       [get_bd_pins mm_to_lite_proto/aresetn] \
       [get_bd_pins mm_to_lite_slice_before/aresetn] \
@@ -340,27 +340,27 @@ namespace eval platform {
     set mem_rst_gen [tapasco::createResetGen "mem_rst_gen"]
 
     # connect external ports
-    connect_bd_net $pcie_clk [get_bd_pins $host_rst_gen/slowest_sync_clk] [get_clock_reset_port "i_host_clk"]
+    connect_bd_net $pcie_clk [get_bd_pins $host_rst_gen/slowest_sync_clk] [tapasco::subsystem::get_port "host" "clk"]
     connect_bd_net $pcie_aresetn [get_bd_pins $host_rst_gen/ext_reset_in]
 
-    connect_bd_net $ddr_clk [get_bd_pins $mem_rst_gen/slowest_sync_clk] [get_clock_reset_port "i_mem_clk"]
+    connect_bd_net $ddr_clk [get_bd_pins $mem_rst_gen/slowest_sync_clk] [tapasco::subsystem::get_port "mem" "clk"]
     connect_bd_net $ddr_clk_aresetn [get_bd_pins $mem_rst_gen/ext_reset_in]
 
-    connect_bd_net $design_clk [get_bd_pins $design_rst_gen/slowest_sync_clk] [get_clock_reset_port "i_design_clk"]
+    connect_bd_net $design_clk [get_bd_pins $design_rst_gen/slowest_sync_clk] [tapasco::subsystem::get_port "design" "clk"]
     connect_bd_net $design_clk_aresetn [get_bd_pins $design_rst_gen/ext_reset_in]
 
     # connect to clock reset master
-    connect_bd_net [get_bd_pins $host_rst_gen/peripheral_aresetn] [get_clock_reset_port "i_host_peripheral_resetn"]
-    connect_bd_net [get_bd_pins $host_rst_gen/peripheral_reset] [get_clock_reset_port "i_host_peripheral_reset"]
-    connect_bd_net [get_bd_pins $host_rst_gen/interconnect_aresetn] [get_clock_reset_port "i_host_interconnect_resetn"]
+    connect_bd_net [get_bd_pins $host_rst_gen/peripheral_aresetn] [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
+    connect_bd_net [get_bd_pins $host_rst_gen/peripheral_reset] [tapasco::subsystem::get_port "host" "rst" "peripheral" "reset"]
+    connect_bd_net [get_bd_pins $host_rst_gen/interconnect_aresetn] [tapasco::subsystem::get_port "host" "rst" "interconnect"]
 
-    connect_bd_net [get_bd_pins $design_rst_gen/peripheral_aresetn] [get_clock_reset_port "i_design_peripheral_resetn"]
-    connect_bd_net [get_bd_pins $design_rst_gen/peripheral_reset] [get_clock_reset_port "i_design_peripheral_reset"]
-    connect_bd_net [get_bd_pins $design_rst_gen/interconnect_aresetn] [get_clock_reset_port "i_design_interconnect_resetn"]
+    connect_bd_net [get_bd_pins $design_rst_gen/peripheral_aresetn] [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
+    connect_bd_net [get_bd_pins $design_rst_gen/peripheral_reset] [tapasco::subsystem::get_port "design" "rst" "peripheral" "reset"]
+    connect_bd_net [get_bd_pins $design_rst_gen/interconnect_aresetn] [tapasco::subsystem::get_port "design" "rst" "interconnect"]
 
-    connect_bd_net [get_bd_pins $mem_rst_gen/peripheral_aresetn] [get_clock_reset_port "i_mem_peripheral_resetn"]
-    connect_bd_net [get_bd_pins $mem_rst_gen/peripheral_reset] [get_clock_reset_port "i_mem_peripheral_reset"]
-    connect_bd_net [get_bd_pins $mem_rst_gen/interconnect_aresetn] [get_clock_reset_port "i_mem_interconnect_resetn"]
+    connect_bd_net [get_bd_pins $mem_rst_gen/peripheral_aresetn] [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"]
+    connect_bd_net [get_bd_pins $mem_rst_gen/peripheral_reset] [tapasco::subsystem::get_port "mem" "rst" "peripheral" "reset"]
+    connect_bd_net [get_bd_pins $mem_rst_gen/interconnect_aresetn] [tapasco::subsystem::get_port "mem" "rst" "interconnect"]
   }
 
   proc create_mig_core {name} {

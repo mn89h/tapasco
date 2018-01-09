@@ -182,7 +182,7 @@ namespace eval arch {
       lappend mdist 0
     }
 
-    # distribute masters round-robin on all output ports: mdist holds 
+    # distribute masters round-robin on all output ports: mdist holds
     # number of masters for each port
     set j 0
     for {set i 0} {$i < $no_masters} {incr i} {
@@ -347,13 +347,13 @@ namespace eval arch {
 
   # Connect internal clock lines.
   proc arch_connect_clocks {} {
-    set host_aclk [platform::get_clock_reset_port "o_host_clk"]
+    set host_aclk [tapasco::subsystem::get_port "host" "clk"]
     connect_bd_net $host_aclk [get_bd_pins -filter { NAME == "s_aclk" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
-    set design_aclk [platform::get_clock_reset_port "o_design_clk"]
+    set design_aclk [tapasco::subsystem::get_port "design" "clk"]
     connect_bd_net $design_aclk [get_bd_pins -filter { NAME == "m_aclk" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
     connect_bd_net $design_aclk [get_bd_pins -filter { TYPE == clk && DIR == I } -of_objects [get_bd_cells -filter {NAME =~ "target_ip_*"}]]
     puts "  creating clock lines ..."
-    set memory_aclk [platform::get_clock_reset_port "o_mem_clk"]
+    set memory_aclk [tapasco::subsystem::get_port "mem" "clk"]
     if {[llength [get_bd_cells -filter {NAME =~ "out*"}]] > 0} {
       connect_bd_net $design_aclk [get_bd_pins -filter { NAME == "s_aclk" } -of_objects [get_bd_cells -filter {NAME =~ "out*"}]]
       connect_bd_net $memory_aclk [get_bd_pins -filter { NAME == "m_aclk" } -of_objects [get_bd_cells -filter {NAME =~ "out*"}]]
@@ -362,29 +362,29 @@ namespace eval arch {
 
   # Connect internal reset lines.
   proc arch_connect_resets {} {
-   # create hierarchical ports for host interconnect and peripheral resets
-   set host_ic_arstn [platform::get_clock_reset_port "o_host_interconnect_resetn"]
-   set host_p_arstn  [platform::get_clock_reset_port "o_host_peripheral_resetn"]
-   connect_bd_net $host_ic_arstn [get_bd_pins -filter { NAME == "s_interconnect_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
-   connect_bd_net $host_p_arstn [get_bd_pins -filter { NAME == "s_peripheral_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
+    # create hierarchical ports for host interconnect and peripheral resets
+    set host_ic_arstn [tapasco::subsystem::get_port "host" "rst" "interconnect"]
+    set host_p_arstn  [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
+    connect_bd_net $host_ic_arstn [get_bd_pins -filter { NAME == "s_interconnect_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
+    connect_bd_net $host_p_arstn [get_bd_pins -filter { NAME == "s_peripheral_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
 
-   # create hierarchical ports for design interconnect and peripheral resets
-   set design_ic_arstn [platform::get_clock_reset_port "o_design_interconnect_resetn"]
-   set design_p_arstn  [platform::get_clock_reset_port "o_design_peripheral_resetn"]
-   connect_bd_net $design_ic_arstn [get_bd_pins -filter { NAME == "m_interconnect_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
-   connect_bd_net $design_p_arstn [get_bd_pins -filter { NAME == "m_peripheral_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
-   connect_bd_net $design_p_arstn [get_bd_pins -filter { TYPE == rst && DIR == I } -of_objects [get_bd_cells -filter {NAME =~ "target_ip*"}]]
+    # create hierarchical ports for design interconnect and peripheral resets
+    set design_ic_arstn [tapasco::subsystem::get_port "design" "rst" "interconnect"]
+    set design_p_arstn  [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
+    connect_bd_net $design_ic_arstn [get_bd_pins -filter { NAME == "m_interconnect_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
+    connect_bd_net $design_p_arstn [get_bd_pins -filter { NAME == "m_peripheral_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
+    connect_bd_net $design_p_arstn [get_bd_pins -filter { TYPE == rst && DIR == I } -of_objects [get_bd_cells -filter {NAME =~ "target_ip*"}]]
 
-   # create hierarchical ports for memory interconnect and peripheral resets
-   set memory_ic_arstn [platform::get_clock_reset_port "o_mem_interconnect_resetn"]
-   set memory_p_arstn  [platform::get_clock_reset_port "o_mem_peripheral_resetn"]
-   if {[llength [get_bd_cells -filter {NAME =~ "out*"}]] > 0} {
-     set outs [get_bd_cells -filter {NAME =~ "out*"}]
-     connect_bd_net $design_ic_arstn [get_bd_pins -filter { NAME == "s_interconnect_aresetn" } -of_objects $outs]
-     connect_bd_net $design_p_arstn [get_bd_pins -filter { NAME == "s_peripheral_aresetn" } -of_objects $outs]
-     connect_bd_net $memory_ic_arstn [get_bd_pins -filter { NAME == "m_interconnect_aresetn" } -of_objects $outs]
-     connect_bd_net $memory_p_arstn [get_bd_pins -filter { NAME == "m_peripheral_aresetn" } -of_objects $outs]
-   }
+    # create hierarchical ports for memory interconnect and peripheral resets
+    set memory_ic_arstn [tapasco::subsystem::get_port "mem" "rst" "interconnect"]
+    set memory_p_arstn  [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"]
+    if {[llength [get_bd_cells -filter {NAME =~ "out*"}]] > 0} {
+      set outs [get_bd_cells -filter {NAME =~ "out*"}]
+      connect_bd_net $design_ic_arstn [get_bd_pins -filter { NAME == "s_interconnect_aresetn" } -of_objects $outs]
+      connect_bd_net $design_p_arstn [get_bd_pins -filter { NAME == "s_peripheral_aresetn" } -of_objects $outs]
+      connect_bd_net $memory_ic_arstn [get_bd_pins -filter { NAME == "m_interconnect_aresetn" } -of_objects $outs]
+      connect_bd_net $memory_p_arstn [get_bd_pins -filter { NAME == "m_peripheral_aresetn" } -of_objects $outs]
+    }
   }
 
   # Instantiates the architecture.
@@ -397,7 +397,7 @@ namespace eval arch {
     }
 
     # create hierarchical group
-    set group [platform::create_subsystem "uArch" true false]
+    set group [tapasco::subsystem::create "uArch"]
     set instance [current_bd_instance .]
     current_bd_instance $group
 
