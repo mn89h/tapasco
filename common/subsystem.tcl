@@ -41,7 +41,6 @@ namespace eval subsystem {
       set prstn [create_bd_pin -type rst -dir $d "${c}_peripheral_aresetn"]
       set prst  [create_bd_pin -type rst -dir $d "${c}_peripheral_areset"]
       set irstn [create_bd_pin -type rst -dir $d "${c}_interconnect_aresetn"]
-      set_property CONFIG.POLARITY ACTIVE_LOW $prstn $irstn
     }
 
     current_bd_instance $instance

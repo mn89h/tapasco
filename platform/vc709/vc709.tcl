@@ -249,7 +249,7 @@ namespace eval platform {
     set mm_to_lite_slice_before [tapasco::createRegisterSlice "mm_to_lite_slice_before"]
     set mm_to_lite_slice_mid [tapasco::createRegisterSlice "mm_to_lite_slice_mid"]
     set mm_to_lite_slice_after [tapasco::createRegisterSlice "mm_to_lite_slice_after"]
-    set mm_to_lite_dwidth [tapasco::createDWidthConverter "mm_to_lite_dwidth" 256 64]
+    set mm_to_lite_dwidth [tapasco::createDWidthConverter "mm_to_lite_dwidth" 256]
 
     # connect PCIe slave to external port
     connect_bd_intf_net $s_axi [get_bd_intf_pins axi_pcie3_0/S_AXI]
@@ -274,22 +274,20 @@ namespace eval platform {
     connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
       [get_bd_pins $out_ic/ACLK] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ S0* && TYPE == clk}] \
-      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == clk}]
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == clk}] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == clk}]
     connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == clk}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M02_* && TYPE == clk}]
-    connect_bd_net [tapasco::subsystem::get_port "mem" "clk"] \
-      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == clk}]
 
     connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] \
       [get_bd_pins $out_ic/ARESETN] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ S0* && TYPE == rst}] \
-      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == rst}]
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == rst}] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == rst}]
     connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == rst}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M02_* && TYPE == rst}]
-    connect_bd_net [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"] \
-      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == rst}]
 
     set version [lindex [split [get_property VLNV [get_bd_cells axi_pcie3_0]] :] end]
     if {[expr "$version < 3.0"]} {

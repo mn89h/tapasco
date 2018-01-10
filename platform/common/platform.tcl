@@ -53,14 +53,6 @@ namespace eval platform {
       current_bd_instance $instance
     }
 
-    for {set i 1} {$i < [llength $sss]} {incr i} {
-      connect_bd_intf_net [get_bd_intf_pins [lindex $sss [expr "$i - 1"]]/M_CLOCKS_RESETS] \
-        [get_bd_intf_pins [lindex $sss $i]/S_CLOCKS_RESETS]
-    }
-    connect_bd_intf_net [get_bd_intf_pins [lindex $sss end]/M_CLOCKS_RESETS] \
-      [get_bd_intf_pins -of_objects [get_bd_cells "/uArch"] -filter "VLNV == [tapasco::get_vlnv "tapasco_clocks_resets"] && MODE == Slave"]
-
-    
     # create custom subsystems
     foreach ss [info commands create_custom_subsystem_*] {
       set name [regsub {.*create_custom_subsystem_(.*)} $ss {\1}]
@@ -72,6 +64,25 @@ namespace eval platform {
 
     wire_subsystem_wires
     wire_subsystem_intfs
+    construct_address_map
+  }
+
+  proc construct_address_map {{map ""}} {
+    if {$map == ""} { set map [get_address_map [get_pe_base_address]] }
+    puts "ADDRESS MAP: $map"
+  }
+
+  proc connect_subsystems {} {
+    foreach s {host design mem} {
+      connect_bd_net [get_bd_pins -of_objects [get_bd_cells] -filter "NAME == ${s}_clk && DIR == O"] \
+        [get_bd_pins -of_objects [get_bd_cells] -filter "NAME =~ ${s}_clk && DIR == I"]
+      connect_bd_net [get_bd_pins -of_objects [get_bd_cells] -filter "NAME == ${s}_interconnect_resetn && DIR == O"] \
+        [get_bd_pins -of_objects [get_bd_cells] -filter "NAME =~ ${s}_interconnect_resetn && DIR == I"] \
+      connect_bd_net [get_bd_pins -of_objects [get_bd_cells] -filter "NAME == ${s}_peripheral_resetn && DIR == O"] \
+        [get_bd_pins -of_objects [get_bd_cells] -filter "NAME =~ ${s}_peripheral_resetn && DIR == I"] \
+      connect_bd_net [get_bd_pins -of_objects [get_bd_cells] -filter "NAME == ${s}_peripheral_reset && DIR == O"] \
+        [get_bd_pins -of_objects [get_bd_cells] -filter "NAME =~ ${s}_peripheral_resetn && DIR == O"] \
+    }
   }
 
   proc get_pe_base_address {} {
@@ -83,7 +94,7 @@ namespace eval platform {
     set tapasco_status [tapasco::createTapascoStatus "tapasco_status"]
     connect_bd_intf_net $port [get_bd_intf_pins -of_objects $tapasco_status -filter "VLNV == [tapasco::get_vlnv aximm_intf] && MODE == Slave"]
     connect_bd_net [tapasco::subsystem::get_port "design" "clk"] [get_bd_pins -of_objects $tapasco_status -filter {TYPE == clk && DIR == I}]
-    connect_bd_net [tapasco::subsystem::get_port "design" "peripheral" "rst" false] [get_bd_pins -of_objects $tapasco_status -filter {TYPE == rst && DIR == I}]
+    connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "reset"] [get_bd_pins -of_objects $tapasco_status -filter {TYPE == rst && DIR == I}]
   }
 
   proc wire_subsystem_wires {} {

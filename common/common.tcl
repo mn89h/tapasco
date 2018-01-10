@@ -431,14 +431,16 @@ namespace eval tapasco {
   # @param name Name of the instance.
   # @param from Data width on slave side (default: 256)
   # @param to   Data width on master side (default: 64)
-  proc createDWidthConverter {name {from "256"} {to "64"}} {
+  proc createDWidthConverter {name {from "256"} {to ""}} {
     variable stdcomps
     puts "Creating AXI Datawidth converter $name $from -> $to ..."
     set vlnv [dict get $stdcomps dwidth_conv vlnv]
     puts "  VLNV: $vlnv"
 
     set inst [create_bd_cell -type ip -vlnv $vlnv $name]
-    set_property -dict [list CCONFIG.SI_DATA_WIDTH $from CONFIG.MI_DATA_WIDTH $to] $inst
+    if {$to != ""} {
+      set_property -dict [list CCONFIG.SI_DATA_WIDTH $from CONFIG.MI_DATA_WIDTH $to] $inst
+    }
     return $inst
   }
 
@@ -1041,7 +1043,7 @@ namespace eval tapasco {
       "Clocks" [json::write array \
         [json::write object "Domain" [json::write string "Host"] "Frequency" [tapasco::get_host_frequency]] \
         [json::write object "Domain" [json::write string "Design"] "Frequency" [tapasco::get_design_frequency]] \
-        [json::write object "Domain" [json::write string "Memory"] "Frequency" [tapasco::get_host_frequency]] \
+        [json::write object "Domain" [json::write string "Memory"] "Frequency" [tapasco::get_memory_frequency]] \
       ] \
       "Capabilities" [json::write object "Capabilities 0" [get_capabilities_flags]] \
     ]

@@ -347,43 +347,20 @@ namespace eval arch {
 
   # Connect internal clock lines.
   proc arch_connect_clocks {} {
-    set host_aclk [tapasco::subsystem::get_port "host" "clk"]
-    connect_bd_net $host_aclk [get_bd_pins -filter { NAME == "s_aclk" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
-    set design_aclk [tapasco::subsystem::get_port "design" "clk"]
-    connect_bd_net $design_aclk [get_bd_pins -filter { NAME == "m_aclk" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
-    connect_bd_net $design_aclk [get_bd_pins -filter { TYPE == clk && DIR == I } -of_objects [get_bd_cells -filter {NAME =~ "target_ip_*"}]]
-    puts "  creating clock lines ..."
-    set memory_aclk [tapasco::subsystem::get_port "mem" "clk"]
-    if {[llength [get_bd_cells -filter {NAME =~ "out*"}]] > 0} {
-      connect_bd_net $design_aclk [get_bd_pins -filter { NAME == "s_aclk" } -of_objects [get_bd_cells -filter {NAME =~ "out*"}]]
-      connect_bd_net $memory_aclk [get_bd_pins -filter { NAME == "m_aclk" } -of_objects [get_bd_cells -filter {NAME =~ "out*"}]]
-    }
+    connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
+      [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == clk && DIR == I"]
   }
 
   # Connect internal reset lines.
   proc arch_connect_resets {} {
-    # create hierarchical ports for host interconnect and peripheral resets
-    set host_ic_arstn [tapasco::subsystem::get_port "host" "rst" "interconnect"]
-    set host_p_arstn  [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
-    connect_bd_net $host_ic_arstn [get_bd_pins -filter { NAME == "s_interconnect_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
-    connect_bd_net $host_p_arstn [get_bd_pins -filter { NAME == "s_peripheral_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
-
-    # create hierarchical ports for design interconnect and peripheral resets
-    set design_ic_arstn [tapasco::subsystem::get_port "design" "rst" "interconnect"]
-    set design_p_arstn  [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
-    connect_bd_net $design_ic_arstn [get_bd_pins -filter { NAME == "m_interconnect_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
-    connect_bd_net $design_p_arstn [get_bd_pins -filter { NAME == "m_peripheral_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
-    connect_bd_net $design_p_arstn [get_bd_pins -filter { TYPE == rst && DIR == I } -of_objects [get_bd_cells -filter {NAME =~ "target_ip*"}]]
-
-    # create hierarchical ports for memory interconnect and peripheral resets
-    set memory_ic_arstn [tapasco::subsystem::get_port "mem" "rst" "interconnect"]
-    set memory_p_arstn  [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"]
-    if {[llength [get_bd_cells -filter {NAME =~ "out*"}]] > 0} {
-      set outs [get_bd_cells -filter {NAME =~ "out*"}]
-      connect_bd_net $design_ic_arstn [get_bd_pins -filter { NAME == "s_interconnect_aresetn" } -of_objects $outs]
-      connect_bd_net $design_p_arstn [get_bd_pins -filter { NAME == "s_peripheral_aresetn" } -of_objects $outs]
-      connect_bd_net $memory_ic_arstn [get_bd_pins -filter { NAME == "m_interconnect_aresetn" } -of_objects $outs]
-      connect_bd_net $memory_p_arstn [get_bd_pins -filter { NAME == "m_peripheral_aresetn" } -of_objects $outs]
+    connect_bd_net [tapasco::subsystem::get_port "design" "rst" "interconnect"] \
+      [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == rst && NAME =~ *interconnect_aresetn && DIR == I"]
+    connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
+      [get_bd_pins -of_objects [get_bd_cells -of_objects [current_bd_instance .]] -filter "TYPE == rst && NAME =~ *peripheral_aresetn && DIR == I"] \
+      [get_bd_pins -filter { TYPE == rst && DIR == I } -of_objects [get_bd_cells -filter {NAME =~ "target_ip*"}]]
+    set active_high_resets [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == rst && DIR == I && CONFIG.POLARITY == ACTIVE_HIGH"]
+    if {[llength $active_high_resets] > 0} {
+      connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "reset"] $active_high_resets
     }
   }
 
