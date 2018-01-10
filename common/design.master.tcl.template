@@ -37,6 +37,7 @@ tapasco::call_plugins "pre-header"
 @@HEADER@@
 
 # source architecture-specific Tcl scripts
+source -notrace "$env(TAPASCO_HOME)/arch/common/arch.tcl"
 source -notrace @@ARCHITECTURE_TCL@@
 
 # source platform-specific Tcl scripts

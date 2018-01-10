@@ -67,11 +67,6 @@ namespace eval platform {
     construct_address_map
   }
 
-  proc construct_address_map {{map ""}} {
-    if {$map == ""} { set map [get_address_map [get_pe_base_address]] }
-    puts "ADDRESS MAP: $map"
-  }
-
   proc connect_subsystems {} {
     foreach s {host design mem} {
       connect_bd_net [get_bd_pins -of_objects [get_bd_cells] -filter "NAME == ${s}_clk && DIR == O"] \
@@ -85,10 +80,6 @@ namespace eval platform {
     }
   }
 
-  proc get_pe_base_address {} {
-    error "Platform does not implement mandatory proc get_pe_base_address!"
-  }
-
   proc create_subsystem_tapasco {} {
     set port [create_bd_intf_pin -vlnv [tapasco::get_vlnv "aximm_intf"] -mode Slave "S_TAPASCO"]
     set tapasco_status [tapasco::createTapascoStatus "tapasco_status"]
@@ -98,12 +89,12 @@ namespace eval platform {
   }
 
   proc wire_subsystem_wires {} {
-    foreach p [get_bd_pins -of_objects [get_bd_cells] -filter {INTF == false && DIR == I}] {
-      if {[llength [get_bd_nets -of_objects $p]] == 0} {
+    foreach p [get_bd_pins -quiet -of_objects [get_bd_cells] -filter {INTF == false && DIR == I}] {
+      if {[llength [get_bd_nets -quiet -of_objects $p]] == 0} {
         set name [get_property NAME $p]
         set type [get_property TYPE $p]
         puts "Looking for matching source for $p ($name) with type $type ..."
-        set src [get_bd_pins -of_objects [get_bd_cells] -filter "NAME == $name && TYPE == $type && INTF == false && DIR == O"]
+        set src [lsort [get_bd_pins -quiet -of_objects [get_bd_cells] -filter "NAME == $name && TYPE == $type && INTF == false && DIR == O"]]
         if {[llength $src] > 0} {
           puts "  found pin: $src, connecting $p -> $src"
           connect_bd_net $src $p
@@ -115,14 +106,14 @@ namespace eval platform {
   }
 
   proc wire_subsystem_intfs {} {
-    foreach p [get_bd_intf_pins -of_objects [get_bd_cells] -filter {MODE == Slave}] {
-      if {[llength [get_bd_intf_nets -of_objects $p]] == 0} {
+    foreach p [get_bd_intf_pins -quiet -of_objects [get_bd_cells] -filter {MODE == Slave}] {
+      if {[llength [get_bd_intf_nets -quiet -of_objects $p]] == 0} {
         set name [regsub {^S_} [get_property NAME $p] {M_}]
         set vlnv [get_property VLNV $p]
         puts "Looking for matching source for $p ($name) with VLNV $vlnv ..."
-        set srcs [lsort [get_bd_intf_pins -of_objects [get_bd_cells] -filter "NAME == $name && VLNV == $vlnv && MODE == Master"]]
+        set srcs [lsort [get_bd_intf_pins -quiet -of_objects [get_bd_cells] -filter "NAME == $name && VLNV == $vlnv && MODE == Master"]]
         foreach src $srcs {
-          if {[llength [get_bd_intf_nets -of_objects $src]] == 0} {
+          if {[llength [get_bd_intf_nets -quiet -of_objects $src]] == 0} {
             puts "  found pin: $src, connecting $p -> $src"
             connect_bd_intf_net $src $p
             break
@@ -132,33 +123,6 @@ namespace eval platform {
         }
       }
     }
-  }
-
-  # Returns the address map of the current composition.
-  # Format: <SLAVE INTF> <BASE ADDR> <RANGE> <KIND>
-  # Kind is either Mem or Register, depending on the usage.
-  # Must be implemented by Platforms.
-  proc get_address_map {offset} {
-    set ret [list]
-    set pes [lsort [arch::get_processing_elements]]
-    #set offset 0x00300000
-    foreach pe $pes {
-      set usrs [lsort [get_bd_addr_segs $pe/* -filter { USAGE != memory }]]
-      for {set i 0} {$i < [llength $usrs]} {incr i; incr offset 0x10000} {
-        set seg [lindex $usrs $i]
-        set intf [get_bd_intf_pins -of_objects $seg]
-        set range [get_property RANGE $seg]
-        lappend ret "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind register"
-      }
-      set usrs [lsort [get_bd_addr_segs $pe/* -filter { USAGE == memory }]]
-      for {set i 0} {$i < [llength $usrs]} {incr i; incr offset 0x10000} {
-        set seg [lindex $usrs $i]
-        set intf [get_bd_intf_pins -of_objects $seg]
-        set range [get_property RANGE $seg]
-        lappend ret "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind memory"
-      }
-    }
-    return $ret
   }
 
   # Checks all current runs at given step for errors, outputs their log files in case.
@@ -228,6 +192,117 @@ namespace eval platform {
       write_bitstream -force "${bitstreamname}.bit"
     } else {
       error "timing failure, WNS: $wns"
+    }
+  }
+
+  # Returns the base address of the PEs in the device address space.
+  proc get_pe_base_address {} {
+    error "Platform does not implement mandatory proc get_pe_base_address!"
+  }
+
+  proc get_address_map {{pe_base ""}} {
+    if {$pe_base == ""} { set pe_base [get_pe_base_address] }
+    set peam [::arch::get_address_map $pe_base]
+    foreach m [tapasco::get_aximm_interfaces [get_bd_cells -filter {PATH !~ /uArch/*}]] {
+      set as [get_bd_addr_segs -addressables -of_objects $m]
+      puts "master: $m, segs: $as"
+      switch -glob [get_property NAME $m] {
+        "M_DMA" {
+          set base 0x00300000
+          foreach seg [lsort [get_bd_addr_segs -addressables -of_objects $m]] {
+            puts [format "  $seg -> 0x%08x" $base]
+            set sintf [get_bd_intf_pins -of_objects $seg]
+            set range [get_property RANGE $seg]
+            set kind [get_property USAGE $seg]
+            dict set peam $sintf "interface $sintf offset $base range $range kind $kind"
+            incr base 0x00010000
+          }
+        }
+        "M_INTC" {
+          set base 0x00400000
+          foreach seg [lsort [get_bd_addr_segs -addressables -of_objects $m]] {
+            puts [format "  $seg -> 0x%08x" $base]
+            set sintf [get_bd_intf_pins -of_objects $seg]
+            set range [get_property RANGE $seg]
+            set kind [get_property USAGE $seg]
+            dict set peam $sintf "interface $sintf offset $base range $range kind $kind"
+            incr base 0x00010000
+          }
+        }
+        "M_MSIX" {
+          set base 0x00500000
+          foreach seg [lsort [get_bd_addr_segs -addressables -of_objects $m]] {
+            puts [format "  $seg -> 0x%08x" $base]
+            set sintf [get_bd_intf_pins -of_objects $seg]
+            set range [get_property RANGE $seg]
+            set kind [get_property USAGE $seg]
+            dict set peam $sintf "interface $sintf offset $base range $range kind $kind"
+            incr base 0x00010000
+          }
+        }
+        "M_TAPASCO" {
+          set base 0x02800000
+          foreach seg [lsort [get_bd_addr_segs -addressables -of_objects $m]] {
+            puts [format "  $seg -> 0x%08x" $base]
+            set sintf [get_bd_intf_pins -of_objects $seg]
+            set range [get_property RANGE $seg]
+            set kind [get_property USAGE $seg]
+            dict set peam $sintf "interface $sintf offset $base range $range kind $kind"
+            incr base $range
+          }
+        }
+        "M_ARCH" {}
+        default {
+          puts "unknown master: $m"
+          set base 0
+          foreach seg [lsort [get_bd_addr_segs -addressables -of_objects $m]] {
+            puts [format "  $seg -> 0x%08x" $base]
+            set sintf [get_bd_intf_pins -of_objects $seg]
+            set range [get_property RANGE $seg]
+            set kind [get_property USAGE $seg]
+            dict set peam $sintf "interface $sintf offset $base range $range kind $kind"
+            incr base $range
+          }
+        }
+      }
+    }
+    return $peam
+  }
+
+  proc construct_address_map {{map ""}} {
+    if {$map == ""} { set map [get_address_map [get_pe_base_address]] }
+    puts "ADDRESS MAP: $map"
+    set seg_i 0
+    foreach space [get_bd_addr_spaces] {
+      puts "space: $space"
+      set intfs [get_bd_intf_pins -quiet -of_objects $space]
+      foreach intf $intfs {
+        set segs [get_bd_addr_segs -addressables -of_objects $intf]
+        foreach seg $segs {
+          puts "seg: $seg"
+          set sintf [get_bd_intf_pins -quiet -of_objects $seg]
+          if {[catch {dict get $map $intf}]} {
+            if {[catch {dict get $map $sintf}]} {
+              error "neither $intf nor $sintf were found in address map for $seg: $::errorInfo"
+            }
+            set me [dict get $map $sintf]
+          } else {
+            set me [dict get $map $intf]
+          }
+          puts "  address map info: $me]"
+          set range  [dict get $me "range"]
+          set offset [dict get $me "offset"]
+          puts "    offset: $offset"
+          puts "    range: $range"
+          create_bd_addr_seg \
+            -range $range \
+            -offset $offset \
+            $space \
+            $seg \
+            [format "AM_SEG_%03d" $seg_i]
+          incr seg_i
+        }
+      }
     }
   }
 }

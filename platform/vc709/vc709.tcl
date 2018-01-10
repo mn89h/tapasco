@@ -228,6 +228,7 @@ namespace eval platform {
 
     # create hierarchical ports
     set s_axi [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_HOST"]
+    set s_msix [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MSIX"]
     set m_arch [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_ARCH"]
     set m_intc [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_INTC"]
     set m_tapasco [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_TAPASCO"]
@@ -252,7 +253,7 @@ namespace eval platform {
     set mm_to_lite_dwidth [tapasco::createDWidthConverter "mm_to_lite_dwidth" 256]
 
     # connect PCIe slave to external port
-    connect_bd_intf_net $s_axi [get_bd_intf_pins axi_pcie3_0/S_AXI]
+    #connect_bd_intf_net $s_axi [get_bd_intf_pins axi_pcie3_0/S_AXI]
     # connect PCIe master to external port
     connect_bd_intf_net [get_bd_intf_pins axi_pcie3_0/M_AXI] [get_bd_intf_pins mm_to_lite_slice_before/S_AXI]
     # connect mm_to_lite datawidth converter to protocol converter
@@ -266,6 +267,12 @@ namespace eval platform {
     connect_bd_intf_net [get_bd_intf_pins mm_to_lite_slice_after/M_AXI] \
       [get_bd_intf_pins -of_objects $out_ic -filter "VLNV == [tapasco::get_vlnv aximm_intf] && MODE == Slave"]
 
+    set in_ic [tapasco::createInterconnect "in_ic" 2 1]
+    connect_bd_intf_net [get_bd_intf_pins S_HOST] [get_bd_intf_pins $in_ic/S00_AXI]
+    connect_bd_intf_net [get_bd_intf_pins S_MSIX] [get_bd_intf_pins $in_ic/S01_AXI]
+    connect_bd_intf_net [get_bd_intf_pins -of_object $in_ic -filter { MODE == Master }] \
+      [get_bd_intf_pins $pcie/S_AXI]
+
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M00_AXI}] $m_arch
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M01_AXI}] $m_intc
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M02_AXI}] $m_tapasco
@@ -275,19 +282,26 @@ namespace eval platform {
       [get_bd_pins $out_ic/ACLK] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ S0* && TYPE == clk}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == clk}] \
-      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == clk}]
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == clk}] \
+      [get_bd_pins -of_objects $in_ic  -filter {NAME =~ *00* && TYPE == clk}] \
+      [get_bd_pins -of_objects $in_ic  -filter {NAME == ACLK  && TYPE == clk}]
     connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == clk}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M02_* && TYPE == clk}]
+    connect_bd_net [tapasco::subsystem::get_port "mem" "clk"] \
+      [get_bd_pins -of_objects $in_ic -filter {NAME =~ S01_* && TYPE == clk}]
 
     connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] \
       [get_bd_pins $out_ic/ARESETN] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ S0* && TYPE == rst}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == rst}] \
-      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == rst}]
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == rst}] \
+      [get_bd_pins -of_objects $in_ic  -filter {NAME =~ *00* && TYPE == rst}]
     connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == rst}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M02_* && TYPE == rst}]
+    connect_bd_net [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"] \
+      [get_bd_pins -of_objects $in_ic -filter {NAME =~ S01_* && TYPE == rst}]
 
     set version [lindex [split [get_property VLNV [get_bd_cells axi_pcie3_0]] :] end]
     if {[expr "$version < 3.0"]} {
@@ -456,7 +470,7 @@ namespace eval platform {
   }
 
   proc get_pe_base_address {} {
-    return 0x00300000
+    return 0x02000000
   }
 
   proc platform_address_map_set {{tapasco_base 0x0}} {

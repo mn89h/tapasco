@@ -1017,24 +1017,31 @@ namespace eval tapasco {
     set addr [platform::get_address_map [platform::get_pe_base_address]]
     set slots [list]
     set slot_id 0
-    foreach a $addr {
-      if {[dict get $a "kind"] != "memory"} {
-        set kind [format "%d" [regsub {.*target_ip_([0-9][0-9]).*} [dict get $a "interface"] {\1}]]
-        set kid [dict get [tapasco::get_composition] $kind id]
-        lappend slots [json::write object "Type" [json::write string "Kernel"] "SlotId" $slot_id "Kernel" $kid]
-      } else {
-        lappend slots [json::write object "Type" [json::write string "Memory"] "SlotId" $slot_id "Bytes" [format "%d" [dict get $a "range"]]]
+    foreach intf [dict keys $addr] {
+      switch [dict get $addr $intf "kind"] {
+        "register" {
+          set kind [format "%d" [regsub {.*target_ip_([0-9][0-9]).*} $intf {\1}]]
+          set kid [dict get [tapasco::get_composition] $kind id]
+          lappend slots [json::write object "Type" [json::write string "Kernel"] "SlotId" $slot_id "Kernel" $kid]
+          incr slot_id
+        }
+        "memory" {
+          lappend slots [json::write object "Type" [json::write string "Memory"] "SlotId" $slot_id "Bytes" [format "%d" [dict get $addr $intf "range"]]]
+          incr slot_id
+        }
+        "master" {}
+        default { error "invalid kind: [dict get $addr $intf kind]" }
       }
-      incr slot_id
     }
 
     set regex {([0-9][0-9][0-9][0-9]).([0-9][0-9]*)}
     set no_pes [llength [arch::get_processing_elements]]
     set no_intc [expr "$no_pes > 96 ? 4 : ($no_pes > 64 ? 3 : ($no_pes > 32 ? 2 : 1))"]
+    set ts [clock seconds]
 
     return [json::write object \
       "Composition" [json::write array {*}$slots] \
-      "Timestamp" [clock seconds] \
+      "Timestamp" [expr "$ts - ($ts \% 86400)"] \
       "Interrupt Controllers" $no_intc \
       "Versions" [json::write array \
         [json::write object "Software" [json::write string "Vivado"] "Year" [regsub $regex [version -short] {\1}] "Release" [regsub $regex [version -short] {\2}]] \
@@ -1043,7 +1050,7 @@ namespace eval tapasco {
       "Clocks" [json::write array \
         [json::write object "Domain" [json::write string "Host"] "Frequency" [tapasco::get_host_frequency]] \
         [json::write object "Domain" [json::write string "Design"] "Frequency" [tapasco::get_design_frequency]] \
-        [json::write object "Domain" [json::write string "Memory"] "Frequency" [tapasco::get_memory_frequency]] \
+        [json::write object "Domain" [json::write string "Memory"] "Frequency" [tapasco::get_mem_frequency]] \
       ] \
       "Capabilities" [json::write object "Capabilities 0" [get_capabilities_flags]] \
     ]
