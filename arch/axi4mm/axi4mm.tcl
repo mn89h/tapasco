@@ -16,9 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
-# @file		axi4mm.tcl
-# @brief	AXI4 memory mapped master/slave interface based Architectures.
-# @author	J. Korinth, TU Darmstadt (jk@esa.tu-darmstadt.de)
+# @file    axi4mm.tcl
+# @brief  AXI4 memory mapped master/slave interface based Architectures.
+# @author  J. Korinth, TU Darmstadt (jk@esa.tu-darmstadt.de)
 #
 namespace eval arch {
   namespace export create
@@ -318,7 +318,7 @@ namespace eval arch {
     set i 0
     set j 0
     set left [llength $ips]
-    set cc [tapasco::createConcat "xlconcat_$j" [expr "[llength $ips] > 32 ? 32 : [llength $ips]"]]
+    set cc [tapasco::ip::create_xlconcat "xlconcat_$j" [expr "[llength $ips] > 32 ? 32 : [llength $ips]"]]
     lappend arch_irq_concats $cc
     foreach ip [lsort $ips] {
       foreach pin [get_bd_pins -of $ip -filter { TYPE == intr }] {
@@ -327,11 +327,11 @@ namespace eval arch {
         incr left -1
         if {$i > 31} {
           set i 0
-  	incr j
-  	if { $left > 0 } {
-  	  set cc [tapasco::createConcat "xlconcat_$j" [expr "$left > 32 ? 32 : $left"]]
-  	  lappend arch_irq_concats $cc
-  	}
+          incr j
+          if { $left > 0 } {
+            set cc [tapasco::ip::create_xlconcat "xlconcat_$j" [expr "$left > 32 ? 32 : $left"]]
+            lappend arch_irq_concats $cc
+          }
         }
       }
     }

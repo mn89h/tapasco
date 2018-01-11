@@ -65,6 +65,8 @@ namespace eval platform {
     wire_subsystem_wires
     wire_subsystem_intfs
     construct_address_map
+
+    tapasco::call_plugins "post-platform"
   }
 
   proc connect_subsystems {} {
@@ -81,9 +83,9 @@ namespace eval platform {
   }
 
   proc create_subsystem_tapasco {} {
-    set port [create_bd_intf_pin -vlnv [tapasco::get_vlnv "aximm_intf"] -mode Slave "S_TAPASCO"]
-    set tapasco_status [tapasco::createTapascoStatus "tapasco_status"]
-    connect_bd_intf_net $port [get_bd_intf_pins -of_objects $tapasco_status -filter "VLNV == [tapasco::get_vlnv aximm_intf] && MODE == Slave"]
+    set port [create_bd_intf_pin -vlnv [tapasco::ip::get_vlnv "aximm_intf"] -mode Slave "S_TAPASCO"]
+    set tapasco_status [tapasco::ip::create_tapasco_status "tapasco_status"]
+    connect_bd_intf_net $port [get_bd_intf_pins -of_objects $tapasco_status -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Slave"]
     connect_bd_net [tapasco::subsystem::get_port "design" "clk"] [get_bd_pins -of_objects $tapasco_status -filter {TYPE == clk && DIR == I}]
     connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "reset"] [get_bd_pins -of_objects $tapasco_status -filter {TYPE == rst && DIR == I}]
   }

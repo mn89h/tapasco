@@ -26,8 +26,8 @@ namespace eval fancontrol {
     if {[tapasco::is_feature_enabled "FanControl"]} {
       put "Building primitive PWM module to subdue the noisy ZC706 fan ..."
       set ps [get_bd_cell -hierarchical -filter {VLNV =~ "xilinx.com:ip:processing_system*"}]
-      set cnt [tapasco::createBinaryCounter "pwmcounter" 4]
-      set sli [tapasco::createSlice "pwmslice" 4 3]
+      set cnt [tapasco::ip::create_bincnt "pwmcounter" 4]
+      set sli [tapasco::ip::create_xlslice "pwmslice" 4 3]
       set pwm [create_bd_port -dir O "pwm"]
       connect_bd_net $pwm [get_bd_pins "pwmslice/Dout"]
       connect_bd_net [get_bd_pins "pwmcounter/Q"] [get_bd_pins "pwmslice/Din"]

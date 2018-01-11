@@ -43,7 +43,7 @@ namespace eval leds {
     set cell [create_bd_cell -type hier "${name}_splitter"]
     current_bd_instance $cell
     for {set i 0} {$i < $width} {incr i} {
-      set slice [tapasco::createSlice ${name}_$i $width $i]
+      set slice [tapasco::ip::create_xlslice ${name}_$i $width $i]
       connect_bd_net $input [get_bd_pins -of_objects $slice -filter { DIR == I }]
       lappend pins [get_bd_pins -of_objects $slice -filter { DIR == O }]
     }
@@ -67,7 +67,7 @@ namespace eval leds {
     set total_width [calc_total_width $rlist]
     if {$total_width < 6} {
       # create tie-off constant zero
-      set zero [tapasco::createConstant zero 1 0]
+      set zero [tapasco::ip::create_constant zero 1 0]
       set pin [get_bd_pins -of_objects $zero -filter {DIR == "O"}]
       for {set i $total_width} {$i < 6} {incr i} { lappend rlist $pin }
     }
@@ -89,7 +89,7 @@ namespace eval leds {
 
     set inputs [get_led_inputs $inputs]
     puts "  Inputs: $inputs"
-    set led_concat [tapasco::createConcat led_concat 6]
+    set led_concat [tapasco::ip::create_xlconcat led_concat 6]
 
     # connect the inputs
     for {set i 0} {$i < 6 && [llength $inputs] > $i} {incr i} {

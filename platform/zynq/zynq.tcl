@@ -83,17 +83,17 @@ namespace eval platform {
 
       # create interrupt controllers and connect them to GP1
       set intcs [list]
-      set cc [tapasco::createConcat "intc_concat" [llength $irqs]]
+      set cc [tapasco::ip::create_xlconcat "intc_concat" [llength $irqs]]
       set i 0
       foreach irq $irqs {
-        set intc [tapasco::createIntCtrl [format "axi_intc_%02d" $i]]
+        set intc [tapasco::ip::create_axi_irqc [format "axi_intc_%02d" $i]]
         lappend intcs $intc
         connect_bd_net -boundary_type upper $irq [get_bd_pins -of $intc -filter {NAME=="intr"}]
         connect_bd_net -boundary_type upper [get_bd_pins -of $intc -filter {NAME=="irq"}] [get_bd_pins -of $cc -filter "NAME == [format "In%d" $i]"]
         incr i
       }
 
-      set intcic [tapasco::createInterconnect "axi_intc_ic" 1 [llength $intcs]]
+      set intcic [tapasco::ip::create_axi_ic "axi_intc_ic" 1 [llength $intcs]]
       set i 0
       foreach intc $intcs {
         set slave [get_bd_intf_pins -of $intc -filter { MODE == "Slave" }]
@@ -121,7 +121,7 @@ namespace eval platform {
           lappend c [dict get $composition $i id]
         }
       }
-      set tapasco_status [tapasco::createTapascoStatus "tapasco_status" $c]
+      set tapasco_status [tapasco::ip::create_tapasco_status "tapasco_status" $c]
       return $tapasco_status
     }
 
@@ -149,20 +149,20 @@ namespace eval platform {
       # create interrupt controllers and connect them to GP1
       set intcs [list]
       foreach irq $irqs {
-        set intc [tapasco::createIntCtrl [format "axi_intc_%02d" [llength $intcs]]]
+        set intc [tapasco::ip::create_axi_irqc [format "axi_intc_%02d" [llength $intcs]]]
         connect_bd_net $irq [get_bd_pins -of $intc -filter {NAME=="intr"}]
         lappend intcs $intc
       }
 
       # concatenate interrupts and connect them to port
-      set int_cc [tapasco::createConcat "int_cc" [llength $irqs]]
+      set int_cc [tapasco::ip::create_xlconcat "int_cc" [llength $irqs]]
       for {set i 0} {$i < [llength $irqs]} {incr i} {
         connect_bd_net [get_bd_pins "[lindex $intcs $i]/irq"] [get_bd_pins "$int_cc/In$i"]
       }
       connect_bd_net [get_bd_pins "$int_cc/dout"] $irq_out
       connect_bd_net $irq_out $ps_irq_in
 
-      set intcic [tapasco::createInterconnect "axi_intc_ic" 1 [llength $intcs]]
+      set intcic [tapasco::ip::create_axi_ic "axi_intc_ic" 1 [llength $intcs]]
       set i 0
       foreach intc $intcs {
         set slave [get_bd_intf_pins -of $intc -filter { MODE == "Slave" }]
@@ -213,7 +213,7 @@ namespace eval platform {
       set fclk0_aresetn [create_bd_pin -type "rst" -dir "O" "ps_resetn"]
 
       # generate PS7 instance
-      set ps [tapasco::createZynqPS "ps7" [tapasco::get_board_preset] [tapasco::get_design_frequency]]
+      set ps [tapasco::ip::create_ps "ps7" [tapasco::get_board_preset] [tapasco::get_design_frequency]]
       if {[tapasco::get_board_preset] != {}} {
         set_property -dict [list CONFIG.preset [tapasco::get_board_preset]] $ps
       }
@@ -274,7 +274,7 @@ namespace eval platform {
       set ext_reset_ins [list]
       for {set i 0} {$i < [llength $clocks]} {incr i} {
         set clock [lindex $clocks $i]
-        set rst_gen [tapasco::createResetGen "rst_gen_$i"]
+        set rst_gen [tapasco::ip::create_rst_gen "rst_gen_$i"]
         set cn [get_property "NAME" [get_bd_pins $clock]]
         connect_bd_net $clock [get_bd_pins "$rst_gen/slowest_sync_clk"]
         lappend ext_reset_ins [get_bd_pins "$rst_gen/ext_reset_in"]

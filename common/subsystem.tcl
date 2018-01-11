@@ -31,12 +31,10 @@ namespace eval subsystem {
   proc create {name {is_source false}} {
     set instance [current_bd_instance]
     set cell [create_bd_cell -type hier $name]
-    set intf_vlnv [tapasco::get_vlnv "tapasco_clocks_resets"]
     current_bd_instance $cell
     set d [expr "{$is_source} ? {O} : {I}"]
 
     foreach c {host design mem} {
-      puts "  creating $c connections ..."
       set clk   [create_bd_pin -type clk -dir $d "${c}_clk"]
       set prstn [create_bd_pin -type rst -dir $d "${c}_peripheral_aresetn"]
       set prst  [create_bd_pin -type rst -dir $d "${c}_peripheral_areset"]

@@ -56,7 +56,7 @@ namespace eval platform {
     set irqs [arch::get_irqs]
     puts "Connecting [llength $irqs] interrupts .."
     # create hierarchical ports
-    set s_axi [create_bd_intf_pin -mode Slave -vlnv [tapasco::get_vlnv "aximm_intf"] "S_INTC"]
+    set s_axi [create_bd_intf_pin -mode Slave -vlnv [tapasco::ip::get_vlnv "aximm_intf"] "S_INTC"]
     set aclk [tapasco::subsystem::get_port "host" "clk"]
     set ic_aresetn [tapasco::subsystem::get_port "host" "rst" "interconnect"]
     set p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
@@ -69,16 +69,16 @@ namespace eval platform {
     set msix_data [create_bd_pin -from 31 -to 0 -dir "O" "msix_data"]
     set msix_addr [create_bd_pin -from 63 -to 0 -dir "O" "msix_addr"]
     set msix_int [create_bd_pin -dir "O" "msix_int"]
-    set m_axi [create_bd_intf_pin -mode Master -vlnv [tapasco::get_vlnv "aximm_intf"] "M_MSIX"]
+    set m_axi [create_bd_intf_pin -mode Master -vlnv [tapasco::ip::get_vlnv "aximm_intf"] "M_MSIX"]
 
     set num_irqs 132
     set num_irqs_threadpools 128
 
-    set irq_concat_ss [tapasco::createConcat "interrupt_concat" 6]
-    set irq_unused [tapasco::createConstant "irq_unused" 4 0]
+    set irq_concat_ss [tapasco::ip::create_xlconcat "interrupt_concat" 6]
+    set irq_unused [tapasco::ip::create_constant "irq_unused" 4 0]
 
     # create MSIX interrupt controller
-    set msix_intr_ctrl [tapasco::createMSIXIntrCtrl "msix_intr_ctrl"]
+    set msix_intr_ctrl [tapasco::ip::create_msix_intr_ctrl "msix_intr_ctrl"]
     connect_bd_net [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "dout"}] [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "interrupt"}]
 
     set curr_pcie_line 4
@@ -146,8 +146,8 @@ namespace eval platform {
 
     # create instances of cores: MIG core, dual DMA, system cache
     set mig [create_mig_core "mig"]
-    set dual_dma [tapasco::createDualDMA "dual_dma"]
-    set mig_ic [tapasco::createInterconnect "mig_ic" 2 1]
+    set dual_dma [tapasco::ip::create_dualdma "dual_dma"]
+    set mig_ic [tapasco::ip::create_axi_ic "mig_ic" 2 1]
     set_property -dict [list \
       CONFIG.S01_HAS_DATA_FIFO {2}
     ] $mig_ic
@@ -157,7 +157,7 @@ namespace eval platform {
     if {$cache_en} {
       set cf [tapasco::get_feature "Cache"]
       puts "Platform configured w/L2 Cache, implementing ..."
-      set cache [tapasco::createSystemCache "cache_l2" 1 \
+      set cache [tapasco::ip::create_axi_cache "cache_l2" 1 \
           [dict get [tapasco::get_feature "Cache"] "size"] \
           [dict get [tapasco::get_feature "Cache"] "associativity"]]
 
@@ -248,11 +248,11 @@ namespace eval platform {
 
     # create instances of cores: PCIe core, mm_to_lite
     set pcie [create_pcie_core]
-    set mm_to_lite_proto [tapasco::createProtocolConverter "mm_to_lite_proto" "AXI4" "AXI4LITE"]
-    set mm_to_lite_slice_before [tapasco::createRegisterSlice "mm_to_lite_slice_before"]
-    set mm_to_lite_slice_mid [tapasco::createRegisterSlice "mm_to_lite_slice_mid"]
-    set mm_to_lite_slice_after [tapasco::createRegisterSlice "mm_to_lite_slice_after"]
-    set mm_to_lite_dwidth [tapasco::createDWidthConverter "mm_to_lite_dwidth" 256]
+    set mm_to_lite_proto [tapasco::ip::create_proto_conv "mm_to_lite_proto" "AXI4" "AXI4LITE"]
+    set mm_to_lite_slice_before [tapasco::ip::create_axi_reg_slice "mm_to_lite_slice_before"]
+    set mm_to_lite_slice_mid [tapasco::ip::create_axi_reg_slice "mm_to_lite_slice_mid"]
+    set mm_to_lite_slice_after [tapasco::ip::create_axi_reg_slice "mm_to_lite_slice_after"]
+    set mm_to_lite_dwidth [tapasco::ip::create_dwidth_conv "mm_to_lite_dwidth" 256]
 
     # connect PCIe slave to external port
     #connect_bd_intf_net $s_axi [get_bd_intf_pins axi_pcie3_0/S_AXI]
@@ -265,11 +265,11 @@ namespace eval platform {
     connect_bd_intf_net [get_bd_intf_pins mm_to_lite_proto/M_AXI] [get_bd_intf_pins mm_to_lite_slice_after/S_AXI]
 
     # FIXME are the default settings for the IC ok?
-    set out_ic [tapasco::createInterconnect "out_ic" 1 4]
+    set out_ic [tapasco::ip::create_axi_ic "out_ic" 1 4]
     connect_bd_intf_net [get_bd_intf_pins mm_to_lite_slice_after/M_AXI] \
-      [get_bd_intf_pins -of_objects $out_ic -filter "VLNV == [tapasco::get_vlnv aximm_intf] && MODE == Slave"]
+      [get_bd_intf_pins -of_objects $out_ic -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Slave"]
 
-    set in_ic [tapasco::createInterconnect "in_ic" 2 1]
+    set in_ic [tapasco::ip::create_axi_ic "in_ic" 2 1]
     connect_bd_intf_net [get_bd_intf_pins S_HOST] [get_bd_intf_pins $in_ic/S00_AXI]
     connect_bd_intf_net [get_bd_intf_pins S_MSIX] [get_bd_intf_pins $in_ic/S01_AXI]
     connect_bd_intf_net [get_bd_intf_pins -of_object $in_ic -filter { MODE == Master }] \
@@ -344,9 +344,9 @@ namespace eval platform {
     set design_clk_aresetn [create_bd_pin -type "rst" -dir "I" "design_aresetn"]
 
     # create reset generator
-    set host_rst_gen [tapasco::createResetGen "host_rst_gen"]
-    set design_rst_gen [tapasco::createResetGen "design_rst_gen"]
-    set mem_rst_gen [tapasco::createResetGen "mem_rst_gen"]
+    set host_rst_gen [tapasco::ip::create_rst_gen "host_rst_gen"]
+    set design_rst_gen [tapasco::ip::create_rst_gen "design_rst_gen"]
+    set mem_rst_gen [tapasco::ip::create_rst_gen "mem_rst_gen"]
 
     # connect external ports
     connect_bd_net $pcie_clk [get_bd_pins $host_rst_gen/slowest_sync_clk] [tapasco::subsystem::get_port "host" "clk"]
@@ -381,7 +381,7 @@ namespace eval platform {
     set reset [ create_bd_port -dir I -type rst reset ]
     set_property -dict [ list CONFIG.POLARITY {ACTIVE_HIGH}  ] $reset
     # create the IP core itself
-    set mig_7series_0 [tapasco::createMIG $name]
+    set mig_7series_0 [tapasco::ip::create_mig_core $name]
     # generate the PRJ File for MIG
     set str_mig_folder [get_property IP_DIR [ get_ips [ get_property CONFIG.Component_Name $mig_7series_0 ] ] ]
     set str_mig_file_name mig_a.prj
@@ -405,7 +405,7 @@ namespace eval platform {
     set pcie_perst [ create_bd_port -dir I -type rst pcie_perst ]
     set_property -dict [ list CONFIG.POLARITY {ACTIVE_LOW}  ] $pcie_perst
     # create PCIe core
-    set axi_pcie3_0 [tapasco::createPCIeBridge "axi_pcie3_0"]
+    set axi_pcie3_0 [tapasco::ip::create_axi_pcie3_0 "axi_pcie3_0"]
     set pcie_properties [list \
       CONFIG.SYS_RST_N_BOARD_INTERFACE {pcie_perst} \
       CONFIG.axi_data_width {256_bit} \
@@ -462,7 +462,7 @@ namespace eval platform {
     set inst [current_bd_instance]
     set engine [create_bd_cell -type hier dma_engine]
     current_bd_instance $engine
-    set dual_dma_0 [tapasco::createDualDMA dual_dma_0]
+    set dual_dma_0 [tapasco::ip::create_dualdma dual_dma_0]
     current_bd_instance $inst
   }
 
@@ -552,13 +552,13 @@ namespace eval platform {
     set ss_reset [create_subsystem_reset]
 
     # create AXI infrastructure
-    set axi_ic_to_host [tapasco::createInterconnect "axi_ic_to_host" 2 1]
+    set axi_ic_to_host [tapasco::ip::create_axi_ic "axi_ic_to_host" 2 1]
 
-    set axi_ic_from_host [tapasco::createInterconnect "axi_ic_from_host" 1 4]
+    set axi_ic_from_host [tapasco::ip::create_axi_ic "axi_ic_from_host" 1 4]
 
     set axi_ic_to_mem [list]
     if {[llength [arch::get_masters]] > 0} {
-      set axi_ic_to_mem [tapasco::createInterconnect "axi_ic_to_mem" [llength [arch::get_masters]] 1]
+      set axi_ic_to_mem [tapasco::ip::create_axi_ic "axi_ic_to_mem" [llength [arch::get_masters]] 1]
       connect_bd_intf_net [get_bd_intf_pins $axi_ic_to_mem/M00_AXI] [get_bd_intf_pins /Memory/s_axi_mem]
     }
 
@@ -569,7 +569,7 @@ namespace eval platform {
     }
 
     # always create TPC status core
-    set tapasco_status [tapasco::createTapascoStatus "tapasco_status"]
+    set tapasco_status [tapasco::ip::create_tapasco_status "tapasco_status"]
     connect_bd_intf_net [get_bd_intf_pins $axi_ic_from_host/M03_AXI] [get_bd_intf_pins $tapasco_status/S00_AXI]
 
     # connect PCIe <-> InterruptControl
