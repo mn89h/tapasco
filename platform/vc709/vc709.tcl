@@ -74,8 +74,8 @@ namespace eval platform {
     set num_irqs 132
     set num_irqs_threadpools 128
 
-    set irq_concat_ss [tapasco::createConcat "interrupt_concat" 8]
-    set irq_unused [tapasco::createConstant "irq_unused" 1 0]
+    set irq_concat_ss [tapasco::createConcat "interrupt_concat" 6]
+    set irq_unused [tapasco::createConstant "irq_unused" 4 0]
 
     # create MSIX interrupt controller
     set msix_intr_ctrl [tapasco::createMSIXIntrCtrl "msix_intr_ctrl"]
@@ -100,8 +100,10 @@ namespace eval platform {
     connect_bd_net $dma_irq [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In0"}]
     puts "Unused Interrupts: 1, 2, 3 are tied to 0"
     connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In1"}]
-    connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In2"}]
-    connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In3"}]
+    for {set i 0} {$i < 4} {incr i} {
+      set port [create_bd_pin -dir I -type intr "irq_$i"]
+      connect_bd_net $port [get_bd_pin $irq_concat_ss/[format "In%d" [expr "$i + 2"]]]
+    }
 
     # connect internal clocks
     connect_bd_net $aclk [get_bd_pins -of_objects [get_bd_cells -filter {VLNV !~ "*:tapasco:*"}] -filter {TYPE == "clk" && DIR == "I"}]
@@ -283,25 +285,20 @@ namespace eval platform {
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ S0* && TYPE == clk}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == clk}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == clk}] \
-      [get_bd_pins -of_objects $in_ic  -filter {NAME =~ *00* && TYPE == clk}] \
-      [get_bd_pins -of_objects $in_ic  -filter {NAME == ACLK  && TYPE == clk}]
+      [get_bd_pins -of_objects $in_ic  -filter {TYPE == clk}]
     connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == clk}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M02_* && TYPE == clk}]
-    connect_bd_net [tapasco::subsystem::get_port "mem" "clk"] \
-      [get_bd_pins -of_objects $in_ic -filter {NAME =~ S01_* && TYPE == clk}]
 
     connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] \
       [get_bd_pins $out_ic/ARESETN] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ S0* && TYPE == rst}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == rst}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == rst}] \
-      [get_bd_pins -of_objects $in_ic  -filter {NAME =~ *00* && TYPE == rst}]
+      [get_bd_pins -of_objects $in_ic  -filter {TYPE == rst}]
     connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == rst}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M02_* && TYPE == rst}]
-    connect_bd_net [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"] \
-      [get_bd_pins -of_objects $in_ic -filter {NAME =~ S01_* && TYPE == rst}]
 
     set version [lindex [split [get_property VLNV [get_bd_cells axi_pcie3_0]] :] end]
     if {[expr "$version < 3.0"]} {

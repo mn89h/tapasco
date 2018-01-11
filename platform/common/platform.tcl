@@ -201,72 +201,35 @@ namespace eval platform {
   }
 
   proc get_address_map {{pe_base ""}} {
+    set max64 [expr "1 << 64"]
     if {$pe_base == ""} { set pe_base [get_pe_base_address] }
     set peam [::arch::get_address_map $pe_base]
+    puts "Computing addresses for masters ..."
     foreach m [tapasco::get_aximm_interfaces [get_bd_cells -filter {PATH !~ /uArch/*}]] {
-      set as [get_bd_addr_segs -addressables -of_objects $m]
-      puts "master: $m, segs: $as"
       switch -glob [get_property NAME $m] {
-        "M_DMA" {
-          set base 0x00300000
-          foreach seg [lsort [get_bd_addr_segs -addressables -of_objects $m]] {
-            puts [format "  $seg -> 0x%08x" $base]
-            set sintf [get_bd_intf_pins -of_objects $seg]
-            set range [get_property RANGE $seg]
-            set kind [get_property USAGE $seg]
-            dict set peam $sintf "interface $sintf offset $base range $range kind $kind"
-            incr base 0x00010000
-          }
-        }
-        "M_INTC" {
-          set base 0x00400000
-          foreach seg [lsort [get_bd_addr_segs -addressables -of_objects $m]] {
-            puts [format "  $seg -> 0x%08x" $base]
-            set sintf [get_bd_intf_pins -of_objects $seg]
-            set range [get_property RANGE $seg]
-            set kind [get_property USAGE $seg]
-            dict set peam $sintf "interface $sintf offset $base range $range kind $kind"
-            incr base 0x00010000
-          }
-        }
-        "M_MSIX" {
-          set base 0x00500000
-          foreach seg [lsort [get_bd_addr_segs -addressables -of_objects $m]] {
-            puts [format "  $seg -> 0x%08x" $base]
-            set sintf [get_bd_intf_pins -of_objects $seg]
-            set range [get_property RANGE $seg]
-            set kind [get_property USAGE $seg]
-            dict set peam $sintf "interface $sintf offset $base range $range kind $kind"
-            incr base 0x00010000
-          }
-        }
-        "M_TAPASCO" {
-          set base 0x02800000
-          foreach seg [lsort [get_bd_addr_segs -addressables -of_objects $m]] {
-            puts [format "  $seg -> 0x%08x" $base]
-            set sintf [get_bd_intf_pins -of_objects $seg]
-            set range [get_property RANGE $seg]
-            set kind [get_property USAGE $seg]
-            dict set peam $sintf "interface $sintf offset $base range $range kind $kind"
-            incr base $range
-          }
-        }
-        "M_ARCH" {}
-        default {
-          puts "unknown master: $m"
-          set base 0
-          foreach seg [lsort [get_bd_addr_segs -addressables -of_objects $m]] {
-            puts [format "  $seg -> 0x%08x" $base]
-            set sintf [get_bd_intf_pins -of_objects $seg]
-            set range [get_property RANGE $seg]
-            set kind [get_property USAGE $seg]
-            dict set peam $sintf "interface $sintf offset $base range $range kind $kind"
-            incr base $range
-          }
-        }
+        "M_DMA"     { foreach {base stride range} [list 0x00300000 0x10000 0     ] {} }
+        "M_INTC"    { foreach {base stride range} [list 0x00400000 0x10000 0     ] {} }
+        "M_MSIX"    { foreach {base stride range} [list 0x00500000 0x10000 $max64] {} }
+        "M_TAPASCO" { foreach {base stride range} [list 0x02800000 0       0     ] {} }
+        "M_HOST"    { foreach {base stride range} [list 0          0       $max64] {} }
+        "M_ARCH"    { set base "skip" }
+        default     { foreach {base stride range} [list 0 0 0]                     {} }
       }
+      if {$base != "skip"} { set peam [assign_address $peam $m $base $stride $range] }
     }
     return $peam
+  }
+
+  proc assign_address {address_map master base {stride 0} {range 0}} {
+    foreach seg [lsort [get_bd_addr_segs -addressables -of_objects $master]] {
+      puts [format "  $master: $seg -> 0x%08x (range: 0x%08x)" $base $range]
+      set sintf [get_bd_intf_pins -of_objects $seg]
+      if {$range <= 0} { set range [get_property RANGE $seg] }
+      set kind [get_property USAGE $seg]
+      dict set address_map $sintf "interface $sintf offset $base range $range kind $kind"
+      if {$stride == 0} { incr base $range } else { incr base $stride }
+    }
+    return $address_map
   }
 
   proc construct_address_map {{map ""}} {
@@ -275,11 +238,11 @@ namespace eval platform {
     set seg_i 0
     foreach space [get_bd_addr_spaces] {
       puts "space: $space"
-      set intfs [get_bd_intf_pins -quiet -of_objects $space]
+      set intfs [get_bd_intf_pins -quiet -of_objects $space -filter { MODE == Master }]
       foreach intf $intfs {
         set segs [get_bd_addr_segs -addressables -of_objects $intf]
         foreach seg $segs {
-          puts "seg: $seg"
+          puts "  seg: $seg"
           set sintf [get_bd_intf_pins -quiet -of_objects $seg]
           if {[catch {dict get $map $intf}]} {
             if {[catch {dict get $map $sintf}]} {
@@ -289,14 +252,17 @@ namespace eval platform {
           } else {
             set me [dict get $map $intf]
           }
-          puts "  address map info: $me]"
+          puts "    address map info: $me]"
           set range  [dict get $me "range"]
           set offset [dict get $me "offset"]
-          puts "    offset: $offset"
-          puts "    range: $range"
+          puts "      range: $range"
+          puts "      offset: $offset"
+          puts "      space: $space"
+          puts "      seg: $seg"
+          if {[expr "(1 << 64) == $range"]} { set range "16E" }
           create_bd_addr_seg \
-            -range $range \
             -offset $offset \
+            -range $range \
             $space \
             $seg \
             [format "AM_SEG_%03d" $seg_i]
