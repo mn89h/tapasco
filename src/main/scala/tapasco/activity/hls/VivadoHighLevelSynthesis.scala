@@ -55,6 +55,7 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
       new FileWriter(script.toString).append(makeScript(k, t)).close()  // write Tcl file
       val runName = "'%s' for %s".format(k.name, t.toString)
       logger.info("starting run {}: output in {}", runName: Any, logfile)
+      logfile.toFile.delete
       cfg.verbose foreach { mode =>
         logger.info("verbose mode {} is active, starting to watch {}", mode: Any, logfile)
         lt += logfile
