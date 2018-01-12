@@ -1,7 +1,7 @@
 if which locate > /dev/null 2>&1; then
-  LIBMPFR=`locate -l1 libmpfr`
+  LIBMPFR=`locate libmpfr | grep '\.so\.' | sort -nr | head -1`
 else
-  LIBMPFR=`find /usr -name 'libmpfr*so*' 2>/dev/null | head -1`
+  LIBMPFR=`find /usr -name 'libmpfr*so*' 2>/dev/null | sort -nr | head -1`
 fi
 
 if [ -n "$BASH_VERSION" ]; then
