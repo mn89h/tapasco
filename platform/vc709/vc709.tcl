@@ -39,6 +39,26 @@ namespace eval platform {
     return [list 128]
   }
 
+  proc get_address_map {{pe_base ""}} {
+    set max64 [expr "1 << 64"]
+    if {$pe_base == ""} { set pe_base [get_pe_base_address] }
+    set peam [::arch::get_address_map $pe_base]
+    puts "Computing addresses for masters ..."
+    foreach m [::tapasco::get_aximm_interfaces [get_bd_cells -filter "PATH !~ [::tapasco::subsystem::get arch]/*"]] {
+      switch -glob [get_property NAME $m] {
+        "M_DMA"     { foreach {base stride range} [list 0x00300000 0x10000 0     ] {} }
+        "M_INTC"    { foreach {base stride range} [list 0x00400000 0x10000 0     ] {} }
+        "M_MSIX"    { foreach {base stride range} [list 0x00500000 0x10000 $max64] {} }
+        "M_TAPASCO" { foreach {base stride range} [list 0x02800000 0       0     ] {} }
+        "M_HOST"    { foreach {base stride range} [list 0          0       $max64] {} }
+        "M_ARCH"    { set base "skip" }
+        default     { foreach {base stride range} [list 0 0 0]                     {} }
+      }
+      if {$base != "skip"} { set peam [assign_address $peam $m $base $stride $range] }
+    }
+    return $peam
+  }
+
   # Setup the clock network.
   proc platform_connect_clock {clock_pin} {
     puts "Connecting clocks ..."
@@ -80,13 +100,6 @@ namespace eval platform {
     # create MSIX interrupt controller
     set msix_intr_ctrl [tapasco::ip::create_msix_intr_ctrl "msix_intr_ctrl"]
     connect_bd_net [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "dout"}] [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "interrupt"}]
-
-    set curr_pcie_line 4
-    # connect interrupts to interrupt controller
-    foreach irq $irqs {
-      connect_bd_net -boundary_type upper $irq [get_bd_pins -of $irq_concat_ss -filter "NAME == [format "In%d" $curr_pcie_line]"]
-      incr curr_pcie_line 1
-    }
 
     connect_bd_intf_net [get_bd_intf_pins -of_objects $msix_intr_ctrl -filter {NAME == "M_AXI"}] $m_axi
     connect_bd_net [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "cfg_interrupt_msix_address"}] $msix_addr
@@ -457,227 +470,8 @@ namespace eval platform {
     return $axi_pcie3_0
   }
 
-  proc platform_create_dma_engine {{name "dma_engine"}} {
-    puts "Creating DMA engine submodule ..."
-    set inst [current_bd_instance]
-    set engine [create_bd_cell -type hier dma_engine]
-    current_bd_instance $engine
-    set dual_dma_0 [tapasco::ip::create_dualdma dual_dma_0]
-    current_bd_instance $inst
-  }
-
   proc get_pe_base_address {} {
     return 0x02000000
-  }
-
-  proc platform_address_map_set {{tapasco_base 0x0}} {
-    # connect AXI slaves
-    set master_addr_space [get_bd_addr_spaces "/PCIe/axi_pcie3_0/M_AXI"]
-    # connect DMA controllers
-    set dmas [lsort [get_bd_addr_segs -of_objects [get_bd_cells "/Memory/dual_dma*"]]]
-    set offset [expr "$tapasco_base + 0x00300000"]
-    for {set i 0} {$i < [llength $dmas]} {incr i; incr offset 0x10000} {
-      create_bd_addr_seg -range 64K -offset $offset $master_addr_space [lindex $dmas $i] "DMA_SEG$i"
-    }
-    # connect interrupt controllers
-    set intcs [lsort [get_bd_addr_segs -of_objects [get_bd_cells /InterruptControl/axi_intc_0*]]]
-    set offset [expr "$tapasco_base + 0x00400000"]
-    for {set i 0} {$i < [llength $intcs]} {incr i; incr offset 0x10000} {
-      create_bd_addr_seg -range 64K -offset $offset $master_addr_space [lindex $intcs $i] "INTC_SEG$i"
-    }
-    set msix [get_bd_addr_segs -of_objects [get_bd_cells /InterruptControl/msix_intr_ctrl]]
-    set offset [expr "$tapasco_base + 0x00500000"]
-    create_bd_addr_seg -range 64K -offset $offset $master_addr_space $msix "MSIX_SEG"
-
-    # connect TPC status core
-    set status_segs [get_bd_addr_segs -of_objects [get_bd_cells "tapasco_status"]]
-    set offset [expr "$tapasco_base + 0x02800000"]
-    set i 0
-    foreach s $status_segs {
-      create_bd_addr_seg -range 4K -offset $offset $master_addr_space $s "STATUS_SEG$i"
-      incr i
-      incr offset 0x1000
-    }
-
-    # connect user IP
-    set usrs [lsort [get_bd_addr_segs "/uArch/*"]]
-    set offset [expr "$tapasco_base + 0x02000000"]
-    for {set i 0} {$i < [llength $usrs]} {incr i; incr offset 0x10000} {
-      create_bd_addr_seg -range 64K -offset $offset $master_addr_space [lindex $usrs $i] "USR_SEG$i"
-    }
-
-    # connect AXI masters
-    foreach dma [lsort [get_bd_cells "/Memory/dual_dma*"]] {
-      # connect DMA masters
-      set ms [get_bd_addr_spaces $dma/M64_AXI]
-      set ts [get_bd_addr_segs /PCIe/axi_pcie3_0/S_AXI/BAR0]
-      create_bd_addr_seg -range 16E -offset 0 $ms $ts "SEG_$ms"
-
-      set ms [get_bd_addr_spaces $dma/M32_AXI]
-      set ts [get_bd_addr_segs /Memory/mig/*]
-      create_bd_addr_seg -range 4G -offset 0 $ms $ts "SEG_$ms"
-    }
-
-    set int_ms [get_bd_addr_spaces /InterruptControl/msix_intr_ctrl/M_AXI]
-    set ts [get_bd_addr_segs /PCIe/axi_pcie3_0/S_AXI/BAR0]
-    create_bd_addr_seg -range 16E -offset 0 $int_ms $ts "SEG_intr"
-
-    # connect user IP
-    set usrs [lsort [get_bd_addr_spaces /uArch/* -filter { NAME =~ "*m_axi*" || NAME =~ "*M_AXI*" }]]
-    set ts [get_bd_addr_segs /Memory/mig/*]
-    foreach u $usrs {
-      create_bd_addr_seg -range [get_property RANGE $u] -offset 0 $u $ts "SEG_$u"
-    }
-  }
-
-  proc platform_address_map {} {
-    platform_address_map_set
-
-    # call plugins
-    tapasco::call_plugins "post-address-map"
-  }
-
-  # Platform API: Entry point for Platform instantiation.
-  proc createdd {} {
-    # create interrupt subsystem
-    set ss_int [create_subsystem_intc [arch::get_irqs]]
-
-    # create memory subsystem
-    set ss_mem [create_subsystem_memory]
-
-    # create PCIe subsystem
-    set ss_pcie [create_subsystem_host]
-
-    # create Reset subsystem
-    set ss_reset [create_subsystem_reset]
-
-    # create AXI infrastructure
-    set axi_ic_to_host [tapasco::ip::create_axi_ic "axi_ic_to_host" 2 1]
-
-    set axi_ic_from_host [tapasco::ip::create_axi_ic "axi_ic_from_host" 1 4]
-
-    set axi_ic_to_mem [list]
-    if {[llength [arch::get_masters]] > 0} {
-      set axi_ic_to_mem [tapasco::ip::create_axi_ic "axi_ic_to_mem" [llength [arch::get_masters]] 1]
-      connect_bd_intf_net [get_bd_intf_pins $axi_ic_to_mem/M00_AXI] [get_bd_intf_pins /Memory/s_axi_mem]
-    }
-
-    set s_n 0
-    foreach m [arch::get_masters] {
-      connect_bd_intf_net $m [get_bd_intf_pins [format "$axi_ic_to_mem/S%02d_AXI" $s_n]]
-      incr s_n
-    }
-
-    # always create TPC status core
-    set tapasco_status [tapasco::ip::create_tapasco_status "tapasco_status"]
-    connect_bd_intf_net [get_bd_intf_pins $axi_ic_from_host/M03_AXI] [get_bd_intf_pins $tapasco_status/S00_AXI]
-
-    # connect PCIe <-> InterruptControl
-    connect_bd_net [get_bd_pins $ss_pcie/msix_fail] [get_bd_pins $ss_int/msix_fail]
-    connect_bd_net [get_bd_pins $ss_pcie/msix_sent] [get_bd_pins $ss_int/msix_sent]
-    connect_bd_net [get_bd_pins $ss_pcie/msix_mask] [get_bd_pins $ss_int/msix_mask]
-    connect_bd_net [get_bd_pins $ss_pcie/msix_enable] [get_bd_pins $ss_int/msix_enable]
-    connect_bd_net [get_bd_pins $ss_int/msix_data] [get_bd_pins $ss_pcie/msix_data]
-    connect_bd_net [get_bd_pins $ss_int/msix_addr] [get_bd_pins $ss_pcie/msix_addr]
-    connect_bd_net [get_bd_pins $ss_int/msix_int] [get_bd_pins $ss_pcie/msix_int]
-
-    # connect Memory <-> InterruptControl
-    connect_bd_net [get_bd_pins $ss_mem/dma_irq] [get_bd_pins $ss_int/dma_irq]
-
-    # connect clocks
-    set pcie_aclk [get_bd_pins $ss_pcie/pcie_aclk]
-    set ddr_clk [get_bd_pins $ss_mem/ddr_aclk]
-    set design_clk [get_bd_pins $ss_mem/design_aclk]
-
-    connect_bd_net $pcie_aclk \
-      [get_bd_pins $ss_mem/pcie_aclk] \
-      [get_bd_pins $ss_reset/pcie_aclk] \
-      [get_bd_pins -of_objects $axi_ic_to_host -filter {TYPE == "clk" && DIR == "I"}] \
-      [get_bd_pins -of_objects $axi_ic_from_host -filter {TYPE == "clk" && DIR == "I" && NAME != "M00_ACLK"}] \
-      [get_bd_pins $ss_int/aclk] \
-      [get_bd_pins $tapasco_status/s00_axi_aclk]
-
-    set design_clk_receivers [list \
-      [get_bd_pins $ss_mem/design_clk] \
-      [get_bd_pins $ss_reset/design_aclk] \
-      [get_bd_pins uArch/*aclk] \
-      [get_bd_pins $axi_ic_from_host/M00_ACLK] \
-    ]
-
-    if {[llength [arch::get_masters]] > 0} {
-      lappend design_clk_receivers [get_bd_pins -filter { TYPE == "clk" } -of_objects $axi_ic_to_mem]
-    }
-    connect_bd_net $design_clk $design_clk_receivers
-
-    connect_bd_net $ddr_clk [get_bd_pins $ss_reset/ddr_aclk]
-
-    # connect PCIe resets
-    connect_bd_net [get_bd_pins $ss_pcie/pcie_aresetn] \
-      [get_bd_pins $ss_reset/pcie_aresetn] \
-      [get_bd_pins $tapasco_status/s00_axi_aresetn]
-
-    connect_bd_net [get_bd_pins $ss_mem/ddr_aresetn] \
-      [get_bd_pins $ss_reset/ddr_clk_aresetn] \
-      [get_bd_pins $ss_reset/design_clk_aresetn]
-    set pcie_p_aresetn [get_bd_pins $ss_reset/pcie_peripheral_aresetn]
-    set pcie_ic_aresetn [get_bd_pins $ss_reset/pcie_interconnect_aresetn]
-
-    connect_bd_net $pcie_p_aresetn \
-      [get_bd_pins $ss_mem/mem64_aresetn] \
-      [get_bd_pins -of_objects $axi_ic_to_host -filter {TYPE == "rst" && DIR == "I" && NAME != "ARESETN"}] \
-      [get_bd_pins -of_objects $axi_ic_from_host -filter {TYPE == "rst" && DIR == "I" && NAME != "M00_ARESETN"}] \
-      [get_bd_pins $ss_int/peripheral_aresetn] \
-      [get_bd_pins $ss_mem/pcie_peripheral_aresetn]
-
-    connect_bd_net $pcie_ic_aresetn \
-      [get_bd_pins $axi_ic_to_host/ARESETN] \
-      [get_bd_pins $ss_int/interconnect_aresetn]
-
-    # connect ddr_clk resets
-    set ddr_clk_p_aresetn [get_bd_pins $ss_reset/ddr_clk_peripheral_aresetn]
-    set ddr_clk_ic_aresetn [get_bd_pins $ss_reset/ddr_clk_interconnect_aresetn]
-
-    connect_bd_net [get_bd_pins $ss_reset/ddr_clk_peripheral_aresetn] [get_bd_pins $ss_mem/ddr_peripheral_aresetn]
-    connect_bd_net [get_bd_pins $ss_reset/ddr_clk_interconnect_aresetn] [get_bd_pins $ss_mem/ddr_interconnect_aresetn]
-
-    set design_clk_p_aresetn [get_bd_pins $ss_reset/design_clk_peripheral_aresetn]
-    set design_clk_ic_aresetn [get_bd_pins $ss_reset/design_clk_interconnect_aresetn]
-
-    set design_rst_receivers [list \
-      [get_bd_pins $ss_mem/design_peripheral_aresetn] \
-      [get_bd_pins uArch/*peripheral_aresetn] \
-      [get_bd_pins $axi_ic_from_host/M00_ARESETN] \
-    ]
-
-    if {[llength [arch::get_masters]] > 0} {
-      lappend design_rst_receivers [get_bd_pins -filter {TYPE == "rst" && NAME != "ARESETN"} -of_objects $axi_ic_to_mem]
-    }
-
-    connect_bd_net $design_clk_p_aresetn $design_rst_receivers
-
-    connect_bd_net $design_clk_ic_aresetn \
-      [get_bd_pins $ss_mem/interconnect_aresetn] \
-      [get_bd_pins uArch/*interconnect_aresetn] \
-      [get_bd_pins $axi_ic_to_mem/ARESETN]
-
-    # connect AXI from host to system
-    connect_bd_intf_net [get_bd_intf_pins $ss_pcie/m_axi] [get_bd_intf_pins $axi_ic_from_host/S00_AXI]
-    connect_bd_intf_net [get_bd_intf_pins $axi_ic_from_host/M00_AXI] [get_bd_intf_pins uArch/S_AXI]
-    connect_bd_intf_net [get_bd_intf_pins $axi_ic_from_host/M01_AXI] [get_bd_intf_pins $ss_int/S_AXI]
-    connect_bd_intf_net [get_bd_intf_pins $axi_ic_from_host/M02_AXI] [get_bd_intf_pins $ss_mem/s_axi_ddma]
-
-    # connect AXI from system to host
-    connect_bd_intf_net [get_bd_intf_pins $ss_mem/m_axi_mem64] [get_bd_intf_pins $axi_ic_to_host/S00_AXI]
-    connect_bd_intf_net [get_bd_intf_pins $ss_int/M_AXI] [get_bd_intf_pins $axi_ic_to_host/S01_AXI]
-    connect_bd_intf_net [get_bd_intf_pins $axi_ic_to_host/M00_AXI] [get_bd_intf_pins $ss_pcie/s_axi]
-
-    # call plugins
-    tapasco::call_plugins "post-platform"
-
-    # validate the design
-    platform_address_map
-    validate_bd_design
-    save_bd_design
   }
 
   ##################################################################

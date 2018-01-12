@@ -19,27 +19,9 @@
 source -notrace $::env(TAPASCO_HOME)/platform/zynq/zynq.tcl
 
 namespace eval platform {
-  namespace export create
-  namespace export max_masters
-  namespace export get_address_map
-  namespace export create_clock_port
-  namespace export createZynqPS
-
   foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME)/platform/pynq/plugins" "*.tcl"] {
     puts "Found plugin: $f"
     source -notrace $f
-  }
-
-  proc max_masters {} {
-    return [zynq::max_masters]
-  }
-
-  proc get_address_map {} {
-    return [zynq::get_address_map]
-  }
-
-  proc create {} {
-    return [zynq::create]
   }
 
   proc create_clock_port {{name "sys_clk"}} {
@@ -50,15 +32,15 @@ namespace eval platform {
   }
 }
 
-namespace eval tapasco {
+namespace eval ::tapasco::ip {
   # overwrite standard procedure
-  proc createZynqPS {{name ps7} {preset [tapasco::get_board_preset]} {freq_mhz [tapasco::get_design_frequency]}} {
+  proc create_ps {{name ps7} {preset [tapasco::get_board_preset]} {freq_mhz [tapasco::get_design_frequency]}} {
     variable stdcomps
     puts "Creating Zynq-7000 series IP core for PyNQ..."
     puts "  VLNV: [dict get $stdcomps ps vlnv]"
     puts "  FCLK0 : $freq_mhz"
 
-    set ps [create_bd_cell -type ip -vlnv [dict get $stdcomps ps vlnv] $name]
+    set ps [create_bd_cell -type ip -vlnv [get_vlnv ps] $name]
     set_property -dict [ list \
       CONFIG.PCW_DDR_RAM_BASEADDR {0x00100000}  \
       CONFIG.PCW_DDR_RAM_HIGHADDR {0x1FFFFFFF}  \

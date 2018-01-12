@@ -287,7 +287,7 @@ namespace eval tapasco {
       for {set i 0} {$i < $n} {incr i} {
         set rest_ports [expr "$nports - $i * 16"]
         set rest_ports [expr "min($rest_ports, 16)"]
-        set nic [::tapasco:ip::create_axi_ic [format "ic_%03d" $ic_n] [expr "$masters ? $rest_ports : 1"] [expr "$masters ? 1 : $rest_ports"]]
+        set nic [ip::create_axi_ic [format "ic_%03d" $ic_n] [expr "$masters ? $rest_ports : 1"] [expr "$masters ? 1 : $rest_ports"]]
         incr ic_n
         lappend curr_ics $nic
       }
@@ -369,94 +369,6 @@ namespace eval tapasco {
     connect_bd_net $main_ic_arstn [get_bd_pins -filter {TYPE == "rst" && DIR == "I" && NAME == "ARESETN"} -of_objects [get_bd_cells "$group/*"]]
     connect_bd_net $m_p_arstn [get_bd_pins -filter {TYPE == "rst" && DIR == "I" && NAME =~ "M*_ARESETN"} -of_objects $last_stage]
     connect_bd_net $s_p_arstn [get_bd_pins -filter {TYPE == "rst" && DIR == "I" && NAME =~ "S*_ARESETN"} -of_objects $last_stage]
-
-    current_bd_instance $instance
-    return $group
-  }
-
-  # Creates a subsystem with clock and reset generation for a list of clocks.
-  # Consists of clocking wizard + reset generators with single ext. reset in.
-  # @param freqs list of name frequency (MHz) pairs, e.g., [list design 100 memory 250]
-  # @param name Name of the subsystem group
-  # @return Subsystem group
-  proc create_subsystem_clocks_and_resets {{freqs {}} {name ClockResets}} {
-    if {$freqs == {}} { set freqs [get_frequencies] }
-    puts "Creating clock and reset subsystem ..."
-    puts "  frequencies: $freqs"
-    set instance [current_bd_instance .]
-    set group [create_bd_cell -type hier $name]
-    current_bd_instance $group
-
-    set reset_in [create_bd_pin -dir I -type rst "reset_in"]
-    set clk [createClockingWizard "clk_wiz"]
-    set_property -dict [list CONFIG.USE_LOCKED {false} CONFIG.USE_RESET {false} CONFIG.NUM_OUT_CLKS [expr "[llength $freqs] / 2"]] $clk
-    set clk_mode "sys_diff_clock"
-
-    if {[catch {set_property CONFIG.CLK_IN1_BOARD_INTERFACE {sys_diff_clock} $clk}]} {
-      puts "  sys_diff_clock is not supported, trying sys_clock instead"
-      set clk_mode "sys_clock"
-    }
-    # check if external port already exists, re-use
-    if {[catch [get_bd_ports "/$clk_mode"]]} {
-      # connect existing top-level port
-      connect_bd_net [get_bd_ports "/$clk_mode"] [get_bd_pins -filter {TYPE == clk && DIR == I} -of_objects $clk]
-      # use PLL primitive for all but the first subsystem (MMCMs are limited)
-      set_property -dict [list CONFIG.PRIMITIVE {PLL} CONFIG.USE_MIN_POWER {true}] $clk
-    } {
-      # apply board automation to create top-level port
-      if {$clk_mode == "sys_diff_clock"} {
-        set cport [get_bd_intf_pins -of_objects $clk]
-      } {
-        set cport [get_bd_pins -filter {DIR == I} -of_objects $clk]
-      }
-      puts "  clk: $clk, cport: $cport"
-      if {$cport != {}} {
-        # apply board automation
-        apply_bd_automation -rule xilinx.com:bd_rule:board -config "Board_Interface $clk_mode" $cport
-        puts "board automation worked, moving on"
-      } {
-        # last resort: try to call platform::create_clock_port
-        set clk_mode "sys_clk"
-        set cport [platform::create_clock_port $clk_mode]
-        connect_bd_net $cport [get_bd_pins -filter {TYPE == clk && DIR == I} -of_objects $clk]
-      }
-    }
-
-    for {set i 0; set clkn 1} {$i < [llength $freqs]} {incr i 2} {
-      set name [lindex $freqs $i]
-      set freq [lindex $freqs [expr $i + 1]]
-      #set clkn [expr "$i / 2 + 1"]
-      puts "  instantiating clock: $name @ $freq MHz"
-      for {set j 0} {$j < $i} {incr j 2} {
-        if {[lindex $freqs [expr $j + 1]] == $freq} {
-          puts "    $name is same frequency as [lindex $freqs $j], re-using"
-          break
-        }
-      }
-      # create ports
-      set port [create_bd_pin -dir O -type clk ${name}_aclk]
-      set p_rst [create_bd_pin -dir O -type rst "${name}_peripheral_aresetn"]
-      set i_rst [create_bd_pin -dir O -type rst "${name}_interconnect_aresetn"]
-
-      if {[expr "$j < $i"]} {
-        # simply re-wire sources
-        foreach p [list "aclk" "interconnect_aresetn" "peripheral_aresetn"] dst [list $port $i_rst $p_rst] {
-          puts "  j = $j,  [lindex $freqs $j]_${p}"
-          set src [get_bd_pins -filter {DIR == O} -of_objects [get_bd_nets -boundary_type lower -of_objects [get_bd_pins "[lindex $freqs $j]_${p}"]]]
-          connect_bd_net $src $dst
-        }
-      } {
-        set_property -dict [list CONFIG.CLKOUT${clkn}_USED {true} CONFIG.CLKOUT${clkn}_REQUESTED_OUT_FREQ $freq] $clk
-        set clkp [get_bd_pins "$clk/clk_out${clkn}"]
-        set rstgen [createResetGen "${name}_rst_gen"]
-        connect_bd_net $clkp $port
-        connect_bd_net $reset_in [get_bd_pins "$rstgen/ext_reset_in"]
-        connect_bd_net $clkp [get_bd_pins "$rstgen/slowest_sync_clk"]
-        connect_bd_net [get_bd_pins "$rstgen/peripheral_aresetn"] $p_rst
-        connect_bd_net [get_bd_pins "$rstgen/interconnect_aresetn"] $i_rst
-        incr clkn
-      }
-    }
 
     current_bd_instance $instance
     return $group

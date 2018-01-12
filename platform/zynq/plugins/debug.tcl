@@ -21,7 +21,7 @@
 #         addded by default; other nets can be added as strings via feature.
 # @author J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 #
-namespace eval debug {
+namespace eval ::platform::zynq::debug {
   namespace export debug_feature
 
   proc get_debug_nets {} {

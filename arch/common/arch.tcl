@@ -29,11 +29,11 @@ namespace eval arch {
       set masters [lsort [tapasco::get_aximm_interfaces $pe]]
       foreach intf $masters {
         set space [get_bd_addr_spaces -of_objects $intf]
-        set offset [get_property OFFSET $space]
-        if {$offset == ""} { set offset 0 }
+        set off [get_property OFFSET $space]
+        if {$off == ""} { set off 0 }
         set range [get_property RANGE $space]
         if {$range == ""} { error "no range found on $space for $intf!" }
-        dict set ret $intf "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind master"
+        dict set ret $intf "interface $intf [format "offset 0x%08x range 0x%08x" $off $range] kind master"
       }
     }
     return $ret

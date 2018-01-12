@@ -64,8 +64,11 @@ namespace eval ::tapasco::ip {
 
     set irqc [create_bd_cell -type ip -vlnv [dict get $stdcomps axi_irqc vlnv] $name]
     # activate edge-sensitive interrupts
-    set_property -dict [list CONFIG.C_KIND_OF_INTR.VALUE_SRC USER] $irqc
-    set_property -dict [list CONFIG.C_KIND_OF_INTR {0xFFFFFFFF}] $irqc
+    set_property -dict [list \
+      CONFIG.C_KIND_OF_INTR.VALUE_SRC USER \
+      CONFIG.C_KIND_OF_INTR {0xFFFFFFFF} \
+      CONFIG.C_IRQ_CONNECTION {1} \
+    ] $irqc
     # set_property -dict [list CONFIG.C_EN_CASCADE_MODE {1} CONFIG.C_CASCADE_MASTER {1}] $irqc
     return $irqc
   }

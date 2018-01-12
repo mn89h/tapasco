@@ -203,23 +203,7 @@ namespace eval platform {
   }
 
   proc get_address_map {{pe_base ""}} {
-    set max64 [expr "1 << 64"]
-    if {$pe_base == ""} { set pe_base [get_pe_base_address] }
-    set peam [::arch::get_address_map $pe_base]
-    puts "Computing addresses for masters ..."
-    foreach m [tapasco::get_aximm_interfaces [get_bd_cells -filter {PATH !~ /uArch/*}]] {
-      switch -glob [get_property NAME $m] {
-        "M_DMA"     { foreach {base stride range} [list 0x00300000 0x10000 0     ] {} }
-        "M_INTC"    { foreach {base stride range} [list 0x00400000 0x10000 0     ] {} }
-        "M_MSIX"    { foreach {base stride range} [list 0x00500000 0x10000 $max64] {} }
-        "M_TAPASCO" { foreach {base stride range} [list 0x02800000 0       0     ] {} }
-        "M_HOST"    { foreach {base stride range} [list 0          0       $max64] {} }
-        "M_ARCH"    { set base "skip" }
-        default     { foreach {base stride range} [list 0 0 0]                     {} }
-      }
-      if {$base != "skip"} { set peam [assign_address $peam $m $base $stride $range] }
-    }
-    return $peam
+    error "Platform does not implement mandatory proc get_address_map!"
   }
 
   proc assign_address {address_map master base {stride 0} {range 0}} {

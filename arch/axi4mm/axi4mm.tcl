@@ -40,7 +40,7 @@ namespace eval arch {
   # Returns a list of the bd_cells of slave interfaces of the threadpool.
   proc get_slaves {} {
     set inst [current_bd_instance]
-    current_bd_instance "/uArch"
+    current_bd_instance [::tapasco::subsystem::get arch]
     set r [list [get_bd_intf_pins -of [get_bd_cells "in1"] -filter { MODE == "Slave" }]]
     current_bd_instance $inst
     return $r
@@ -53,12 +53,12 @@ namespace eval arch {
   }
 
   proc get_processing_elements {} {
-    return [get_bd_cells "/uArch/target*"]
+    return [get_bd_cells -of_objects [::tapasco::subsystem::get arch] -filter { NAME =~ target*}]
   }
 
   # Returns a list of interrupt lines from the threadpool.
   proc get_irqs {} {
-    return [get_bd_pins -of_objects [get_bd_cells "uArch"] -filter {TYPE == "intr" && DIR == "O"}]
+    return [get_bd_pins -of_objects [::tapasco::subsystem::get arch] -filter {TYPE == "intr" && DIR == "O"}]
   }
 
   # Checks, if the current composition can be instantiated. Exits script with
@@ -339,7 +339,7 @@ namespace eval arch {
     foreach irq_concat $arch_irq_concats {
       # create hierarchical port with correct width
       set port [get_bd_pins -of_objects $irq_concat -filter {DIR == "O"}]
-      set out_port [create_bd_pin -type INTR -dir O -from [get_property LEFT $port] -to [get_property RIGHT $port] "irq_$i"]
+      set out_port [create_bd_pin -type INTR -dir O -from [get_property LEFT $port] -to [get_property RIGHT $port] "intr_$i"]
       connect_bd_net $port $out_port
       incr i
     }
@@ -374,7 +374,7 @@ namespace eval arch {
     }
 
     # create hierarchical group
-    set group [tapasco::subsystem::create "uArch"]
+    set group [tapasco::subsystem::create "arch"]
     set instance [current_bd_instance .]
     current_bd_instance $group
 

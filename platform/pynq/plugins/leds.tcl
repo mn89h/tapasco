@@ -21,7 +21,12 @@
 # @author J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 #
 namespace eval leds {
-  set default_led_pins [list "/uArch/irq_0" "/InterruptControl/irq_out"]
+  proc default_led_pins {} {
+    return [concat \
+      [get_bd_pins -of_objects [::tapasco::subsystem::get arch] -filter { TYPE == intr && DIR == O }] \
+      [get_bd_pins -of_objects [::tapasco::subsystem::get intc] -filter { TYPE == intr && DIR == O }] \
+    ]
+  }
 
   proc get_width {input} {
     set l [get_property LEFT $input]
@@ -78,10 +83,9 @@ namespace eval leds {
   }
 
   proc create_led_core {{name "gp_led"} {inputs [list]}} {
-    variable default_led_pins
     puts "Creating LED core ..."
     if {[llength $inputs] == 0} {
-      set inputs $default_led_pins
+      set inputs [default_led_pins]
     }
     set old_inst [current_bd_instance .]
     set cell [create_bd_cell -type hier "LEDs"]
@@ -109,7 +113,6 @@ namespace eval leds {
 
 
   proc create_leds {{name "gp_leds"}} {
-    variable default_led_pins
     if {[tapasco::is_feature_enabled "LED"]} {
       puts "Implementing Platform feature LED ..."
       # create and connect LED core

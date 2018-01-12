@@ -24,6 +24,10 @@ namespace eval subsystem {
   namespace export create
   namespace export get_port
   namespace export get_ports
+  namespace export get_names
+  namespace export get_custom_names
+  namespace export get_all
+  namespace export get
 
   # Creates a hierarchical cell with given name and interface ports for clocks
   # and resets of the three base clocks in TaPaSCo designs.
@@ -73,5 +77,35 @@ namespace eval subsystem {
       error "$::errorInfo"
     }
     return $r
+  }
+
+  # Returns the names of custom subsystems on this Platform.
+  proc get_custom {} {
+    set names [list]
+    foreach n [info commands ::platform::create_custom_subsystem_*] {
+      lappend names [regsub {.*create_custom_subsystem_(.*)} $n {\1}]
+    }
+    return $names
+  }
+
+  proc get_names {} {
+    set names [list "arch"]
+    foreach n [info commands ::platform::create_subsystem_*] {
+      set name [regsub {.*create_subsystem_(.*)} $n {\1}]
+      lappend names $name
+    }
+    return [concat $names [get_custom]]
+  }
+
+  proc get_all {} {
+    set cells [dict create]
+    foreach name [get_names] { dict set cells $name [get_bd_cells "/$name"] }
+    return $cells
+  }
+
+  proc get {name} {
+    set all [get_all]
+    if {![dict exists $all $name]} { error "subsystem $name does not exist!" }
+    return [dict get [get_all] $name]
   }
 }
