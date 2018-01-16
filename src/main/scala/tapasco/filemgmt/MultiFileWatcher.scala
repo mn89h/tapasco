@@ -104,6 +104,7 @@ class MultiFileWatcher(pollInterval: Int = MultiFileWatcher.POLL_INTERVAL) exten
         def run() {
           try {
             while (! _files.isEmpty || ! _waitingFor.isEmpty) {
+              Thread.sleep(pollInterval)
               val waits = _waitingFor.synchronized { _waitingFor.toList }
               waits foreach { p =>
                 logger.trace("waiting for {}", p)
@@ -117,7 +118,6 @@ class MultiFileWatcher(pollInterval: Int = MultiFileWatcher.POLL_INTERVAL) exten
                   publish(LinesAdded(p, lines))
                 }
               }
-              Thread.sleep(pollInterval)
             }
             _watchThread.set(None)
           } catch { case e: InterruptedException => _watchThread.set(None) }
