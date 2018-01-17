@@ -65,7 +65,7 @@ hls-2017.1:
     - source setup.sh
     - source /opt/cad/xilinx/vivado/Vivado/$VIVADO_VERSION/settings64.sh
     - sbt assembly
-    - tapasco compose [arraysum x 1, arrayupdate x 1] @ 100 MHz
+    - tapasco -v compose [arraysum x 1, arrayupdate x 1] @ 100 MHz
 
 compose-2017.4:
   dependencies:
