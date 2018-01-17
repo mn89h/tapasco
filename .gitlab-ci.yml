@@ -21,35 +21,71 @@ before_script:
   # Log the sbt version and TaPaSCo version
   - sbt sbtVersion version
 
+stages:
+  - toolchain-test
+  - hls
+  - compose
+  - dse
+
 scala-test:
+  stage: toolchain-test
   script:
     # Execute your project's tests
     - source setup.sh
     - sbt clean test
 
-.vivado-template: &vivado-definition
+.hls-template: &hls-definition
+  stage: hls
   script:
     - source setup.sh
     - source /opt/cad/xilinx/vivado/Vivado/$VIVADO_VERSION/settings64.sh
     - sbt assembly
-    - tapasco -v compose [arraysum x 1, arrayupdate x 1, precision_counter x 1] @ 100 MHz
+    - tapasco hls arraysum, arrayupdate
 
-vivado-2017.4:
+hls-2017.4:
   variables:
     VIVADO_VERSION: "2017.4"
-  <<: *vivado-definition
+  <<: *hls-definition
 
-vivado-2017.3:
+hls-2017.3:
   variables:
     VIVADO_VERSION: "2017.3"
-  <<: *vivado-definition
+  <<: *hls-definition
 
-vivado-2017.2:
+hls-2017.2:
   variables:
     VIVADO_VERSION: "2017.2"
-  <<: *vivado-definition
+  <<: *hls-definition
 
-vivado-2017.1:
+hls-2017.1:
   variables:
     VIVADO_VERSION: "2017.1"
-  <<: *vivado-definition
+  <<: *hls-definition
+
+.compose-template: &compose-definition
+  stage: compose
+  script:
+    - source setup.sh
+    - source /opt/cad/xilinx/vivado/Vivado/$VIVADO_VERSION/settings64.sh
+    - sbt assembly
+    - tapasco compose [arraysum x 1, arrayupdate x 1] @ 100 MHz
+
+compose-2017.4:
+  variables:
+    VIVADO_VERSION: "2017.4"
+  <<: *compose-definition
+
+compose-2017.3:
+  variables:
+    VIVADO_VERSION: "2017.3"
+  <<: *compose-definition
+
+compose-2017.2:
+  variables:
+    VIVADO_VERSION: "2017.2"
+  <<: *compose-definition
+
+compose-2017.1:
+  variables:
+    VIVADO_VERSION: "2017.1"
+  <<: *compose-definition
