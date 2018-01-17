@@ -34,7 +34,7 @@ scala-test:
     - source setup.sh
     - source /opt/cad/xilinx/vivado/Vivado/$VIVADO_VERSION/settings64.sh
     - sbt assembly
-    - tapasco -v hls arraysum, arrayupdate
+    - tapasco hls arraysum, arrayupdate
 
 hls-2017.4:
   variables:
