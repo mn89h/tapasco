@@ -9,9 +9,10 @@ variables:
 
 before_script:
   # Enable the usage of sources over https
+  - uname -a
   - apt-get update -yqq
   - apt-get install apt-transport-https zip -yqq
-  - apt-get install -y build-essential libgmp-dev libx11-dev libfontconfig-dev libxft-dev git python g++multilib
+  - apt-get install -y build-essential libgmp-dev libx11-dev libfontconfig-dev libxft-dev git python libc6-dev
   - ln -s /usr/lib/x86_64-linux-gnu/libgmp.so /usr/lib/x86_64-linux-gnu/libgmp.so.3
   # Install SBT
   - curl -s "https://get.sdkman.io" | bash
