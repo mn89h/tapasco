@@ -13,14 +13,6 @@ before_script:
   - apt-get install apt-transport-https zip -yqq
   - apt-get install -y build-essential libgmp-dev libx11-dev libfontconfig-dev libxft-dev git python
   - ln -s /usr/lib/x86_64-linux-gnu/libgmp.so /usr/lib/x86_64-linux-gnu/libgmp.so.3
-  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
-  - eval $(ssh-agent -s)
-  - ssh-add <(echo "$SSH_PRIVATE_KEY")
-  - mkdir -p /root/.ssh
-  - '[[ -f /.dockerenv ]] && echo "$SSH_SERVER_HOSTKEYS" > /root/.ssh/known_hosts'
-  # Add keyserver for SBT
-  - echo "deb http://dl.bintray.com/sbt/debian /" | tee -a /etc/apt/sources.list.d/sbt.list
-  - apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823
   # Install SBT
   - curl -s "https://get.sdkman.io" | bash
   - source "/root/.sdkman/bin/sdkman-init.sh"
