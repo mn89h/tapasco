@@ -4,10 +4,20 @@
 # but an image with a JVM speeds up the build a bit.
 image: java:8
 
+variables:
+  XILINXD_LICENSE_FILE: "/opt/cad/keys/xilinx"
+
 before_script:
   # Enable the usage of sources over https
   - apt-get update -yqq
   - apt-get install apt-transport-https zip -yqq
+  - apt-get install -y build-essential libgmp-dev libx11-dev libfontconfig-dev libxft-dev git python
+  - ln -s /usr/lib/x86_64-linux-gnu/libgmp.so /usr/lib/x86_64-linux-gnu/libgmp.so.3
+  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+  - eval $(ssh-agent -s)
+  - ssh-add <(echo "$SSH_PRIVATE_KEY")
+  - mkdir -p /root/.ssh
+  - '[[ -f /.dockerenv ]] && echo "$SSH_SERVER_HOSTKEYS" > /root/.ssh/known_hosts'
   # Add keyserver for SBT
   - echo "deb http://dl.bintray.com/sbt/debian /" | tee -a /etc/apt/sources.list.d/sbt.list
   - apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823
@@ -18,8 +28,34 @@ before_script:
   # Log the sbt version and TaPaSCo version
   - sbt sbtVersion version
 
-test:
+scala-test:
   script:
     # Execute your project's tests
     - source setup.sh
     - sbt clean test
+
+.vivado-template: &vivado-definition
+  script:
+    - source setup.sh
+    - source /opt/cad/xilinx/vivado/Vivado/$VIVADO_VERSION/settings64.sh
+    - tapasco -v compose [arraysum x 1, arrayupdate x 1, precision_counter x 1] @ 100 MHz
+
+vivado-2017.4:
+  variables:
+    VIVADO_VERSION: "2017.4"
+  <<: *vivado-definition
+
+vivado-2017.3:
+  variables:
+    VIVADO_VERSION: "2017.3"
+  <<: *vivado-definition
+
+vivado-2017.2:
+  variables:
+    VIVADO_VERSION: "2017.2"
+  <<: *vivado-definition
+
+vivado-2017.1:
+  variables:
+    VIVADO_VERSION: "2017.1"
+  <<: *vivado-definition
