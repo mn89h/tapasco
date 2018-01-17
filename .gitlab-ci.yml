@@ -30,6 +30,7 @@ scala-test:
   script:
     - source setup.sh
     - source /opt/cad/xilinx/vivado/Vivado/$VIVADO_VERSION/settings64.sh
+    - sbt assembly
     - tapasco -v compose [arraysum x 1, arrayupdate x 1, precision_counter x 1] @ 100 MHz
 
 vivado-2017.4:
