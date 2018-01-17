@@ -69,28 +69,28 @@ hls-2017.1:
 
 compose-2017.4:
   dependencies:
-      - hls:hls-2017.4
+      - hls-2017.4
   variables:
     VIVADO_VERSION: "2017.4"
   <<: *compose-definition
 
 compose-2017.3:
   dependencies:
-     - hls:hls-2017.3
+     - hls-2017.3
   variables:
     VIVADO_VERSION: "2017.3"
   <<: *compose-definition
 
 compose-2017.2:
   dependencies:
-    - hls:hls-2017.2
+    - hls-2017.2
   variables:
     VIVADO_VERSION: "2017.2"
   <<: *compose-definition
 
 compose-2017.1:
   dependencies:
-      - hls:hls-2017.1
+      - hls-2017.1
   variables:
     VIVADO_VERSION: "2017.1"
   <<: *compose-definition
