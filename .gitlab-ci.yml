@@ -69,31 +69,34 @@ hls-2017.1:
 
 .import-template: &import-definition
   stage: import
+  dependencies:
+    - sbt-prepare
   script:
-    - source setup.sh
-    - source /opt/cad/xilinx/vivado/Vivado/$VIVADO_VERSION/settings64.sh
-    - sbt assembly
     - cd $TAPASCO_HOME/common/ip && zip -r precision_counter.zip precision_counter*
     - tapasco import $TAPASCO_HOME/common/ip/precision_counter.zip as 14
 
 import-2017.4:
   variables:
     VIVADO_VERSION: "2017.4"
+    VIVADO_OFFSET: "xilinx/vivado/Vivado/$VIVADO_VERSION/"
   <<: *import-definition
 
 import-2017.3:
   variables:
     VIVADO_VERSION: "2017.3"
+    VIVADO_OFFSET: "xilinx/vivado/Vivado/$VIVADO_VERSION/"
   <<: *import-definition
 
 import-2017.2:
   variables:
     VIVADO_VERSION: "2017.2"
+    VIVADO_OFFSET: "xilinx/vivado/Vivado/$VIVADO_VERSION/"
   <<: *import-definition
 
 import-2017.1:
   variables:
     VIVADO_VERSION: "2017.1"
+    VIVADO_OFFSET: "xilinx/vivado/Vivado/$VIVADO_VERSION/"
   <<: *import-definition
 
 .compose-template: &compose-definition
