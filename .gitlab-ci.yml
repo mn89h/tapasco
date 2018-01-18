@@ -18,6 +18,7 @@ before_script:
 stages:
   - toolchain-test
   - hls
+  - import
   - compose
   - dse
 
@@ -59,6 +60,35 @@ hls-2017.1:
     VIVADO_VERSION: "2017.1"
   <<: *hls-definition
 
+.import-template: &import-definition
+  stage: import
+  script:
+    - source setup.sh
+    - source /opt/cad/xilinx/vivado/Vivado/$VIVADO_VERSION/settings64.sh
+    - sbt assembly
+    - cd $TAPASCO_HOME/common/ip && zip -r precision_counter.zip precision_counter*
+    - tapasco import $TAPASCO_HOME/common/ip/precision_counter.zip as 14
+
+import-2017.4:
+  variables:
+    VIVADO_VERSION: "2017.4"
+  <<: *import-definition
+
+import-2017.3:
+  variables:
+    VIVADO_VERSION: "2017.3"
+  <<: *import-definition
+
+import-2017.2:
+  variables:
+    VIVADO_VERSION: "2017.2"
+  <<: *import-definition
+
+import-2017.1:
+  variables:
+    VIVADO_VERSION: "2017.1"
+  <<: *import-definition
+
 .compose-template: &compose-definition
   stage: compose
   script:
@@ -69,14 +99,16 @@ hls-2017.1:
 
 compose-2017.4:
   dependencies:
-      - hls-2017.4
+    - hls-2017.4
+    - import-2017.4
   variables:
     VIVADO_VERSION: "2017.4"
   <<: *compose-definition
 
 compose-2017.3:
   dependencies:
-     - hls-2017.3
+    - hls-2017.3
+    - import-2017.3
   variables:
     VIVADO_VERSION: "2017.3"
   <<: *compose-definition
@@ -84,13 +116,15 @@ compose-2017.3:
 compose-2017.2:
   dependencies:
     - hls-2017.2
+    - import-2017.2
   variables:
     VIVADO_VERSION: "2017.2"
   <<: *compose-definition
 
 compose-2017.1:
   dependencies:
-      - hls-2017.1
+    - hls-2017.1
+    - import-2017.1
   variables:
     VIVADO_VERSION: "2017.1"
   <<: *compose-definition
