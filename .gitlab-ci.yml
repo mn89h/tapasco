@@ -1,19 +1,15 @@
-image: centos:7
+image: tapasco
 
 variables:
   XILINXD_LICENSE_FILE: "/opt/cad/keys/xilinx"
 
 before_script:
-  # Enable the usage of sources over https
   - uname -a
-  - yum -y install java-1.8.0-openjdk unzip which zip boost gperftools-libs libX11 mpfr
-  - yum -y groupinstall 'Development Tools'
-  # Install SBT
-  - curl -s "https://get.sdkman.io" | bash
-  - source "/root/.sdkman/bin/sdkman-init.sh"
-  - sdk install sbt
-  # Log the sbt version and TaPaSCo version
-  - sbt sbtVersion version
+  - ls
+  - echo $SHELL
+  - echo $PWD
+  - source $PWD/setup.sh
+  - export _JAVA_OPTIONS="-Dsbt.global.base=$TAPASCO_HOME/.sbt/ -Dsbt.ivy.home=$TAPASCO_HOME/.ivy2/ -Divy.home=$TAPASCO_HOME/.ivy2/"
 
 stages:
   - toolchain-test
@@ -26,38 +22,49 @@ scala-test:
   stage: toolchain-test
   script:
     # Execute your project's tests
-    - source setup.sh
     - sbt clean test
 
-.hls-template: &hls-definition
-  stage: hls
+sbt-prepare:
+  stage: toolchain-test
   artifacts:
       untracked: true
       expire_in: 1 hrs
   script:
-    - source setup.sh
-    - source /opt/cad/xilinx/vivado/Vivado/$VIVADO_VERSION/settings64.sh
     - sbt assembly
+    - cd $TAPASCO_HOME/common/ip/tapasco_status && ./chiselSetup.sh
+
+.hls-template: &hls-definition
+  stage: hls
+  dependencies:
+    - sbt-prepare
+  artifacts:
+      untracked: true
+      expire_in: 1 hrs
+  script:
     - tapasco hls arraysum, arrayupdate
 
 hls-2017.4:
   variables:
     VIVADO_VERSION: "2017.4"
+    VIVADO_OFFSET: "xilinx/vivado/Vivado/$VIVADO_VERSION/"
   <<: *hls-definition
 
 hls-2017.3:
   variables:
     VIVADO_VERSION: "2017.3"
+    VIVADO_OFFSET: "xilinx/vivado/Vivado/$VIVADO_VERSION/"
   <<: *hls-definition
 
 hls-2017.2:
   variables:
     VIVADO_VERSION: "2017.2"
+    VIVADO_OFFSET: "xilinx/vivado/Vivado/$VIVADO_VERSION/"
   <<: *hls-definition
 
 hls-2017.1:
   variables:
     VIVADO_VERSION: "2017.1"
+    VIVADO_OFFSET: "xilinx/vivado/Vivado/$VIVADO_VERSION/"
   <<: *hls-definition
 
 .import-template: &import-definition
@@ -92,9 +99,6 @@ import-2017.1:
 .compose-template: &compose-definition
   stage: compose
   script:
-    - source setup.sh
-    - source /opt/cad/xilinx/vivado/Vivado/$VIVADO_VERSION/settings64.sh
-    - sbt assembly
     - tapasco -v compose [arraysum x 1, arrayupdate x 1] @ 100 MHz
 
 compose-2017.4:
@@ -103,6 +107,7 @@ compose-2017.4:
     - import-2017.4
   variables:
     VIVADO_VERSION: "2017.4"
+    VIVADO_OFFSET: "xilinx/vivado/Vivado/$VIVADO_VERSION/"
   <<: *compose-definition
 
 compose-2017.3:
@@ -111,6 +116,7 @@ compose-2017.3:
     - import-2017.3
   variables:
     VIVADO_VERSION: "2017.3"
+    VIVADO_OFFSET: "xilinx/vivado/Vivado/$VIVADO_VERSION/"
   <<: *compose-definition
 
 compose-2017.2:
@@ -119,6 +125,7 @@ compose-2017.2:
     - import-2017.2
   variables:
     VIVADO_VERSION: "2017.2"
+    VIVADO_OFFSET: "xilinx/vivado/Vivado/$VIVADO_VERSION/"
   <<: *compose-definition
 
 compose-2017.1:
@@ -127,4 +134,5 @@ compose-2017.1:
     - import-2017.1
   variables:
     VIVADO_VERSION: "2017.1"
+    VIVADO_OFFSET: "xilinx/vivado/Vivado/$VIVADO_VERSION/"
   <<: *compose-definition
