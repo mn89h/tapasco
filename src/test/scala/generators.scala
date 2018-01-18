@@ -50,8 +50,13 @@ package object generators {
     k <- genSize
   } yield Slot.Memory(slotId getOrElse s, k)
 
+  implicit def genEmpty(slotId: Option[SlotId] = None): Gen[Slot.Empty] = for {
+    s <- genSlotId
+  } yield Slot.Empty(slotId getOrElse s)
+
   implicit def genSlot(slotId: Option[SlotId] = None): Gen[Slot] = Gen.oneOf(genKernel(slotId),
-                                                                             genMemory(slotId))
+                                                                             genMemory(slotId),
+                                                                             genEmpty(slotId))
 
   val genInterruptControllers: Gen[Int] = Gen.choose(1, 4)
 
@@ -60,11 +65,18 @@ package object generators {
     slots <- Gen.pick(n, Gen.lzy(genSlot(Some(0))), Gen.lzy(genSlot(Some(1))), 2 until NUM_SLOTS map (s => Gen.lzy(genSlot(Some(s)))):_*)
   } yield slots
 
+  val genCapBits: Gen[CapBits] = Gen.choose(0L, (1L << 32) - 1)
+
+  val genCapabilities: Gen[Capabilities] = for {
+    cap0 <- genCapBits
+  } yield Capabilities(cap0)
+
   implicit val genStatus: Gen[Status] = for {
     config <- genConfig
     timestamp <- genTimestamp
     interruptControllers <- genInterruptControllers
     versions <- genVersions
     clocks <- genClocks
-  } yield Status(config, timestamp, interruptControllers, versions, clocks)
+    capabilities <- genCapabilities
+  } yield Status(config, timestamp, interruptControllers, versions, clocks, capabilities)
 }
