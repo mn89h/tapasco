@@ -28,7 +28,11 @@ sbt-prepare:
   stage: toolchain-test
   artifacts:
       expire_in: 1 hrs
-      untracked: true
+      paths:
+        - .ivy2
+        - .sbt
+        - bin
+        - target
   script:
     - sbt assembly
     - cd $TAPASCO_HOME/common/ip/tapasco_status && ./chiselSetup.sh
