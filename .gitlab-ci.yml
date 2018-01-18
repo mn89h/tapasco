@@ -29,13 +29,11 @@ sbt-prepare:
   artifacts:
       expire_in: 1 hrs
       paths:
-        - .ivy2
-        - .sbt
-        - bin
-        - target
+        - artifact.tgz
   script:
     - sbt assembly
     - cd $TAPASCO_HOME/common/ip/tapasco_status && ./chiselSetup.sh
+    - tar cvfz artifact.tgz .ivy2 .sbt bin target
 
 .hls-template: &hls-definition
   stage: hls
@@ -45,6 +43,8 @@ sbt-prepare:
       untracked: true
       expire_in: 1 hrs
   script:
+    - tar xvfz artifact.tgz
+    - rm artifact.tgz
     - source /opt/cad/$VIVADO_OFFSET/settings64.sh
     - tapasco hls arraysum, arrayupdate
 
@@ -77,6 +77,8 @@ hls-2017.1:
   dependencies:
     - sbt-prepare
   script:
+    - tar xvfz artifact.tgz
+    - rm artifact.tgz
     - source /opt/cad/$VIVADO_OFFSET/settings64.sh
     - cd $TAPASCO_HOME/common/ip && zip -r precision_counter.zip precision_counter*
     - tapasco import $TAPASCO_HOME/common/ip/precision_counter.zip as 14
