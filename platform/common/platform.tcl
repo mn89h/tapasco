@@ -51,6 +51,7 @@ namespace eval platform {
       current_bd_instance $ss
       eval $cmd
       current_bd_instance $instance
+      puts "Subsystem $name complete."
     }
 
     # create custom subsystems
@@ -83,11 +84,15 @@ namespace eval platform {
   }
 
   proc create_subsystem_tapasco {} {
+    puts "  creating slave port S_TAPASCO ..."
     set port [create_bd_intf_pin -vlnv [tapasco::ip::get_vlnv "aximm_intf"] -mode Slave "S_TAPASCO"]
+    puts "  instantiating custom status core ..."
     set tapasco_status [tapasco::ip::create_tapasco_status "tapasco_status"]
+    puts "  wiring ..."
     connect_bd_intf_net $port [get_bd_intf_pins -of_objects $tapasco_status -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Slave"]
     connect_bd_net [tapasco::subsystem::get_port "design" "clk"] [get_bd_pins -of_objects $tapasco_status -filter {TYPE == clk && DIR == I}]
     connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "reset"] [get_bd_pins -of_objects $tapasco_status -filter {TYPE == rst && DIR == I}]
+    puts "  done!"
   }
 
   proc wire_subsystem_wires {} {
