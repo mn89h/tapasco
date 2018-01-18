@@ -45,6 +45,7 @@ sbt-prepare:
       untracked: true
       expire_in: 1 hrs
   script:
+    - source /opt/cad/$VIVADO_OFFSET/settings64.sh
     - tapasco hls arraysum, arrayupdate
 
 hls-2017.4:
@@ -76,6 +77,7 @@ hls-2017.1:
   dependencies:
     - sbt-prepare
   script:
+    - source /opt/cad/$VIVADO_OFFSET/settings64.sh
     - cd $TAPASCO_HOME/common/ip && zip -r precision_counter.zip precision_counter*
     - tapasco import $TAPASCO_HOME/common/ip/precision_counter.zip as 14
 
@@ -106,6 +108,7 @@ import-2017.1:
 .compose-template: &compose-definition
   stage: compose
   script:
+    - source /opt/cad/$VIVADO_OFFSET/settings64.sh
     - tapasco -v compose [arraysum x 1, arrayupdate x 1] @ 100 MHz
 
 compose-2017.4:
