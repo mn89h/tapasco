@@ -344,16 +344,19 @@ namespace eval ::tapasco::ip {
   # @param name Name of the instance.
   # @param ids  List of kernel IDs.
   proc create_tapasco_status {name {ids {}}} {
-    variable stdcomps
+    set vlnv [tapasco::ip::get_vlnv "tapasco_status"]
+    puts "Creating custom status core ..."
+    puts "  VLNV: $vlnv"
+    puts "  IDs : $ids"
+    puts "  sourcing JSON lib ..."
     source -notrace "$::env(TAPASCO_HOME)/common/json_write.tcl"
     package require json::write
 
+    puts "  making JSON config file ..."
     set json [make_status_config_json]
     set json_file "[file normalize [pwd]]/tapasco_status.json"
-    puts "Creating TPC Status ..."
-    puts "  VLNV: [dict get $stdcomps tapasco_status vlnv]"
-    puts "  IDs : $ids"
-    puts "  Status: $json_file $json"
+    puts "  JSON configuration in $json_file: "
+    puts "$json"
     if {[catch {open $json_file "w"} f]} {
       error "could not open file $json_file!"
     } else {
@@ -385,16 +388,19 @@ namespace eval ::tapasco::ip {
     set_property IP_REPO_PATHS $ip_repo_paths [current_project]
     update_ip_catalog
 
+    puts "  done!"
     # create the IP core
-    return [create_bd_cell -type ip -vlnv [dict get $stdcomps tapasco_status vlnv] $name]
+    return [create_bd_cell -type ip -vlnv $vlnv $name]
   }
 
   # Generate JSON configuration for the status core.
   proc make_status_config_json {} {
+    puts "  getting adddress map ..."
     set addr [platform::get_address_map [platform::get_pe_base_address]]
     set slots [list]
     set slot_id 0
     foreach intf [dict keys $addr] {
+      puts "  processing $intf: [dict get $addr $intf kind] ..."
       switch [dict get $addr $intf "kind"] {
         "register" {
           set kind [format "%d" [regsub {.*target_ip_([0-9][0-9]).*} $intf {\1}]]
@@ -410,6 +416,7 @@ namespace eval ::tapasco::ip {
         default { error "invalid kind: [dict get $addr $intf kind]" }
       }
     }
+    puts "  finished address map, composing JSON ..."
 
     set regex {([0-9][0-9][0-9][0-9]).([0-9][0-9]*)}
     set no_pes [llength [arch::get_processing_elements]]
