@@ -51,6 +51,7 @@ namespace eval ::platform {
   proc get_address_map {{pe_base ""}} {
     set max32 [expr "1 << 32"]
     if {$pe_base == ""} { set pe_base [get_pe_base_address] }
+    puts "Computing addresses for PEs ..."
     set peam [::arch::get_address_map $pe_base]
     puts "Computing addresses for masters ..."
     foreach m [::tapasco::get_aximm_interfaces [get_bd_cells -filter "PATH !~ [::tapasco::subsystem::get arch]/*"]] {
@@ -156,7 +157,7 @@ namespace eval ::platform {
   proc create_subsystem_memory {} {
     set arch_masters [::arch::get_masters]
     set ps_slaves [list "HP0" "HP1" "ACP"]
-    puts "Creating memory slave ports for [llength $arch_masters] ..."
+    puts "Creating memory slave ports for [llength $arch_masters] masters ..."
     if {[llength $arch_masters] > [llength $ps_slaves]} {
       error "  trying to connect [llength $arch_masters] architecture masters, " \
         "but only [llength $ps_slaves] memory interfaces are available"
