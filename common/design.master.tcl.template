@@ -73,6 +73,9 @@ set_msg_config -suppress -id {[xilinx.com:ip:axi_intc:4.1-7]}
 # create design
 create_bd_design -quiet "system"
 
+# enable PE-local memories
+tapasco::add_capabilities_flag 3
+
 # event: post-init
 tapasco::call_plugins "pre-arch"
 
