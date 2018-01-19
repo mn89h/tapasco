@@ -1,15 +1,15 @@
-image: tapasco
+image: tapasco_ci
 
 variables:
   XILINXD_LICENSE_FILE: "/opt/cad/keys/xilinx"
 
 before_script:
   - uname -a
-  - ls
   - echo $SHELL
   - echo $PWD
   - source $PWD/setup.sh
-  - export _JAVA_OPTIONS="-Dsbt.global.base=$TAPASCO_HOME/.sbt/ -Dsbt.ivy.home=$TAPASCO_HOME/.ivy2/ -Divy.home=$TAPASCO_HOME/.ivy2/"
+  - source /root/.sdkman/bin/sdkman-init.sh
+  - export SBT_OPTS="-Dsbt.global.base=$TAPASCO_HOME/.sbt/ -Dsbt.ivy.home=$TAPASCO_HOME/.ivy2/ -Divy.home=$TAPASCO_HOME/.ivy2/"
 
 stages:
   - toolchain-test
