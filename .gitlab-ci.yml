@@ -26,23 +26,28 @@ scala-test:
 sbt-prepare:
   stage: toolchain-test
   cache:
-      untracked: true
+      paths:
+        - .ivy2
+        - .sbt
+        - bin
+        - target
       key: "$CI_COMMIT_SHA-$CI_COMMIT_REF_NAME"
       policy: push
   script:
-    - ls /cache_global
-    - ls /opt/cad
     - sbt assembly
-    #- cd $TAPASCO_HOME/common/ip/tapasco_status && ./chiselSetup.sh
+    - cd $TAPASCO_HOME/common/ip/tapasco_status && ./chiselSetup.sh
 
 .hls-template: &hls-definition
   stage: hls
   dependencies:
     - sbt-prepare
   cache:
-      untracked: true
+      paths:
+        - .ivy2
+        - .sbt
+        - bin
+        - target
       key: "$CI_COMMIT_SHA-$CI_COMMIT_REF_NAME"
-      policy: pull
   artifacts:
       when: on_failure
       expire_in: 1 day
@@ -87,9 +92,12 @@ hls-2017.1:
   dependencies:
     - sbt-prepare
   cache:
-      untracked: true
+      paths:
+        - .ivy2
+        - .sbt
+        - bin
+        - target
       key: "$CI_COMMIT_SHA-$CI_COMMIT_REF_NAME"
-      policy: pull
   script:
     - source /opt/cad/$VIVADO_OFFSET/settings64.sh
     - |
@@ -127,9 +135,12 @@ import-2017.1:
 .compose-template: &compose-definition
   stage: compose
   cache:
-      untracked: true
+      paths:
+        - .ivy2
+        - .sbt
+        - bin
+        - target
       key: "$CI_COMMIT_SHA-$CI_COMMIT_REF_NAME"
-      policy: pull
   script:
     - source /opt/cad/$VIVADO_OFFSET/settings64.sh
     - |
