@@ -49,7 +49,7 @@ sbt-prepare:
         echo "Cache not available"
         sbt assembly
       fi
-    - tapasco hls arraysum, arrayupdate
+    - tapasco -v hls arraysum, arrayupdate
 
 hls-2017.4:
   variables:
