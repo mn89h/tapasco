@@ -41,6 +41,11 @@ sbt-prepare:
       untracked: true
       key: "$CI_COMMIT_SHA-$CI_COMMIT_REF_NAME"
       policy: pull
+  artifact:
+      when: on_failure
+      expire_in: 1 day
+      paths:
+        - core
   script:
     - source /opt/cad/$VIVADO_OFFSET/settings64.sh
     - vivado -version
