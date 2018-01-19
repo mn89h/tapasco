@@ -41,7 +41,7 @@ sbt-prepare:
       untracked: true
       key: "$CI_COMMIT_SHA-$CI_COMMIT_REF_NAME"
       policy: pull
-  artifact:
+  artifacts:
       when: on_failure
       expire_in: 1 day
       paths:
