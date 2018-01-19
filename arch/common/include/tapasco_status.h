@@ -30,6 +30,7 @@
 typedef struct tapasco_status tapasco_status_t;
 struct tapasco_status {
 	tapasco_func_id_t id[TAPASCO_MAX_INSTANCES];
+	size_t mem[TAPASCO_MAX_INSTANCES];
 	uint32_t gen_ts;
 	uint32_t vivado_version;
 	uint32_t tapasco_version;
