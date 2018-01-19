@@ -30,7 +30,6 @@ sbt-prepare:
       key: "$CI_COMMIT_SHA-$CI_COMMIT_REF_NAME"
       policy: push
   script:
-    - ls /cache
     - ls /cache_global
     - ls /opt/cad
     - sbt assembly
