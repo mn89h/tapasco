@@ -26,11 +26,7 @@ scala-test:
 sbt-prepare:
   stage: toolchain-test
   cache:
-      paths:
-        - .ivy2
-        - .sbt
-        - bin
-        - target
+      untracked: true
       key: "$CI_COMMIT_SHA-$CI_COMMIT_REF_NAME"
       policy: push
   script:
@@ -42,12 +38,9 @@ sbt-prepare:
   dependencies:
     - sbt-prepare
   cache:
-      paths:
-        - .ivy2
-        - .sbt
-        - bin
-        - target
+      untracked: true
       key: "$CI_COMMIT_SHA-$CI_COMMIT_REF_NAME"
+      policy: pull
   artifacts:
       when: on_failure
       expire_in: 1 day
@@ -92,12 +85,9 @@ hls-2017.1:
   dependencies:
     - sbt-prepare
   cache:
-      paths:
-        - .ivy2
-        - .sbt
-        - bin
-        - target
+      untracked: true
       key: "$CI_COMMIT_SHA-$CI_COMMIT_REF_NAME"
+      policy: pull
   script:
     - source /opt/cad/$VIVADO_OFFSET/settings64.sh
     - |
@@ -135,12 +125,9 @@ import-2017.1:
 .compose-template: &compose-definition
   stage: compose
   cache:
-      paths:
-        - .ivy2
-        - .sbt
-        - bin
-        - target
+      untracked: true
       key: "$CI_COMMIT_SHA-$CI_COMMIT_REF_NAME"
+      policy: pull
   script:
     - source /opt/cad/$VIVADO_OFFSET/settings64.sh
     - |
