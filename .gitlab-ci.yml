@@ -30,6 +30,7 @@ sbt-prepare:
       key: "$CI_COMMIT_SHA-$CI_COMMIT_REF_NAME"
       policy: push
   script:
+    - ls /cache
     - sbt assembly
     #- cd $TAPASCO_HOME/common/ip/tapasco_status && ./chiselSetup.sh
 
