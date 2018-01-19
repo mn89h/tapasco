@@ -44,7 +44,11 @@ sbt-prepare:
   script:
     - source /opt/cad/$VIVADO_OFFSET/settings64.sh
     - vivado -version
-    - sbt assembly
+    - |
+      if [ ! - d ".ivy2" ]; then
+        echo "Cache not available"
+        sbt assembly
+      fi
     - tapasco hls arraysum, arrayupdate
 
 hls-2017.4:
@@ -81,7 +85,11 @@ hls-2017.1:
       policy: pull
   script:
     - source /opt/cad/$VIVADO_OFFSET/settings64.sh
-    - sbt assembly
+    - |
+      if [ ! - d ".ivy2" ]; then
+        echo "Cache not available"
+        sbt assembly
+      fi
     - cd $TAPASCO_HOME/common/ip && zip -r precision_counter.zip precision_counter*
     - tapasco import $TAPASCO_HOME/common/ip/precision_counter.zip as 14
 
@@ -117,7 +125,11 @@ import-2017.1:
       policy: pull
   script:
     - source /opt/cad/$VIVADO_OFFSET/settings64.sh
-    - sbt assembly
+    - |
+      if [ ! - d ".ivy2" ]; then
+        echo "Cache not available"
+        sbt assembly
+      fi
     - tapasco -v compose [arraysum x 1, arrayupdate x 1] @ 100 MHz
 
 compose-2017.4:
