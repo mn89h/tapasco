@@ -26,9 +26,9 @@ scala-test:
 
 sbt-prepare:
   stage: toolchain-test
-  artifacts:
-      expire_in: 1 hrs
+  cache:
       untracked: true
+      key: "$CI_COMMIT_SHA-$CI_COMMIT_REF_NAME"
   script:
     - sbt assembly
     - cd $TAPASCO_HOME/common/ip/tapasco_status && ./chiselSetup.sh
@@ -37,11 +37,13 @@ sbt-prepare:
   stage: hls
   dependencies:
     - sbt-prepare
-  artifacts:
+  cache:
       untracked: true
-      expire_in: 1 hrs
+      key: "$CI_COMMIT_SHA-$CI_COMMIT_REF_NAME"
+      policy: pull
   script:
     - source /opt/cad/$VIVADO_OFFSET/settings64.sh
+    - sbt assembly
     - tapasco hls arraysum, arrayupdate
 
 hls-2017.4:
@@ -72,8 +74,13 @@ hls-2017.1:
   stage: import
   dependencies:
     - sbt-prepare
+  cache:
+      untracked: true
+      key: "$CI_COMMIT_SHA-$CI_COMMIT_REF_NAME"
+      policy: pull
   script:
     - source /opt/cad/$VIVADO_OFFSET/settings64.sh
+    - sbt assembly
     - cd $TAPASCO_HOME/common/ip && zip -r precision_counter.zip precision_counter*
     - tapasco import $TAPASCO_HOME/common/ip/precision_counter.zip as 14
 
@@ -103,8 +110,13 @@ import-2017.1:
 
 .compose-template: &compose-definition
   stage: compose
+  cache:
+      untracked: true
+      key: "$CI_COMMIT_SHA-$CI_COMMIT_REF_NAME"
+      policy: pull
   script:
     - source /opt/cad/$VIVADO_OFFSET/settings64.sh
+    - sbt assembly
     - tapasco -v compose [arraysum x 1, arrayupdate x 1] @ 100 MHz
 
 compose-2017.4:
