@@ -45,7 +45,7 @@ sbt-prepare:
     - source /opt/cad/$VIVADO_OFFSET/settings64.sh
     - vivado -version
     - |
-      if [ ! - d ".ivy2" ]; then
+      if [ ! -d ".ivy2" ]; then
         echo "Cache not available"
         sbt assembly
       fi
@@ -86,7 +86,7 @@ hls-2017.1:
   script:
     - source /opt/cad/$VIVADO_OFFSET/settings64.sh
     - |
-      if [ ! - d ".ivy2" ]; then
+      if [ ! -d ".ivy2" ]; then
         echo "Cache not available"
         sbt assembly
       fi
@@ -126,7 +126,7 @@ import-2017.1:
   script:
     - source /opt/cad/$VIVADO_OFFSET/settings64.sh
     - |
-      if [ ! - d ".ivy2" ]; then
+      if [ ! -d ".ivy2" ]; then
         echo "Cache not available"
         sbt assembly
       fi
