@@ -31,7 +31,7 @@ sbt-prepare:
       policy: push
   script:
     - sbt assembly
-    - cd $TAPASCO_HOME/common/ip/tapasco_status && ./chiselSetup.sh
+    #- cd $TAPASCO_HOME/common/ip/tapasco_status && ./chiselSetup.sh
 
 .hls-template: &hls-definition
   stage: hls
@@ -54,7 +54,7 @@ sbt-prepare:
         echo "Cache not available"
         sbt assembly
       fi
-    - tapasco -v hls arraysum, arrayupdate
+    - tapasco -v hls arraysum -p vc709
 
 hls-2017.4:
   variables:
