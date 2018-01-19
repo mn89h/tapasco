@@ -105,7 +105,6 @@ import-2017.1:
   stage: compose
   script:
     - source /opt/cad/$VIVADO_OFFSET/settings64.sh
-    - sdk install java
     - tapasco -v compose [arraysum x 1, arrayupdate x 1] @ 100 MHz
 
 compose-2017.4:
