@@ -21,7 +21,6 @@ stages:
 scala-test:
   stage: toolchain-test
   script:
-    # Execute your project's tests
     - sbt clean test
 
 sbt-prepare:
@@ -44,6 +43,7 @@ sbt-prepare:
       policy: pull
   script:
     - source /opt/cad/$VIVADO_OFFSET/settings64.sh
+    - vivado -version
     - sbt assembly
     - tapasco hls arraysum, arrayupdate
 
