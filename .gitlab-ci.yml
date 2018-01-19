@@ -31,6 +31,7 @@ sbt-prepare:
       policy: push
   script:
     - ls /cache
+    - ls /opt/cad
     - sbt assembly
     #- cd $TAPASCO_HOME/common/ip/tapasco_status && ./chiselSetup.sh
 
