@@ -165,6 +165,7 @@ class Tasks extends Publisher {
     def run() {
       try {
         while (! _stop) {
+          _logger.debug(s"resource status: ${_rm.status}")
           val t: Task = _queued.take()
           if (_rm.canStart(t)) {
             _logger.debug("starting job {}", t.toString)
