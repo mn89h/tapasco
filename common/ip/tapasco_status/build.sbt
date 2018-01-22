@@ -2,7 +2,7 @@ name := "tapasco-status"
 
 organization := "esa.cs.tu-darmstadt.de"
 
-version := "1.0-SNAPSHOT"
+version := "1.0"
 
 scalaVersion := "2.11.12"
 
@@ -34,3 +34,7 @@ lazy val tapascostatus = (project in file(".")).dependsOn(packaging, axiutils, a
 cleanFiles ++= Seq((baseDirectory.value / "test"), (baseDirectory.value / "ip"), (baseDirectory.value / "chisel3"))
 
 aggregate in test := false
+
+assemblyJarName in assembly := s"tapasco-status-${version.value}.jar"
+
+test in assembly := false
