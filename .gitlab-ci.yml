@@ -54,7 +54,7 @@ sbt-prepare:
         echo "Cache not available"
         sbt assembly
       fi
-    - tapasco --maxThreads 1 hls arraysum, arrayinit
+    - tapasco --maxTasks 1 hls arraysum, arrayinit
 
 hls-2017.4:
   variables:
@@ -96,7 +96,7 @@ hls-2017.1:
         sbt assembly
       fi
     - cd $TAPASCO_HOME/common/ip && zip -r precision_counter.zip precision_counter*
-    - tapasco -v --maxThreads 1 import $TAPASCO_HOME/common/ip/precision_counter.zip as 14
+    - tapasco -v --maxTasks 1 import $TAPASCO_HOME/common/ip/precision_counter.zip as 14
 
 import-2017.4:
   variables:
@@ -135,7 +135,7 @@ import-2017.1:
         echo "Cache not available"
         sbt assembly
       fi
-    - tapasco --maxThreads 1 compose [arraysum x 1, arrayupdate x 1] @ 100 MHz
+    - tapasco --maxTasks 1 compose [arraysum x 1, arrayupdate x 1] @ 100 MHz
 
 compose-2017.4:
   dependencies:
