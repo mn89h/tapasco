@@ -6,6 +6,11 @@ version := "0.3-SNAPSHOT"
 
 scalaVersion := "2.11.11"
 
+unmanagedResources in Compile ++= Seq(
+  baseDirectory.value / "package.py",
+  baseDirectory.value / "axi4.py"
+)
+
 resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
   Resolver.sonatypeRepo("releases")

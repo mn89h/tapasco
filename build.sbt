@@ -2,7 +2,7 @@ name := "tapasco-status"
 
 organization := "esa.cs.tu-darmstadt.de"
 
-version := "1.0-SNAPSHOT"
+version := "1.0"
 
 scalaVersion := "2.11.12"
 
@@ -35,11 +35,6 @@ cleanFiles ++= Seq((baseDirectory.value / "test"), (baseDirectory.value / "ip"),
 
 aggregate in test := false
 
-lazy val chiselSetupTask = TaskKey[Unit]("chiselSetup", "Build latest chisel libs from source")
+assemblyJarName in assembly := s"tapasco-status-${version.value}.jar"
 
-chiselSetupTask := {
-  import sys.process._
-  "./chiselSetup.sh" !
-}
-
-compile in Compile <<= (compile in Compile).dependsOn(chiselSetupTask)
+test in assembly := false
