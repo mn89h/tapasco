@@ -134,7 +134,7 @@ import-2017.1:
         echo "Cache not available"
         sbt assembly
       fi
-    - tapasco --maxTasks 1 compose [arraysum x 1, arrayupdate x 1] @ 100 MHz
+    - tapasco -v --maxTasks 1 compose [arraysum x 1, arrayupdate x 1] @ 100 MHz
 
 compose-2017.4:
   dependencies:
