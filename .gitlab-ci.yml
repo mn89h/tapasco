@@ -31,7 +31,6 @@ sbt-prepare:
       policy: push
   script:
     - sbt assembly
-    - cd $TAPASCO_HOME/common/ip/tapasco_status && ./chiselSetup.sh
 
 .hls-template: &hls-definition
   stage: hls
