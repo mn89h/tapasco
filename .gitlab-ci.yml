@@ -53,7 +53,7 @@ sbt-prepare:
         echo "Cache not available"
         sbt assembly
       fi
-    - tapasco --maxTasks 1 hls arraysum, arrayinit
+    - tapasco hls arraysum, arrayinit
 
 hls-2017.4:
   variables:
@@ -95,7 +95,7 @@ hls-2017.1:
         sbt assembly
       fi
     - cd $TAPASCO_HOME/common/ip && zip -r precision_counter.zip precision_counter*
-    - tapasco -v --maxTasks 1 import $TAPASCO_HOME/common/ip/precision_counter.zip as 14
+    - tapasco -v import $TAPASCO_HOME/common/ip/precision_counter.zip as 14
 
 import-2017.4:
   variables:
