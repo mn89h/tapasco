@@ -366,13 +366,9 @@ namespace eval ::tapasco::ip {
 
     # generate core
     set old_pwd [pwd]
-    cd $::env(TAPASCO_HOME)/common/ip/tapasco_status 
-    if {[catch {exec -ignorestderr which sbt} sbt]} {
-      error "could not find sbt"
-    } else {
-      puts "  SBT: $sbt"
-    }
-    if {[catch {exec -ignorestderr $sbt "run $::env(TAPASCO_HOME)/tapasco-status-cache $json_file" | tee ${json_file}.log >@stdout 2>@1}]} {
+    set jar "$::env(TAPASCO_HOME)/common/ip/tapasco_status/tapasco-status.jar"
+    set cache "$::env(TAPASCO_HOME)/tapasco-status-cache"
+    if {[catch {exec -ignorestderr java -jar $jar $cache $json_file | tee ${json_file}.log >@stdout 2>@1}]} {
       puts stderr "Building TaPaSCO status core failed, see ${json_file}.log:"
       puts stderr [read [open ${json_file}.log r]]
       error "Could not build status core."
