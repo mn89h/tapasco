@@ -38,9 +38,11 @@ namespace eval fancontrol {
   }
 
   proc fancontrol_falsepath {{args {}}} {
-    set port [get_ports -filter {NAME =~ *pwm*}]
-    puts "Setting false path on $port, timing does not matter."
-    set_false_path -to $port
+    if {[tapasco::is_feature_enabled "FanControl"]} {
+      set port [get_ports -filter {NAME =~ *pwm*}]
+      puts "Setting false path on $port, timing does not matter."
+      set_false_path -to $port
+    }
     return {}
   }
 }
