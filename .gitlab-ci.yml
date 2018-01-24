@@ -32,7 +32,13 @@ sbt-prepare:
   script:
     - sbt assembly
 
+.template: &template
+  only:
+    - "master"
+    - /20\d\d\.\d/
+
 .hls-template: &hls-definition
+  <<: *template
   stage: hls
   dependencies:
     - sbt-prepare
@@ -56,6 +62,7 @@ sbt-prepare:
     - tapasco -v hls arraysum, arrayinit -a $ARCHS -p $PLATFORMS
 
 .import-template: &import-definition
+  <<: *template
   stage: import
   dependencies:
     - sbt-prepare
@@ -74,6 +81,7 @@ sbt-prepare:
     - tapasco -v import $TAPASCO_HOME/common/ip/precision_counter.zip as 14 -a $ARCHS -p $PLATFORMS
 
 .compose-template: &compose-definition
+  <<: *template
   stage: compose
   cache:
       untracked: true
