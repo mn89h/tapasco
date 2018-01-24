@@ -53,7 +53,7 @@ sbt-prepare:
         echo "Cache not available"
         sbt assembly
       fi
-    - tapasco hls arraysum, arrayinit -a $ARCHS -p $PLATFORMS
+    - tapasco -v hls arraysum, arrayinit -a $ARCHS -p $PLATFORMS
 
 .import-template: &import-definition
   stage: import
