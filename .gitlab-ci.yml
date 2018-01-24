@@ -23,7 +23,13 @@ scala-test:
   script:
     - sbt clean test
 
+.template: &template
+  only:
+    - "master"
+    - /20\d\d\.\d/
+
 sbt-prepare:
+  <<: *template
   stage: toolchain-test
   cache:
       untracked: true
@@ -31,11 +37,6 @@ sbt-prepare:
       policy: push
   script:
     - sbt assembly
-
-.template: &template
-  only:
-    - "master"
-    - /20\d\d\.\d/
 
 .hls-template: &hls-definition
   <<: *template
