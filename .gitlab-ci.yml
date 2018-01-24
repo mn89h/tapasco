@@ -94,7 +94,7 @@ sbt-prepare:
         echo "Cache not available"
         sbt assembly
       fi
-    - tapasco -v --maxTasks 1 compose [arraysum x 1, arrayupdate x 1, precision_counter x 1] @ 100 MHz -a $ARCHS -p $PLATFORMS --features "$FEATURES"
+    - tapasco -v --maxTasks 1 compose [arraysum x 1, arrayupdate x 1] @ 100 MHz -a $ARCHS -p $PLATFORMS --features "$FEATURES"
 
 hls-2017.4-axi4mm-pynq:
   variables:
