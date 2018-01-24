@@ -26,6 +26,7 @@ scala-test:
 .template: &template
   only:
     - "master"
+    - "gitlab-ci"
     - /20\d\d\.\d/
 
 sbt-prepare:
