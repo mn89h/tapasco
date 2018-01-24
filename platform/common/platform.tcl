@@ -237,9 +237,16 @@ namespace eval platform {
           set sintf [get_bd_intf_pins -quiet -of_objects $seg]
           if {[catch {dict get $map $intf}]} {
             if {[catch {dict get $map $sintf}]} {
-              error "neither $intf nor $sintf were found in address map for $seg: $::errorInfo"
+              puts "    neither $intf nor $sintf were found in address map for $seg: $::errorInfo"
+              puts "    assuming internal connection, setting values as found in segment:"
+              set range  [get_property RANGE $seg]
+              puts "      range: $range"
+              set offset [get_property OFFSET $seg]
+              puts "      offset: $offset"
+              set me [dict create "range" $range "offset" $offset "space" $space seg "$seg"]
+            } else {
+              set me [dict get $map $sintf]
             }
-            set me [dict get $map $sintf]
           } else {
             set me [dict get $map $intf]
           }
