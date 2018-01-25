@@ -26,7 +26,6 @@
 source -notrace $::env(TAPASCO_HOME)/platform/common/platform.tcl
 
 namespace eval ::platform {
-  #namespace export create
   namespace export max_masters
   namespace export get_address_map
 
@@ -78,15 +77,16 @@ namespace eval ::platform {
     
     set reset_in [create_bd_pin -dir I -type rst "reset_in"]
     set clk_wiz [::tapasco::ip::create_clk_wiz "clk_wiz"]
-    set_property -dict [list CONFIG.USE_LOCKED {false} CONFIG.USE_RESET {false} CONFIG.NUM_OUT_CLKS [expr "[llength $freqs] / 2"]] $clk_wiz
-    set clk_mode "sys_diff_clock"
+    set_property -dict [list CONFIG.USE_LOCKED {false} CONFIG.USE_RESET {false}] $clk_wiz
+    set clk_mode [lindex [get_board_part_interfaces -filter { NAME =~ sys*clock }] 0]
 
-    if {[catch {set_property CONFIG.CLK_IN1_BOARD_INTERFACE {sys_diff_clock} $clk_wiz}]} {
-      puts "  sys_diff_clock is not supported, trying sys_clock instead"
-      set clk_mode "sys_clock"
+    if {$clk_mode == ""} {
+      error "could not find a board interface for the sys clock - check board part?"
     }
+    set_property CONFIG.CLK_IN1_BOARD_INTERFACE $clk_mode $clk_wiz
+
     # check if external port already exists, re-use
-    if {[catch [get_bd_ports "/$clk_mode"]]} {
+    if {[get_bd_ports -quiet "/$clk_mode"] != {}} {
       # connect existing top-level port
       connect_bd_net [get_bd_ports "/$clk_mode"] [get_bd_pins -filter {TYPE == clk && DIR == I} -of_objects $clk_wiz]
       # use PLL primitive for all but the first subsystem (MMCMs are limited)
@@ -173,84 +173,6 @@ namespace eval ::platform {
     }
 
     foreach s $mem_slaves m $mem_masters { connect_bd_intf_net $s $m }
-  }
-
-  # Setup the clock network.
-  proc platform_connect_clock {ps} {
-    puts "Connecting clocks ..."
-
-    set clk_inputs [get_bd_pins -of_objects [get_bd_cells] -filter { TYPE == "clk" && DIR == "I" }]
-    puts "  connecting to FCLK_CLK0 port of PS7"
-    set clk_inputs [get_bd_pins -of_objects [get_bd_cells] -filter { TYPE == "clk" && DIR == "I" }]
-    connect_bd_net [get_bd_pins -of_objects $ps -filter { NAME == "FCLK_CLK0" }] $clk_inputs
-  }
-
-  # Setup the reset network.
-  proc platform_connect_reset {ps rst_gen} {
-    puts "Connecting resets ..."
-
-    set ics [get_bd_cells -filter "VLNV =~ *axi_interconnect*"]
-    set ic_resets [get_bd_pins -of_objects $ics -filter { TYPE == "rst" && NAME == "ARESETN" }]
-    lappend ic_resets [get_bd_pins uArch/interconnect_aresetn]
-    set periph_resets [get_bd_pins -of_objects $ics -filter { TYPE == "rst" && NAME != "ARESETN" && DIR == "I" }]
-    lappend periph_resets [get_bd_pins -filter { TYPE == "rst" && DIR == "I" && NAME != "ARESETN" } -of_objects [get_bd_cells -filter { NAME =~ axi_intc* }]]
-    lappend periph_resets [get_bd_pins uArch/peripheral_aresetn]
-    lappend periph_resets [get_bd_pins "tapasco_status/s00_axi_aresetn"]
-    puts "ic_resets = $ic_resets"
-    puts "periph_resets = $periph_resets"
-
-    puts "  connecting to FCLK_RESET0_N on PS7"
-    connect_bd_net [get_bd_pins -of_objects $ps -filter { NAME == "FCLK_RESET0_N" }] [get_bd_pins -of_objects $rst_gen -filter { NAME == "ext_reset_in" }]
-    connect_bd_net [get_bd_pins -of_objects $rst_gen -filter { NAME == "interconnect_aresetn" }] $ic_resets
-    connect_bd_net [get_bd_pins -of_objects $rst_gen -filter { NAME == "peripheral_aresetn" }] $periph_resets
-  }
-
-  # Setup interrupts.
-  proc platform_connect_interrupts {irqs ps} {
-    puts "Connecting [llength $irqs] interrupts .."
-
-    # create interrupt controllers and connect them to GP1
-    set intcs [list]
-    set cc [tapasco::ip::create_xlconcat "intc_concat" [llength $irqs]]
-    set i 0
-    foreach irq $irqs {
-      set intc [tapasco::ip::create_axi_irqc [format "axi_intc_%02d" $i]]
-      lappend intcs $intc
-      connect_bd_net -boundary_type upper $irq [get_bd_pins -of $intc -filter {NAME=="intr"}]
-      connect_bd_net -boundary_type upper [get_bd_pins -of $intc -filter {NAME=="irq"}] [get_bd_pins -of $cc -filter "NAME == [format "In%d" $i]"]
-      incr i
-    }
-
-    set intcic [tapasco::ip::create_axi_ic "axi_intc_ic" 1 [llength $intcs]]
-    set i 0
-    foreach intc $intcs {
-      set slave [get_bd_intf_pins -of $intc -filter { MODE == "Slave" }]
-      set master [get_bd_intf_pins -of $intcic -filter "NAME == [format "M%02d_AXI" $i]"]
-      puts "Connecting $master to $slave ..."
-      connect_bd_intf_net -boundary_type upper $master $slave
-      incr i
-    }
-
-    # connect concat to the host
-    connect_bd_net [get_bd_pins -of $cc -filter { DIR == "O" }] [get_bd_pins -of $ps -filter { NAME == "IRQ_F2P" }]
-    # connect interconnect to the host at GP1
-    connect_bd_intf_net [get_bd_intf_pins -of $ps -filter {NAME=="M_AXI_GP1"}] [get_bd_intf_pins -of $intcic -filter {MODE=="Slave"}]
-    return $intcs
-  }
-
-  # Create TPC status information core.
-  # @param TPC composition dict.
-  proc createTapascoStatus {composition} {
-    set c [list]
-    set no_kinds [llength [dict keys $composition]]
-    for {set i 0} {$i < $no_kinds} {incr i} {
-      set no_inst [dict get $composition $i count]
-      for {set j 0} {$j < $no_inst} {incr j} {
-        lappend c [dict get $composition $i id]
-      }
-    }
-    set tapasco_status [tapasco::ip::create_tapasco_status "tapasco_status" $c]
-    return $tapasco_status
   }
 
   # Create interrupt controller subsystem:
@@ -353,9 +275,11 @@ namespace eval ::platform {
 
     # generate PS7 instance
     set ps [tapasco::ip::create_ps "ps7" [tapasco::get_board_preset] [tapasco::get_design_frequency]]
+    puts "  PS generated, activating board preset ..."
     if {[tapasco::get_board_preset] != {}} {
       set_property -dict [list CONFIG.preset [tapasco::get_board_preset]] $ps
     }
+    puts "  PS configuration ..."
     # activate ACP, HP0, HP2 and GP0/1 (+ FCLK1 @10MHz)
     set_property -dict [list \
       CONFIG.PCW_USE_M_AXI_GP0 			{1} \
@@ -376,6 +300,7 @@ namespace eval ::platform {
       CONFIG.PCW_IRQ_F2P_INTR 			{1} \
       CONFIG.PCW_TTC0_PERIPHERAL_ENABLE 		{0} \
       CONFIG.PCW_EN_CLK1_PORT 			{1} ] $ps
+    puts "  PS configuration finished"
 
     # connect masters
     connect_bd_intf_net [get_bd_intf_pins "$ps/M_AXI_GP0"] [get_bd_intf_pins -of_objects $gp0_ic_tree -filter { MODE == Slave }]

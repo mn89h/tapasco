@@ -23,7 +23,7 @@
 #
 # check TAPASCO_HOME env var
 if {![info exists ::env(TAPASCO_HOME)]} {
-  puts "Missing environment variable 'TAPASCO_HOME' - point to TPC root directory."
+  puts "Missing environment variable 'TAPASCO_HOME' - point to TaPaSCo root directory."
   exit 1
 }
 
@@ -98,9 +98,7 @@ update_compile_order -fileset sources_1
 
 # activate retiming in synthesis
 set_property STEPS.SYNTH_DESIGN.ARGS.RETIMING true [get_runs synth_1]
-if {[version -short] >= "2016.4"} {
-  set_property synth_checkpoint_mode None [get_files system.bd]
-}
+set_property synth_checkpoint_mode None [get_files system.bd]
 
 # generate according to the mode
 platform::generate

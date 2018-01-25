@@ -107,14 +107,13 @@ namespace eval ::tapasco::ip {
     puts "Creating Zynq-7000 series IP core ..."
     puts "  VLNV: [dict get $stdcomps ps vlnv]"
     puts "  Preset: $preset"
-    puts "  FCLK0 : $freq_mhz"
 
     set ps [create_bd_cell -type ip -vlnv [dict get $stdcomps ps vlnv] $name]
     if {$preset != {} && $preset != ""} {
       set_property -dict [list CONFIG.preset $preset] $ps
       apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 -config {make_external "FIXED_IO, DDR" apply_board_preset "1" Master "Disable" Slave "Disable" } $ps
     } {
-      apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 -config {make_external "FIXED_IO, DDR" apply_board_preset "0" Master "Disable" Slave "Disable" } $ps
+      apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 -config {make_external "FIXED_IO, DDR" Master "Disable" Slave "Disable" } $ps
     }
     return $ps
   }
