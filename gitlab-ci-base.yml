@@ -16,6 +16,7 @@ stages:
   - hls
   - import
   - compose
+  - compose-features
   - dse
 
 scala-test:
@@ -25,6 +26,7 @@ scala-test:
 
 .template: &template
   only:
+    - "gitlab-ci"
     - "master"
     - /20\d\d\.\d/
 
@@ -99,7 +101,7 @@ sbt-prepare:
 
 .compose-features-template: &compose-features-definition
   <<: *template
-  stage: compose
+  stage: compose-features
   cache:
       untracked: true
       key: "$CI_COMMIT_SHA-$CI_COMMIT_REF_NAME"
