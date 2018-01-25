@@ -103,7 +103,6 @@ compose-2017.4-axi4mm-pynq:
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
     ARCHS: "axi4mm"
     PLATFORMS: "pynq"
-
   <<: *compose-definition
 
 compose-2017.4-axi4mm-vc709:
@@ -112,7 +111,6 @@ compose-2017.4-axi4mm-vc709:
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
-
   <<: *compose-definition
 
 compose-2017.4-axi4mm-zc706:
@@ -121,7 +119,6 @@ compose-2017.4-axi4mm-zc706:
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
     ARCHS: "axi4mm"
     PLATFORMS: "zc706"
-
   <<: *compose-definition
 
 compose-2017.4-axi4mm-zedboard:
@@ -130,7 +127,6 @@ compose-2017.4-axi4mm-zedboard:
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
     ARCHS: "axi4mm"
     PLATFORMS: "zedboard"
-
   <<: *compose-definition
 
 compose-2017.3-axi4mm-pynq:
@@ -139,7 +135,6 @@ compose-2017.3-axi4mm-pynq:
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
     ARCHS: "axi4mm"
     PLATFORMS: "pynq"
-
   <<: *compose-definition
 
 compose-2017.3-axi4mm-vc709:
@@ -148,7 +143,6 @@ compose-2017.3-axi4mm-vc709:
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
-
   <<: *compose-definition
 
 compose-2017.3-axi4mm-zc706:
@@ -157,7 +151,6 @@ compose-2017.3-axi4mm-zc706:
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
     ARCHS: "axi4mm"
     PLATFORMS: "zc706"
-
   <<: *compose-definition
 
 compose-2017.3-axi4mm-zedboard:
@@ -166,7 +159,6 @@ compose-2017.3-axi4mm-zedboard:
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
     ARCHS: "axi4mm"
     PLATFORMS: "zedboard"
-
   <<: *compose-definition
 
 compose-2017.2-axi4mm-pynq:
@@ -175,7 +167,6 @@ compose-2017.2-axi4mm-pynq:
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
     ARCHS: "axi4mm"
     PLATFORMS: "pynq"
-
   <<: *compose-definition
 
 compose-2017.2-axi4mm-vc709:
@@ -184,7 +175,6 @@ compose-2017.2-axi4mm-vc709:
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
-
   <<: *compose-definition
 
 compose-2017.2-axi4mm-zc706:
@@ -193,7 +183,6 @@ compose-2017.2-axi4mm-zc706:
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
     ARCHS: "axi4mm"
     PLATFORMS: "zc706"
-
   <<: *compose-definition
 
 compose-2017.2-axi4mm-zedboard:
@@ -202,7 +191,6 @@ compose-2017.2-axi4mm-zedboard:
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
     ARCHS: "axi4mm"
     PLATFORMS: "zedboard"
-
   <<: *compose-definition
 
 compose-2017.1-axi4mm-pynq:
@@ -211,7 +199,6 @@ compose-2017.1-axi4mm-pynq:
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
     ARCHS: "axi4mm"
     PLATFORMS: "pynq"
-
   <<: *compose-definition
 
 compose-2017.1-axi4mm-vc709:
@@ -220,7 +207,6 @@ compose-2017.1-axi4mm-vc709:
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
-
   <<: *compose-definition
 
 compose-2017.1-axi4mm-zc706:
@@ -229,7 +215,6 @@ compose-2017.1-axi4mm-zc706:
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
     ARCHS: "axi4mm"
     PLATFORMS: "zc706"
-
   <<: *compose-definition
 
 compose-2017.1-axi4mm-zedboard:
@@ -238,6 +223,5 @@ compose-2017.1-axi4mm-zedboard:
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
     ARCHS: "axi4mm"
     PLATFORMS: "zedboard"
-
   <<: *compose-definition
 
