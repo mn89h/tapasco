@@ -68,6 +68,7 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
         ), script.getParent.toFile), waitMillis = Some(24 * 60 * 60 * 1000))
           .!(ProcessLogger(line => logger.trace("Vivado HLS: {}", line),
                            line => logger.trace("Vivado HLS ERR: {}", line)))
+      lt.closeAll
       logger.debug("Vivado HLS finished with exit code %d".format(vivadoRet))
       vivadoRet match {
         case 0 =>
