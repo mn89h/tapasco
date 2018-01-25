@@ -40,6 +40,7 @@ namespace eval platform {
   }
 
   proc get_address_map {{pe_base ""}} {
+    set max32 [expr "1 << 32"]
     set max64 [expr "1 << 64"]
     if {$pe_base == ""} { set pe_base [get_pe_base_address] }
     set peam [::arch::get_address_map $pe_base]
@@ -114,7 +115,7 @@ namespace eval platform {
     puts "Unused Interrupts: 1, 2, 3 are tied to 0"
     connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In1"}]
     for {set i 0} {$i < 4} {incr i} {
-      set port [create_bd_pin -dir I -type intr "irq_$i"]
+      set port [create_bd_pin -from 127 -to 0 -dir I -type intr "intr_$i"]
       connect_bd_net $port [get_bd_pin $irq_concat_ss/[format "In%d" [expr "$i + 2"]]]
     }
 

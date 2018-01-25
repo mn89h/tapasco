@@ -137,11 +137,11 @@ object EvaluateIP {
 
     logger.trace("Vivado command: {}", vivadoCmd mkString " ")
 
-    cfg.verbose foreach { _ => lt.closeAll }
-
     // execute Vivado (max runtime: 1d)
     val r = InterruptibleProcess(Process(vivadoCmd, files.baseDir.toFile),
         waitMillis = Some(24 * 60 * 60 * 1000)).!(io)
+
+    cfg.verbose foreach { _ => lt.closeAll }
 
     if (r == InterruptibleProcess.TIMEOUT_RETCODE) {
       logger.error("%s: Vivado timeout error".format(runPrefix))
