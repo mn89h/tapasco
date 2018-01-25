@@ -110,15 +110,15 @@ class MultiFileWatcher(pollInterval: Int = MultiFileWatcher.POLL_INTERVAL) exten
               if (open(p)) _waitingFor.synchronized { _waitingFor -= p }
             }
             val all_files = files ++ _files.synchronized { _files.toMap }
-            logger.trace("reading from files: {}", files)
-            files foreach { case (p, br) =>
+            logger.trace("reading from files: {}", all_files)
+            all_files foreach { case (p, br) =>
               val lines = readFrom(br)
               if (lines.length > 0) {
                 logger.trace("read {} lines from {}", lines.length, p)
                 publish(LinesAdded(p, lines))
               }
             }
-            lastWasEmpty = files.isEmpty
+            lastWasEmpty = all_files.isEmpty
           }
           _watchThread.set(None)
         } catch { case e: InterruptedException => _watchThread.set(None) }
@@ -141,6 +141,6 @@ object MultiFileWatcher {
     /** Lines ls have been added to file at src. **/
     final case class LinesAdded(src: Path, ls: Traversable[String]) extends Event
   }
-  /** Default polling interval for files: once every 5 seconds. **/
-  final val POLL_INTERVAL = 5000 // 5sec
+  /** Default polling interval for files: once every 2 seconds. **/
+  final val POLL_INTERVAL = 2000 // 2sec
 }

@@ -155,6 +155,8 @@ namespace eval ::platform {
   }
 
   proc create_subsystem_memory {} {
+    set mem_slaves  [list]
+    set mem_masters [list]
     set arch_masters [::arch::get_masters]
     set ps_slaves [list "HP0" "HP1" "ACP"]
     puts "Creating memory slave ports for [llength $arch_masters] masters ..."
@@ -172,7 +174,9 @@ namespace eval ::platform {
       incr m_i
     }
 
-    foreach s $mem_slaves m $mem_masters { connect_bd_intf_net $s $m }
+    if {[llength $mem_slaves] > 0 && [llength $mem_masters] > 0} {
+      foreach s $mem_slaves m $mem_masters { connect_bd_intf_net $s $m }
+    }
   }
 
   # Create interrupt controller subsystem:
