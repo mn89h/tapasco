@@ -26,7 +26,6 @@ scala-test:
 .template: &template
   only:
     - "master"
-    - "gitlab-ci"
     - /20\d\d\.\d/
 
 sbt-prepare:
@@ -98,699 +97,147 @@ sbt-prepare:
       fi
     - tapasco -v --maxTasks 1 compose [arraysum x 1, arrayupdate x 1] @ 100 MHz -a $ARCHS -p $PLATFORMS --features "$FEATURES"
 
-hls-2017.4-axi4mm-pynq:
+compose-2017.4-axi4mm-pynq:
   variables:
     VIVADO_VERSION: "2017.4"
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
     ARCHS: "axi4mm"
     PLATFORMS: "pynq"
-  <<: *hls-definition
-
-import-2017.4-axi4mm-pynq:
-  variables:
-    VIVADO_VERSION: "2017.4"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "pynq"
-  <<: *import-definition
-
-compose-2017.4-axi4mm-pynq-Debug:
-  variables:
-    VIVADO_VERSION: "2017.4"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "pynq"
-    FEATURES: "\"Debug\" { enabled: true }"
 
   <<: *compose-definition
 
-compose-2017.4-axi4mm-pynq-LED:
-  variables:
-    VIVADO_VERSION: "2017.4"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "pynq"
-    FEATURES: "\"LED\" { enabled: true }"
-
-  <<: *compose-definition
-
-hls-2017.4-axi4mm-vc709:
+compose-2017.4-axi4mm-vc709:
   variables:
     VIVADO_VERSION: "2017.4"
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
-  <<: *hls-definition
-
-import-2017.4-axi4mm-vc709:
-  variables:
-    VIVADO_VERSION: "2017.4"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-  <<: *import-definition
-
-compose-2017.4-axi4mm-vc709-ATS-PRI:
-  variables:
-    VIVADO_VERSION: "2017.4"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-    FEATURES: "\"ATS-PRI\" { enabled: true }"
 
   <<: *compose-definition
 
-compose-2017.4-axi4mm-vc709-BlueDMA:
-  variables:
-    VIVADO_VERSION: "2017.4"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-    FEATURES: "\"BlueDMA\" { enabled: true }"
-
-  <<: *compose-definition
-
-compose-2017.4-axi4mm-vc709-Cache:
-  variables:
-    VIVADO_VERSION: "2017.4"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-    FEATURES: "\"Cache\" { enabled: true }"
-
-  <<: *compose-definition
-
-compose-2017.4-axi4mm-vc709-Debug:
-  variables:
-    VIVADO_VERSION: "2017.4"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-    FEATURES: "\"Debug\" { enabled: true }"
-
-  <<: *compose-definition
-
-compose-2017.4-axi4mm-vc709-LED:
-  variables:
-    VIVADO_VERSION: "2017.4"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-    FEATURES: "\"LED\" { enabled: true }"
-
-  <<: *compose-definition
-
-hls-2017.4-axi4mm-zc706:
+compose-2017.4-axi4mm-zc706:
   variables:
     VIVADO_VERSION: "2017.4"
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
     ARCHS: "axi4mm"
     PLATFORMS: "zc706"
-  <<: *hls-definition
-
-import-2017.4-axi4mm-zc706:
-  variables:
-    VIVADO_VERSION: "2017.4"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zc706"
-  <<: *import-definition
-
-compose-2017.4-axi4mm-zc706-Debug:
-  variables:
-    VIVADO_VERSION: "2017.4"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zc706"
-    FEATURES: "\"Debug\" { enabled: true }"
 
   <<: *compose-definition
 
-compose-2017.4-axi4mm-zc706-FanControl:
-  variables:
-    VIVADO_VERSION: "2017.4"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zc706"
-    FEATURES: "\"FanControl\" { enabled: true }"
-
-  <<: *compose-definition
-
-hls-2017.4-axi4mm-zedboard:
+compose-2017.4-axi4mm-zedboard:
   variables:
     VIVADO_VERSION: "2017.4"
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
     ARCHS: "axi4mm"
     PLATFORMS: "zedboard"
-  <<: *hls-definition
-
-import-2017.4-axi4mm-zedboard:
-  variables:
-    VIVADO_VERSION: "2017.4"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zedboard"
-  <<: *import-definition
-
-compose-2017.4-axi4mm-zedboard-Debug:
-  variables:
-    VIVADO_VERSION: "2017.4"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zedboard"
-    FEATURES: "\"Debug\" { enabled: true }"
 
   <<: *compose-definition
 
-compose-2017.4-axi4mm-zedboard-OLED:
-  variables:
-    VIVADO_VERSION: "2017.4"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.4/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zedboard"
-    FEATURES: "\"OLED\" { enabled: true }"
-
-  <<: *compose-definition
-
-hls-2017.3-axi4mm-pynq:
+compose-2017.3-axi4mm-pynq:
   variables:
     VIVADO_VERSION: "2017.3"
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
     ARCHS: "axi4mm"
     PLATFORMS: "pynq"
-  <<: *hls-definition
-
-import-2017.3-axi4mm-pynq:
-  variables:
-    VIVADO_VERSION: "2017.3"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "pynq"
-  <<: *import-definition
-
-compose-2017.3-axi4mm-pynq-Debug:
-  variables:
-    VIVADO_VERSION: "2017.3"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "pynq"
-    FEATURES: "\"Debug\" { enabled: true }"
 
   <<: *compose-definition
 
-compose-2017.3-axi4mm-pynq-LED:
-  variables:
-    VIVADO_VERSION: "2017.3"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "pynq"
-    FEATURES: "\"LED\" { enabled: true }"
-
-  <<: *compose-definition
-
-hls-2017.3-axi4mm-vc709:
+compose-2017.3-axi4mm-vc709:
   variables:
     VIVADO_VERSION: "2017.3"
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
-  <<: *hls-definition
-
-import-2017.3-axi4mm-vc709:
-  variables:
-    VIVADO_VERSION: "2017.3"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-  <<: *import-definition
-
-compose-2017.3-axi4mm-vc709-ATS-PRI:
-  variables:
-    VIVADO_VERSION: "2017.3"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-    FEATURES: "\"ATS-PRI\" { enabled: true }"
 
   <<: *compose-definition
 
-compose-2017.3-axi4mm-vc709-BlueDMA:
-  variables:
-    VIVADO_VERSION: "2017.3"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-    FEATURES: "\"BlueDMA\" { enabled: true }"
-
-  <<: *compose-definition
-
-compose-2017.3-axi4mm-vc709-Cache:
-  variables:
-    VIVADO_VERSION: "2017.3"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-    FEATURES: "\"Cache\" { enabled: true }"
-
-  <<: *compose-definition
-
-compose-2017.3-axi4mm-vc709-Debug:
-  variables:
-    VIVADO_VERSION: "2017.3"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-    FEATURES: "\"Debug\" { enabled: true }"
-
-  <<: *compose-definition
-
-compose-2017.3-axi4mm-vc709-LED:
-  variables:
-    VIVADO_VERSION: "2017.3"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-    FEATURES: "\"LED\" { enabled: true }"
-
-  <<: *compose-definition
-
-hls-2017.3-axi4mm-zc706:
+compose-2017.3-axi4mm-zc706:
   variables:
     VIVADO_VERSION: "2017.3"
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
     ARCHS: "axi4mm"
     PLATFORMS: "zc706"
-  <<: *hls-definition
-
-import-2017.3-axi4mm-zc706:
-  variables:
-    VIVADO_VERSION: "2017.3"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zc706"
-  <<: *import-definition
-
-compose-2017.3-axi4mm-zc706-Debug:
-  variables:
-    VIVADO_VERSION: "2017.3"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zc706"
-    FEATURES: "\"Debug\" { enabled: true }"
 
   <<: *compose-definition
 
-compose-2017.3-axi4mm-zc706-FanControl:
-  variables:
-    VIVADO_VERSION: "2017.3"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zc706"
-    FEATURES: "\"FanControl\" { enabled: true }"
-
-  <<: *compose-definition
-
-hls-2017.3-axi4mm-zedboard:
+compose-2017.3-axi4mm-zedboard:
   variables:
     VIVADO_VERSION: "2017.3"
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
     ARCHS: "axi4mm"
     PLATFORMS: "zedboard"
-  <<: *hls-definition
-
-import-2017.3-axi4mm-zedboard:
-  variables:
-    VIVADO_VERSION: "2017.3"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zedboard"
-  <<: *import-definition
-
-compose-2017.3-axi4mm-zedboard-Debug:
-  variables:
-    VIVADO_VERSION: "2017.3"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zedboard"
-    FEATURES: "\"Debug\" { enabled: true }"
 
   <<: *compose-definition
 
-compose-2017.3-axi4mm-zedboard-OLED:
-  variables:
-    VIVADO_VERSION: "2017.3"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.3/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zedboard"
-    FEATURES: "\"OLED\" { enabled: true }"
-
-  <<: *compose-definition
-
-hls-2017.2-axi4mm-pynq:
+compose-2017.2-axi4mm-pynq:
   variables:
     VIVADO_VERSION: "2017.2"
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
     ARCHS: "axi4mm"
     PLATFORMS: "pynq"
-  <<: *hls-definition
-
-import-2017.2-axi4mm-pynq:
-  variables:
-    VIVADO_VERSION: "2017.2"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "pynq"
-  <<: *import-definition
-
-compose-2017.2-axi4mm-pynq-Debug:
-  variables:
-    VIVADO_VERSION: "2017.2"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "pynq"
-    FEATURES: "\"Debug\" { enabled: true }"
 
   <<: *compose-definition
 
-compose-2017.2-axi4mm-pynq-LED:
-  variables:
-    VIVADO_VERSION: "2017.2"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "pynq"
-    FEATURES: "\"LED\" { enabled: true }"
-
-  <<: *compose-definition
-
-hls-2017.2-axi4mm-vc709:
+compose-2017.2-axi4mm-vc709:
   variables:
     VIVADO_VERSION: "2017.2"
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
-  <<: *hls-definition
-
-import-2017.2-axi4mm-vc709:
-  variables:
-    VIVADO_VERSION: "2017.2"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-  <<: *import-definition
-
-compose-2017.2-axi4mm-vc709-ATS-PRI:
-  variables:
-    VIVADO_VERSION: "2017.2"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-    FEATURES: "\"ATS-PRI\" { enabled: true }"
 
   <<: *compose-definition
 
-compose-2017.2-axi4mm-vc709-BlueDMA:
-  variables:
-    VIVADO_VERSION: "2017.2"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-    FEATURES: "\"BlueDMA\" { enabled: true }"
-
-  <<: *compose-definition
-
-compose-2017.2-axi4mm-vc709-Cache:
-  variables:
-    VIVADO_VERSION: "2017.2"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-    FEATURES: "\"Cache\" { enabled: true }"
-
-  <<: *compose-definition
-
-compose-2017.2-axi4mm-vc709-Debug:
-  variables:
-    VIVADO_VERSION: "2017.2"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-    FEATURES: "\"Debug\" { enabled: true }"
-
-  <<: *compose-definition
-
-compose-2017.2-axi4mm-vc709-LED:
-  variables:
-    VIVADO_VERSION: "2017.2"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-    FEATURES: "\"LED\" { enabled: true }"
-
-  <<: *compose-definition
-
-hls-2017.2-axi4mm-zc706:
+compose-2017.2-axi4mm-zc706:
   variables:
     VIVADO_VERSION: "2017.2"
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
     ARCHS: "axi4mm"
     PLATFORMS: "zc706"
-  <<: *hls-definition
-
-import-2017.2-axi4mm-zc706:
-  variables:
-    VIVADO_VERSION: "2017.2"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zc706"
-  <<: *import-definition
-
-compose-2017.2-axi4mm-zc706-Debug:
-  variables:
-    VIVADO_VERSION: "2017.2"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zc706"
-    FEATURES: "\"Debug\" { enabled: true }"
 
   <<: *compose-definition
 
-compose-2017.2-axi4mm-zc706-FanControl:
-  variables:
-    VIVADO_VERSION: "2017.2"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zc706"
-    FEATURES: "\"FanControl\" { enabled: true }"
-
-  <<: *compose-definition
-
-hls-2017.2-axi4mm-zedboard:
+compose-2017.2-axi4mm-zedboard:
   variables:
     VIVADO_VERSION: "2017.2"
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
     ARCHS: "axi4mm"
     PLATFORMS: "zedboard"
-  <<: *hls-definition
-
-import-2017.2-axi4mm-zedboard:
-  variables:
-    VIVADO_VERSION: "2017.2"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zedboard"
-  <<: *import-definition
-
-compose-2017.2-axi4mm-zedboard-Debug:
-  variables:
-    VIVADO_VERSION: "2017.2"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zedboard"
-    FEATURES: "\"Debug\" { enabled: true }"
 
   <<: *compose-definition
 
-compose-2017.2-axi4mm-zedboard-OLED:
-  variables:
-    VIVADO_VERSION: "2017.2"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.2/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zedboard"
-    FEATURES: "\"OLED\" { enabled: true }"
-
-  <<: *compose-definition
-
-hls-2017.1-axi4mm-pynq:
+compose-2017.1-axi4mm-pynq:
   variables:
     VIVADO_VERSION: "2017.1"
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
     ARCHS: "axi4mm"
     PLATFORMS: "pynq"
-  <<: *hls-definition
-
-import-2017.1-axi4mm-pynq:
-  variables:
-    VIVADO_VERSION: "2017.1"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "pynq"
-  <<: *import-definition
-
-compose-2017.1-axi4mm-pynq-Debug:
-  variables:
-    VIVADO_VERSION: "2017.1"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "pynq"
-    FEATURES: "\"Debug\" { enabled: true }"
 
   <<: *compose-definition
 
-compose-2017.1-axi4mm-pynq-LED:
-  variables:
-    VIVADO_VERSION: "2017.1"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "pynq"
-    FEATURES: "\"LED\" { enabled: true }"
-
-  <<: *compose-definition
-
-hls-2017.1-axi4mm-vc709:
+compose-2017.1-axi4mm-vc709:
   variables:
     VIVADO_VERSION: "2017.1"
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
-  <<: *hls-definition
-
-import-2017.1-axi4mm-vc709:
-  variables:
-    VIVADO_VERSION: "2017.1"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-  <<: *import-definition
-
-compose-2017.1-axi4mm-vc709-ATS-PRI:
-  variables:
-    VIVADO_VERSION: "2017.1"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-    FEATURES: "\"ATS-PRI\" { enabled: true }"
 
   <<: *compose-definition
 
-compose-2017.1-axi4mm-vc709-BlueDMA:
-  variables:
-    VIVADO_VERSION: "2017.1"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-    FEATURES: "\"BlueDMA\" { enabled: true }"
-
-  <<: *compose-definition
-
-compose-2017.1-axi4mm-vc709-Cache:
-  variables:
-    VIVADO_VERSION: "2017.1"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-    FEATURES: "\"Cache\" { enabled: true }"
-
-  <<: *compose-definition
-
-compose-2017.1-axi4mm-vc709-Debug:
-  variables:
-    VIVADO_VERSION: "2017.1"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-    FEATURES: "\"Debug\" { enabled: true }"
-
-  <<: *compose-definition
-
-compose-2017.1-axi4mm-vc709-LED:
-  variables:
-    VIVADO_VERSION: "2017.1"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "vc709"
-    FEATURES: "\"LED\" { enabled: true }"
-
-  <<: *compose-definition
-
-hls-2017.1-axi4mm-zc706:
+compose-2017.1-axi4mm-zc706:
   variables:
     VIVADO_VERSION: "2017.1"
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
     ARCHS: "axi4mm"
     PLATFORMS: "zc706"
-  <<: *hls-definition
-
-import-2017.1-axi4mm-zc706:
-  variables:
-    VIVADO_VERSION: "2017.1"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zc706"
-  <<: *import-definition
-
-compose-2017.1-axi4mm-zc706-Debug:
-  variables:
-    VIVADO_VERSION: "2017.1"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zc706"
-    FEATURES: "\"Debug\" { enabled: true }"
 
   <<: *compose-definition
 
-compose-2017.1-axi4mm-zc706-FanControl:
-  variables:
-    VIVADO_VERSION: "2017.1"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zc706"
-    FEATURES: "\"FanControl\" { enabled: true }"
-
-  <<: *compose-definition
-
-hls-2017.1-axi4mm-zedboard:
+compose-2017.1-axi4mm-zedboard:
   variables:
     VIVADO_VERSION: "2017.1"
     VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
     ARCHS: "axi4mm"
     PLATFORMS: "zedboard"
-  <<: *hls-definition
-
-import-2017.1-axi4mm-zedboard:
-  variables:
-    VIVADO_VERSION: "2017.1"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zedboard"
-  <<: *import-definition
-
-compose-2017.1-axi4mm-zedboard-Debug:
-  variables:
-    VIVADO_VERSION: "2017.1"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zedboard"
-    FEATURES: "\"Debug\" { enabled: true }"
-
-  <<: *compose-definition
-
-compose-2017.1-axi4mm-zedboard-OLED:
-  variables:
-    VIVADO_VERSION: "2017.1"
-    VIVADO_OFFSET: "xilinx/vivado/Vivado/2017.1/"
-    ARCHS: "axi4mm"
-    PLATFORMS: "zedboard"
-    FEATURES: "\"OLED\" { enabled: true }"
 
   <<: *compose-definition
 

@@ -141,6 +141,6 @@ object MultiFileWatcher {
     /** Lines ls have been added to file at src. **/
     final case class LinesAdded(src: Path, ls: Traversable[String]) extends Event
   }
-  /** Default polling interval for files: once per second. **/
-  final val POLL_INTERVAL = 1000 // 1sec
+  /** Default polling interval for files: once every 5 seconds. **/
+  final val POLL_INTERVAL = 5000 // 5sec
 }
