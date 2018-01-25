@@ -145,7 +145,6 @@ compose-2017.4-axi4mm-pynq+Debug:
     ARCHS: "axi4mm"
     PLATFORMS: "pynq"
     FEATURES: "\"Debug\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.4-axi4mm-pynq+LED:
@@ -155,7 +154,6 @@ compose-2017.4-axi4mm-pynq+LED:
     ARCHS: "axi4mm"
     PLATFORMS: "pynq"
     FEATURES: "\"LED\" { enabled: true }"
-
   <<: *compose-features-definition
 
 hls-2017.4-axi4mm-vc709:
@@ -189,7 +187,6 @@ compose-2017.4-axi4mm-vc709+ATS-PRI:
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
     FEATURES: "\"ATS-PRI\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.4-axi4mm-vc709+BlueDMA:
@@ -199,7 +196,6 @@ compose-2017.4-axi4mm-vc709+BlueDMA:
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
     FEATURES: "\"BlueDMA\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.4-axi4mm-vc709+Cache:
@@ -209,7 +205,6 @@ compose-2017.4-axi4mm-vc709+Cache:
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
     FEATURES: "\"Cache\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.4-axi4mm-vc709+Debug:
@@ -219,7 +214,6 @@ compose-2017.4-axi4mm-vc709+Debug:
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
     FEATURES: "\"Debug\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.4-axi4mm-vc709+LED:
@@ -229,7 +223,6 @@ compose-2017.4-axi4mm-vc709+LED:
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
     FEATURES: "\"LED\" { enabled: true }"
-
   <<: *compose-features-definition
 
 hls-2017.4-axi4mm-zc706:
@@ -263,7 +256,6 @@ compose-2017.4-axi4mm-zc706+Debug:
     ARCHS: "axi4mm"
     PLATFORMS: "zc706"
     FEATURES: "\"Debug\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.4-axi4mm-zc706+FanControl:
@@ -273,7 +265,6 @@ compose-2017.4-axi4mm-zc706+FanControl:
     ARCHS: "axi4mm"
     PLATFORMS: "zc706"
     FEATURES: "\"FanControl\" { enabled: true }"
-
   <<: *compose-features-definition
 
 hls-2017.4-axi4mm-zedboard:
@@ -307,7 +298,6 @@ compose-2017.4-axi4mm-zedboard+Debug:
     ARCHS: "axi4mm"
     PLATFORMS: "zedboard"
     FEATURES: "\"Debug\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.4-axi4mm-zedboard+OLED:
@@ -317,7 +307,6 @@ compose-2017.4-axi4mm-zedboard+OLED:
     ARCHS: "axi4mm"
     PLATFORMS: "zedboard"
     FEATURES: "\"OLED\" { enabled: true }"
-
   <<: *compose-features-definition
 
 hls-2017.3-axi4mm-pynq:
@@ -351,7 +340,6 @@ compose-2017.3-axi4mm-pynq+Debug:
     ARCHS: "axi4mm"
     PLATFORMS: "pynq"
     FEATURES: "\"Debug\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.3-axi4mm-pynq+LED:
@@ -361,7 +349,6 @@ compose-2017.3-axi4mm-pynq+LED:
     ARCHS: "axi4mm"
     PLATFORMS: "pynq"
     FEATURES: "\"LED\" { enabled: true }"
-
   <<: *compose-features-definition
 
 hls-2017.3-axi4mm-vc709:
@@ -395,7 +382,6 @@ compose-2017.3-axi4mm-vc709+ATS-PRI:
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
     FEATURES: "\"ATS-PRI\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.3-axi4mm-vc709+BlueDMA:
@@ -405,7 +391,6 @@ compose-2017.3-axi4mm-vc709+BlueDMA:
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
     FEATURES: "\"BlueDMA\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.3-axi4mm-vc709+Cache:
@@ -415,7 +400,6 @@ compose-2017.3-axi4mm-vc709+Cache:
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
     FEATURES: "\"Cache\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.3-axi4mm-vc709+Debug:
@@ -425,7 +409,6 @@ compose-2017.3-axi4mm-vc709+Debug:
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
     FEATURES: "\"Debug\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.3-axi4mm-vc709+LED:
@@ -435,7 +418,6 @@ compose-2017.3-axi4mm-vc709+LED:
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
     FEATURES: "\"LED\" { enabled: true }"
-
   <<: *compose-features-definition
 
 hls-2017.3-axi4mm-zc706:
@@ -469,7 +451,6 @@ compose-2017.3-axi4mm-zc706+Debug:
     ARCHS: "axi4mm"
     PLATFORMS: "zc706"
     FEATURES: "\"Debug\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.3-axi4mm-zc706+FanControl:
@@ -479,7 +460,6 @@ compose-2017.3-axi4mm-zc706+FanControl:
     ARCHS: "axi4mm"
     PLATFORMS: "zc706"
     FEATURES: "\"FanControl\" { enabled: true }"
-
   <<: *compose-features-definition
 
 hls-2017.3-axi4mm-zedboard:
@@ -513,7 +493,6 @@ compose-2017.3-axi4mm-zedboard+Debug:
     ARCHS: "axi4mm"
     PLATFORMS: "zedboard"
     FEATURES: "\"Debug\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.3-axi4mm-zedboard+OLED:
@@ -523,7 +502,6 @@ compose-2017.3-axi4mm-zedboard+OLED:
     ARCHS: "axi4mm"
     PLATFORMS: "zedboard"
     FEATURES: "\"OLED\" { enabled: true }"
-
   <<: *compose-features-definition
 
 hls-2017.2-axi4mm-pynq:
@@ -557,7 +535,6 @@ compose-2017.2-axi4mm-pynq+Debug:
     ARCHS: "axi4mm"
     PLATFORMS: "pynq"
     FEATURES: "\"Debug\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.2-axi4mm-pynq+LED:
@@ -567,7 +544,6 @@ compose-2017.2-axi4mm-pynq+LED:
     ARCHS: "axi4mm"
     PLATFORMS: "pynq"
     FEATURES: "\"LED\" { enabled: true }"
-
   <<: *compose-features-definition
 
 hls-2017.2-axi4mm-vc709:
@@ -601,7 +577,6 @@ compose-2017.2-axi4mm-vc709+ATS-PRI:
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
     FEATURES: "\"ATS-PRI\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.2-axi4mm-vc709+BlueDMA:
@@ -611,7 +586,6 @@ compose-2017.2-axi4mm-vc709+BlueDMA:
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
     FEATURES: "\"BlueDMA\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.2-axi4mm-vc709+Cache:
@@ -621,7 +595,6 @@ compose-2017.2-axi4mm-vc709+Cache:
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
     FEATURES: "\"Cache\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.2-axi4mm-vc709+Debug:
@@ -631,7 +604,6 @@ compose-2017.2-axi4mm-vc709+Debug:
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
     FEATURES: "\"Debug\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.2-axi4mm-vc709+LED:
@@ -641,7 +613,6 @@ compose-2017.2-axi4mm-vc709+LED:
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
     FEATURES: "\"LED\" { enabled: true }"
-
   <<: *compose-features-definition
 
 hls-2017.2-axi4mm-zc706:
@@ -675,7 +646,6 @@ compose-2017.2-axi4mm-zc706+Debug:
     ARCHS: "axi4mm"
     PLATFORMS: "zc706"
     FEATURES: "\"Debug\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.2-axi4mm-zc706+FanControl:
@@ -685,7 +655,6 @@ compose-2017.2-axi4mm-zc706+FanControl:
     ARCHS: "axi4mm"
     PLATFORMS: "zc706"
     FEATURES: "\"FanControl\" { enabled: true }"
-
   <<: *compose-features-definition
 
 hls-2017.2-axi4mm-zedboard:
@@ -719,7 +688,6 @@ compose-2017.2-axi4mm-zedboard+Debug:
     ARCHS: "axi4mm"
     PLATFORMS: "zedboard"
     FEATURES: "\"Debug\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.2-axi4mm-zedboard+OLED:
@@ -729,7 +697,6 @@ compose-2017.2-axi4mm-zedboard+OLED:
     ARCHS: "axi4mm"
     PLATFORMS: "zedboard"
     FEATURES: "\"OLED\" { enabled: true }"
-
   <<: *compose-features-definition
 
 hls-2017.1-axi4mm-pynq:
@@ -763,7 +730,6 @@ compose-2017.1-axi4mm-pynq+Debug:
     ARCHS: "axi4mm"
     PLATFORMS: "pynq"
     FEATURES: "\"Debug\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.1-axi4mm-pynq+LED:
@@ -773,7 +739,6 @@ compose-2017.1-axi4mm-pynq+LED:
     ARCHS: "axi4mm"
     PLATFORMS: "pynq"
     FEATURES: "\"LED\" { enabled: true }"
-
   <<: *compose-features-definition
 
 hls-2017.1-axi4mm-vc709:
@@ -807,7 +772,6 @@ compose-2017.1-axi4mm-vc709+ATS-PRI:
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
     FEATURES: "\"ATS-PRI\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.1-axi4mm-vc709+BlueDMA:
@@ -817,7 +781,6 @@ compose-2017.1-axi4mm-vc709+BlueDMA:
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
     FEATURES: "\"BlueDMA\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.1-axi4mm-vc709+Cache:
@@ -827,7 +790,6 @@ compose-2017.1-axi4mm-vc709+Cache:
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
     FEATURES: "\"Cache\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.1-axi4mm-vc709+Debug:
@@ -837,7 +799,6 @@ compose-2017.1-axi4mm-vc709+Debug:
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
     FEATURES: "\"Debug\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.1-axi4mm-vc709+LED:
@@ -847,7 +808,6 @@ compose-2017.1-axi4mm-vc709+LED:
     ARCHS: "axi4mm"
     PLATFORMS: "vc709"
     FEATURES: "\"LED\" { enabled: true }"
-
   <<: *compose-features-definition
 
 hls-2017.1-axi4mm-zc706:
@@ -881,7 +841,6 @@ compose-2017.1-axi4mm-zc706+Debug:
     ARCHS: "axi4mm"
     PLATFORMS: "zc706"
     FEATURES: "\"Debug\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.1-axi4mm-zc706+FanControl:
@@ -891,7 +850,6 @@ compose-2017.1-axi4mm-zc706+FanControl:
     ARCHS: "axi4mm"
     PLATFORMS: "zc706"
     FEATURES: "\"FanControl\" { enabled: true }"
-
   <<: *compose-features-definition
 
 hls-2017.1-axi4mm-zedboard:
@@ -925,7 +883,6 @@ compose-2017.1-axi4mm-zedboard+Debug:
     ARCHS: "axi4mm"
     PLATFORMS: "zedboard"
     FEATURES: "\"Debug\" { enabled: true }"
-
   <<: *compose-features-definition
 
 compose-2017.1-axi4mm-zedboard+OLED:
@@ -935,6 +892,5 @@ compose-2017.1-axi4mm-zedboard+OLED:
     ARCHS: "axi4mm"
     PLATFORMS: "zedboard"
     FEATURES: "\"OLED\" { enabled: true }"
-
   <<: *compose-features-definition
 
