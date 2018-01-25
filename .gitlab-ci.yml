@@ -12,11 +12,11 @@ before_script:
   - export SBT_OPTS="-Dsbt.global.base=$TAPASCO_HOME/.sbt/ -Dsbt.ivy.home=$TAPASCO_HOME/.ivy2/ -Divy.home=$TAPASCO_HOME/.ivy2/"
 
 stages:
-  - toolchain-test
-  - hls
-  - import
+#  - toolchain-test
+#  - hls
+#  - import
   - compose
-  - dse
+#  - dse
 
 scala-test:
   stage: toolchain-test
