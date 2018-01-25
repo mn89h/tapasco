@@ -100,14 +100,17 @@ class MultiFileWatcher(pollInterval: Int = MultiFileWatcher.POLL_INTERVAL) exten
     if (_watchThread.compareAndSet(None, Some(new Thread(new Runnable {
       def run() {
         try {
-          while (! _files.isEmpty || ! _waitingFor.isEmpty) {
-            Thread.sleep(pollInterval)
+          var lastWasEmpty = false
+          while (! _files.isEmpty || ! _waitingFor.isEmpty || ! lastWasEmpty) {
             val waits = _waitingFor.synchronized { _waitingFor.toList }
+            val files = _files.synchronized { _files.toMap }
+            Thread.sleep(pollInterval)
             waits foreach { p =>
               logger.trace("waiting for {}", p)
               if (open(p)) _waitingFor.synchronized { _waitingFor -= p }
             }
-            val files = _files.synchronized { _files.toMap }
+            val all_files = files ++ _files.synchronized { _files.toMap }
+            logger.trace("reading from files: {}", files)
             files foreach { case (p, br) =>
               val lines = readFrom(br)
               if (lines.length > 0) {
@@ -115,12 +118,14 @@ class MultiFileWatcher(pollInterval: Int = MultiFileWatcher.POLL_INTERVAL) exten
                 publish(LinesAdded(p, lines))
               }
             }
+            lastWasEmpty = files.isEmpty
           }
           _watchThread.set(None)
         } catch { case e: InterruptedException => _watchThread.set(None) }
       }
     })))) {
       _watchThread.get map (_.start)
+      Thread.sleep(100)
     }
   }
 
