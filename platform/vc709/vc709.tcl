@@ -48,8 +48,8 @@ namespace eval platform {
     foreach m [::tapasco::get_aximm_interfaces [get_bd_cells -filter "PATH !~ [::tapasco::subsystem::get arch]/*"]] {
       switch -glob [get_property NAME $m] {
         "M_DMA"     { foreach {base stride range} [list 0x00300000 0x10000 0     ] {} }
-        "M_INTC"    { foreach {base stride range} [list 0x00400000 0x10000 0     ] {} }
-        "M_MSIX"    { foreach {base stride range} [list 0x00500000 0x10000 $max64] {} }
+        "M_INTC"    { foreach {base stride range} [list 0x00500000 0x10000 0     ] {} }
+        "M_MSIX"    { foreach {base stride range} [list 0          0       $max64] {} }
         "M_TAPASCO" { foreach {base stride range} [list 0x02800000 0       0     ] {} }
         "M_HOST"    { foreach {base stride range} [list 0          0       $max64] {} }
         "M_ARCH"    { set base "skip" }
@@ -81,7 +81,8 @@ namespace eval platform {
     set aclk [tapasco::subsystem::get_port "host" "clk"]
     set ic_aresetn [tapasco::subsystem::get_port "host" "rst" "interconnect"]
     set p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
-    set dma_irq [create_bd_pin -type "intr" -dir I "dma_irq"]
+    set dma_irq_read [create_bd_pin -type "intr" -dir I "dma_irq_read"]
+    set dma_irq_write [create_bd_pin -type "intr" -dir I "dma_irq_write"]
 
     set msix_fail [create_bd_pin -dir "I" "msix_fail"]
     set msix_sent [create_bd_pin -dir "I" "msix_sent"]
@@ -111,9 +112,9 @@ namespace eval platform {
     connect_bd_net $msix_enable [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "cfg_interrupt_msix_enable"}]
     connect_bd_net $msix_mask [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "cfg_interrupt_msix_mask"}]
 
-    connect_bd_net $dma_irq [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In0"}]
-    puts "Unused Interrupts: 1, 2, 3 are tied to 0"
-    connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In1"}]
+    connect_bd_net $dma_irq_read [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In0"}]
+    connect_bd_net $dma_irq_write [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In1"}]
+    puts "Unused Interrupts: 2, 3 are tied to 0"
     for {set i 0} {$i < 4} {incr i} {
       set port [create_bd_pin -from 127 -to 0 -dir I -type intr "intr_$i"]
       connect_bd_net $port [get_bd_pin $irq_concat_ss/[format "In%d" [expr "$i + 2"]]]
@@ -156,7 +157,8 @@ namespace eval platform {
     set ddr_p_aresetn  [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"]
     set design_p_aresetn [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
 
-    set irq [create_bd_pin -type "intr" -dir "O" "dma_irq"]
+    set irq_read [create_bd_pin -type "intr" -dir "O" "dma_irq_read"]
+    set irq_write [create_bd_pin -type "intr" -dir "O" "dma_irq_write"]
 
     # create instances of cores: MIG core, dual DMA, system cache
     set mig [create_mig_core "mig"]
@@ -236,7 +238,12 @@ namespace eval platform {
     }
 
     # connect IRQ
-    connect_bd_net [get_bd_pins dual_dma/IRQ] $irq
+     if {[tapasco::is_feature_enabled "BlueDMA"]} {
+       connect_bd_net [get_bd_pins dual_dma/IRQ_read] $irq_read
+       connect_bd_net [get_bd_pins dual_dma/IRQ_write] $irq_write
+     } else {
+       connect_bd_net [get_bd_pins dual_dma/IRQ] $irq_read
+     }
   }
 
   proc create_subsystem_host {} {
@@ -464,7 +471,7 @@ namespace eval platform {
     # create constraints file for GTX transceivers
     set constraints_fn "[get_property DIRECTORY [current_project]]/pcie.xdc"
     set constraints_file [open $constraints_fn w+]
-    puts $constraints_file "set_property LOC IBUFDS_GTE2_X1Y11 \[get_cells {system_i/PCIe/refclk_ibuf/U0/USE_IBUFDS_GTE2.GEN_IBUFDS_GTE2[0].IBUFDS_GTE2_I}\]"
+    puts $constraints_file "set_property LOC IBUFDS_GTE2_X1Y11 \[get_cells {system_i/host/refclk_ibuf/U0/USE_IBUFDS_GTE2.GEN_IBUFDS_GTE2[0].IBUFDS_GTE2_I}\]"
     close $constraints_file
     read_xdc $constraints_fn
 
