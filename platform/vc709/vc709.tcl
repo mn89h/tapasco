@@ -112,10 +112,9 @@ namespace eval platform {
     connect_bd_net $msix_enable [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "cfg_interrupt_msix_enable"}]
     connect_bd_net $msix_mask [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "cfg_interrupt_msix_mask"}]
 
-    connect_bd_net $dma_irq_read [get_bd_pin -of_objects $irq_concat_ss -filter {NAME ==      "In0"}]
-    connect_bd_net $dma_irq_write [get_bd_pin -of_objects $irq_concat_ss -filter {NAME ==     "In1"}]
+    connect_bd_net $dma_irq_read [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In0"}]
+    connect_bd_net $dma_irq_write [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In1"}]
     puts "Unused Interrupts: 2, 3 are tied to 0"
-    connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In1"}]
     for {set i 0} {$i < 4} {incr i} {
       set port [create_bd_pin -from 127 -to 0 -dir I -type intr "intr_$i"]
       connect_bd_net $port [get_bd_pin $irq_concat_ss/[format "In%d" [expr "$i + 2"]]]
@@ -239,7 +238,7 @@ namespace eval platform {
     }
 
     # connect IRQ
-     if {[tapasco::is_platform_feature_enabled "BlueDMA"]} {
+     if {[tapasco::is_feature_enabled "BlueDMA"]} {
        connect_bd_net [get_bd_pins dual_dma/IRQ_read] $irq_read
        connect_bd_net [get_bd_pins dual_dma/IRQ_write] $irq_write
      } else {
