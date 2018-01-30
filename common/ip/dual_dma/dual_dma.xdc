@@ -18,21 +18,17 @@
 #
 #has to be scoped to the dual_dma instance
 
-set dma [get_cells -hier *dual_dma]
-set m32 [get_pins -of_objects $dma -filter { NAME =~ *m32_axi_aclk }]
-set m64 [get_pins -of_objects $dma -filter { NAME =~ *m64_axi_aclk }]
-set m32_clk [get_clocks -of_objects $m32]
-set m64_clk [get_clocks -of_objects $m64]
-set_false_path -through [get_pins -of_objects $dma -filter {NAME =~ *_axi_aresetn}] -to [filter [get_cells -hierarchical -filter {NAME =~ */rstblk/*}] {IS_SEQUENTIAL}]
-set_max_delay -from [filter [all_fanout -from $m32 -flat -endpoints_only] {IS_LEAF}] -to [filter [all_fanout -from $m64 -flat -only_cells] {IS_SEQUENTIAL && (NAME !~ *dout_i_reg[*])}] -datapath_only [get_property -min PERIOD $m32_clk]
-set_max_delay -from [filter [all_fanout -from $m64 -flat -endpoints_only] {IS_LEAF}] -to [filter [all_fanout -from $m32 -flat -only_cells] {IS_SEQUENTIAL && (NAME !~ *dout_i_reg[*])}] -datapath_only [get_property -min PERIOD $m64_clk]
-set_disable_timing -from CLK -to O [filter [all_fanout -from $m32 -flat -endpoints_only -only_cells] {PRIMITIVE_SUBGROUP==dram || PRIMITIVE_SUBGROUP==LUTRAM}]
-set_disable_timing -from CLK -to O [filter [all_fanout -from $m64 -flat -endpoints_only -only_cells] {PRIMITIVE_SUBGROUP==dram || PRIMITIVE_SUBGROUP==LUTRAM}]
+set s_clk [get_clocks -of_objects [get_ports m32_axi_aclk]]
+set m_clk [get_clocks -of_objects [get_ports m64_axi_aclk]]
+set_false_path -through [get_ports -filter {NAME =~ *_axi_aresetn}] -to [filter [get_cells -hierarchical -filter {NAME =~ */rstblk/*}] {IS_SEQUENTIAL}]
+set_max_delay -from [filter [all_fanout -from [get_ports m32_axi_aclk] -flat -endpoints_only] {IS_LEAF}] -to [filter [all_fanout -from [get_ports m64_axi_aclk] -flat -only_cells] {IS_SEQUENTIAL && (NAME !~ *dout_i_reg[*])}] -datapath_only [get_property -min PERIOD $s_clk]
+set_max_delay -from [filter [all_fanout -from [get_ports m64_axi_aclk] -flat -endpoints_only] {IS_LEAF}] -to [filter [all_fanout -from [get_ports m32_axi_aclk] -flat -only_cells] {IS_SEQUENTIAL && (NAME !~ *dout_i_reg[*])}] -datapath_only [get_property -min PERIOD $m_clk]
+set_disable_timing -from CLK -to O [filter [all_fanout -from [get_ports m32_axi_aclk] -flat -endpoints_only -only_cells] {PRIMITIVE_SUBGROUP==dram || PRIMITIVE_SUBGROUP==LUTRAM}]
+set_disable_timing -from CLK -to O [filter [all_fanout -from [get_ports m64_axi_aclk] -flat -endpoints_only -only_cells] {PRIMITIVE_SUBGROUP==dram || PRIMITIVE_SUBGROUP==LUTRAM}]
 
-set g [get_pins -of_objects $dma -filter { NAME =~ *s_axi_aclk }]
-set g_clk [get_clocks -of_objects $g]
+set g_clk [get_clocks -of_objects [get_ports s_axi_aclk]]
 
-set_max_delay -from [filter [all_fanout -from $m32 -flat -endpoints_only] {IS_LEAF}] -to [filter [all_fanout -from $g_clk -flat -only_cells] {IS_SEQUENTIAL && (NAME !~ *dout_i_reg[*])}] -datapath_only [get_property -min PERIOD $m32_clk]
-set_max_delay -from [filter [all_fanout -from $g -flat -endpoints_only] {IS_LEAF}] -to [filter [all_fanout -from $m32 -flat -only_cells] {IS_SEQUENTIAL && (NAME !~ *dout_i_reg[*])}] -datapath_only [get_property -min PERIOD $g_clk]
-set_disable_timing -from CLK -to O [filter [all_fanout -from $g -flat -endpoints_only -only_cells] {PRIMITIVE_SUBGROUP==dram || PRIMITIVE_SUBGROUP==LUTRAM}]
+set_max_delay -from [filter [all_fanout -from [get_ports m32_axi_aclk] -flat -endpoints_only] {IS_LEAF}] -to [filter [all_fanout -from [get_ports s_axi_aclk] -flat -only_cells] {IS_SEQUENTIAL && (NAME !~ *dout_i_reg[*])}] -datapath_only [get_property -min PERIOD $s_clk]
+set_max_delay -from [filter [all_fanout -from [get_ports s_axi_aclk] -flat -endpoints_only] {IS_LEAF}] -to [filter [all_fanout -from [get_ports m32_axi_aclk] -flat -only_cells] {IS_SEQUENTIAL && (NAME !~ *dout_i_reg[*])}] -datapath_only [get_property -min PERIOD $g_clk]
+set_disable_timing -from CLK -to O [filter [all_fanout -from [get_ports s_axi_aclk] -flat -endpoints_only -only_cells] {PRIMITIVE_SUBGROUP==dram || PRIMITIVE_SUBGROUP==LUTRAM}]
 
