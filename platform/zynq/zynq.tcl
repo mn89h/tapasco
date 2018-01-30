@@ -169,14 +169,18 @@ namespace eval ::platform {
       set name [regsub {^M_(.*)} [get_property NAME $m] {S_\1}]
       puts "  $m -> $name"
       lappend mem_slaves [create_bd_intf_pin -mode Slave -vlnv [get_property VLNV $m] $name]
-      lappend mem_masters [create_bd_intf_pin -mode Master -vlnv [::tapasco::ip::get_vlnv "aximm_intf"]\
-        "M_[lindex $ps_slaves $m_i]"]
+      lappend mem_masters [create_bd_intf_pin -mode Master -vlnv [::tapasco::ip::get_vlnv "aximm_intf"] "M_[lindex $ps_slaves $m_i]"]
       incr m_i
     }
 
-    if {[llength $mem_slaves] > 0 && [llength $mem_masters] > 0} {
-      foreach s $mem_slaves m $mem_masters { connect_bd_intf_net $s $m }
+    if {$m_i == 0} {
+      set name [format "S_%s" [lindex $ps_slaves 0]]
+      set vlnv [::tapasco::ip::get_vlnv "aximm_intf"]
+      lappend mem_slaves [create_bd_intf_pin -mode Slave -vlnv $vlnv $name]
+      lappend mem_masters [create_bd_intf_pin -mode Master -vlnv $vlnv "M_[lindex $ps_slaves $m_i]"]
     }
+
+    foreach s $mem_slaves m $mem_masters { connect_bd_intf_net $s $m }
   }
 
   # Create interrupt controller subsystem:
