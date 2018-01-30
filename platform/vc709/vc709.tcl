@@ -48,8 +48,8 @@ namespace eval platform {
     foreach m [::tapasco::get_aximm_interfaces [get_bd_cells -filter "PATH !~ [::tapasco::subsystem::get arch]/*"]] {
       switch -glob [get_property NAME $m] {
         "M_DMA"     { foreach {base stride range} [list 0x00300000 0x10000 0     ] {} }
-        "M_INTC"    { foreach {base stride range} [list 0x00400000 0x10000 0     ] {} }
-        "M_MSIX"    { foreach {base stride range} [list 0x00500000 0x10000 $max64] {} }
+        "M_INTC"    { foreach {base stride range} [list 0x00500000 0x10000 0     ] {} }
+        "M_MSIX"    { foreach {base stride range} [list 0          0       $max64] {} }
         "M_TAPASCO" { foreach {base stride range} [list 0x02800000 0       0     ] {} }
         "M_HOST"    { foreach {base stride range} [list 0          0       $max64] {} }
         "M_ARCH"    { set base "skip" }
