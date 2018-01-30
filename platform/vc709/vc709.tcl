@@ -471,7 +471,7 @@ namespace eval platform {
     # create constraints file for GTX transceivers
     set constraints_fn "[get_property DIRECTORY [current_project]]/pcie.xdc"
     set constraints_file [open $constraints_fn w+]
-    puts $constraints_file "set_property LOC IBUFDS_GTE2_X1Y11 \[get_cells {system_i/PCIe/refclk_ibuf/U0/USE_IBUFDS_GTE2.GEN_IBUFDS_GTE2[0].IBUFDS_GTE2_I}\]"
+    puts $constraints_file "set_property LOC IBUFDS_GTE2_X1Y11 \[get_cells {system_i/host/refclk_ibuf/U0/USE_IBUFDS_GTE2.GEN_IBUFDS_GTE2[0].IBUFDS_GTE2_I}\]"
     close $constraints_file
     read_xdc $constraints_fn
 
