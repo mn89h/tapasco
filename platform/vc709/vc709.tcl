@@ -97,7 +97,6 @@ namespace eval platform {
     set num_irqs_threadpools 128
 
     set irq_concat_ss [tapasco::ip::create_xlconcat "interrupt_concat" 6]
-    set irq_unused [tapasco::ip::create_constant "irq_unused" 4 0]
 
     # create MSIX interrupt controller
     set msix_intr_ctrl [tapasco::ip::create_msix_intr_ctrl "msix_intr_ctrl"]
@@ -115,9 +114,13 @@ namespace eval platform {
     connect_bd_net $dma_irq_read [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In0"}]
     connect_bd_net $dma_irq_write [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In1"}]
     puts "Unused Interrupts: 2, 3 are tied to 0"
-    for {set i 0} {$i < 4} {incr i} {
-      set port [create_bd_pin -from 127 -to 0 -dir I -type intr "intr_$i"]
-      connect_bd_net $port [get_bd_pin $irq_concat_ss/[format "In%d" [expr "$i + 2"]]]
+    set irq_unused [tapasco::ip::create_constant "irq_unused" 1 0]
+    connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In2"}]
+    connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In3"}]
+
+    for {set i 0} {$i < 1} {incr i} {
+      set port [create_bd_pin -from 63 -to 0 -dir I -type intr "intr_$i"]
+      connect_bd_net $port [get_bd_pin $irq_concat_ss/[format "In%d" [expr "$i + 4"]]]
     }
 
     # connect internal clocks
