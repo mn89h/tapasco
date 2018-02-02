@@ -107,7 +107,7 @@ void tapasco_functions_setup_system(tapasco_dev_ctx_t *dev_ctx, tapasco_function
 				slot_id, TAPASCO_FUNC_REG_IAR), sizeof(d), &d, 
 				PLATFORM_CTL_FLAGS_NONE);
 			platform_write_ctl(tapasco_address_map_func_reg(dev_ctx,
-				slot_id, TAPASCO_FUNC_REG_IAR), sizeof(d), &d,
+				slot_id, TAPASCO_FUNC_REG_IAR_ACK), sizeof(d), &d,
 				PLATFORM_CTL_FLAGS_NONE);
 			d = 1;
 		}

@@ -55,6 +55,8 @@ tapasco_reg_addr_t tapasco_address_map_func_reg(tapasco_dev_ctx_t *dev_ctx,
 		return platform_address_get_slot_base(slot_id, 0) + 0x0c;
 	case TAPASCO_FUNC_REG_RETURN:
 		return platform_address_get_slot_base(slot_id, 0) + 0x10;
+	case TAPASCO_FUNC_REG_IAR_ACK:
+		return platform_address_get_slot_base(slot_id, 0) + 0x1c;
 	default:
 		return 0;
 	}
