@@ -36,10 +36,8 @@ typedef enum {
 	TAPASCO_FUNC_REG_BASE,
 	/** Control register (start). */
 	TAPASCO_FUNC_REG_CONTROL,
-	/** Function interrupt status register (if any). */
-	TAPASCO_FUNC_REG_IAR,
 	/** Function interrupt acknowledge register (if any). */
-	TAPASCO_FUNC_REG_IAR_ACK,
+	TAPASCO_FUNC_REG_IAR,
 	/** Register with return value of function (if any). */
 	TAPASCO_FUNC_REG_RETURN
 } tapasco_func_reg_t;

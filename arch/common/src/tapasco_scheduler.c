@@ -127,7 +127,7 @@ tapasco_res_t tapasco_scheduler_launch(
 
 	// ack the interrupt
 	if (platform_write_ctl(tapasco_address_map_func_reg(dev_ctx, slot_id,
-			TAPASCO_FUNC_REG_IAR_ACK), sizeof(start_cmd), &start_cmd,
+			TAPASCO_FUNC_REG_IAR), sizeof(start_cmd), &start_cmd,
 			PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
 		return TAPASCO_FAILURE;
 
