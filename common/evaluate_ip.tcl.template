@@ -31,6 +31,10 @@ set_param general.maxThreads 1
 
 create_project -in_memory -part @@PART@@
 
+# set parameters
+set opt @@OPTIMIZATION@@
+set synth_options "@@SYNTH_OPTIONS@@"
+
 # add files
 add_files @@SRC_FILES@@
 # Read ngc/edif files, e.g. for primitives
@@ -49,18 +53,20 @@ foreach script [list @@TCL_FILES@@] { source $script }
 set top [lindex [find_top] 0]
 
 # synthesize and optimize netlist
-synth_design \
+if {$opt >= 1} {
+  set synth_options "$synth_options -retiming -fanout_limit 400 -shreg_min_size 5"
+}
+if {$opt >= 2} {
+  set synth_options "$synth_options -fsm_extraction one_hot"
+}
+if {$opt >= 3} {
+  set synth_options "$synth_options -keep_equivalent_registers -resource_sharing off -no_lc"
+}
+puts synth_design \
   -part @@PART@@ \
   -top $top \
   -mode out_of_context \
-  -directive AlternateRoutability \
-  -retiming \
-  -fanout_limit 400 \
-  -fsm_extraction one_hot \
-  -keep_equivalent_registers \
-  -resource_sharing off \
-  -no_lc \
-  -shreg_min_size 5
+  $synth_options
 
 # read switching activity files (if any)
 foreach saif [glob -nocomplain *.saif] {
@@ -77,10 +83,32 @@ create_clock -name clk -period @@PERIOD@@ $clock_ports
 set_property HD.CLK_SRC BUFGCTRL_X0Y0 $clock_ports
 
 # place and route
-opt_design
-place_design
-phys_opt_design
+set opt_directive "RuntimeOptimized"
+if {$opt >= 1} { set opt_directive "Default" }
+if {$opt >= 2} { set opt_directive "Explore" }
+opt_design -directive $opt_directive
+
+set place_directive "RuntimeOptimized"
+if {$opt >= 1} { set place_directive "Default" }
+if {$opt >= 1} { set place_directive "Explore" }
+place_design -directive $place_directive
+
+set physopt1_directive "RuntimeOptimized"
+if {$opt >= 1} { set physopt1_directive "Default" }
+if {$opt >= 2} { set physopt1_directive "Explore" }
+if {$opt >= 3} { set physopt1_directive "AggressiveExplore" }
+phys_opt_design -directive $physopt1_directive
+
+set route_directive "RuntimeOptimized"
+if {$opt >= 1} { set route_directive "Default" }
+if {$opt >= 2} { set route_directive "Explore" }
 route_design
+
+set physopt2_directive "Explore"
+if {$opt > 2} { set physopt2_directive "AggressiveExplore" }
+if {$opt >= 2} {
+  phys_opt_design -directive $physopt2_directive
+}
 
 # write design checkpoint
 write_checkpoint -force @@IMPL_CHECKPOINT@@
