@@ -96,82 +96,83 @@ if {@@OPTIMIZATION@@ == 42} {
       puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\tsynth_design\t$synth_start\t$opt_start\t[expr $opt_start - $synth_start]"
       puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\topt_design\t$opt_start\t$synth_finish\t[expr $synth_finish - $opt_start]"
       puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\ttotal_synth\t$synth_start\t$synth_finish\t[expr $synth_start - $synth_start]"
+
+      # write design checkpoint
+      write_checkpoint -force "@@SYNTH_CHECKPOINT@@.O${opt}_P${period}.dcp"
+
+      # set clock
+      set clock_ports [get_ports -filter {DIRECTION == IN && (NAME =~ *clk* || NAME =~ *CLK* || NAME =~ clock)}]
+      puts "clock_ports = $clock_ports"
+      create_clock -name clk -period $period $clock_ports
+      #set_property HD.CLK_SRC BUFGCTRL_X0Y0 $clock_ports
+      set pnr_start [clock seconds]
+
+      # place and route
+      set opt_directive "RuntimeOptimized"
+      if {$opt >= 1} { set opt_directive "Default" }
+      if {$opt >= 2} { set opt_directive "Explore" }
+      puts "running opt_design -directive $opt_directive ..."
+      opt_design -directive $opt_directive
+      set opt_design_finish [clock seconds]
+
+      set place_directive "RuntimeOptimized"
+      if {$opt >= 1} { set place_directive "Default" }
+      if {$opt >= 1} { set place_directive "Explore" }
+      puts "running place_design -directive $place_directive ..."
+      place_design -directive $place_directive
+      set place_design_finish [clock seconds]
+
+      set physopt1_directive "RuntimeOptimized"
+      if {$opt >= 1} { set physopt1_directive "Default" }
+      if {$opt >= 2} { set physopt1_directive "Explore" }
+      if {$opt >= 3} { set physopt1_directive "AggressiveExplore" }
+      puts "running phys_opt_design -directive $physopt1_directive ..."
+      phys_opt_design -directive $physopt1_directive
+      set physopt1_finish [clock seconds]
+
+      set route_directive "RuntimeOptimized"
+      if {$opt >= 1} { set route_directive "Default" }
+      if {$opt >= 2} { set route_directive "Explore" }
+      puts "running route_design -directive $route_directive ..."
+      route_design -directive $route_directive
+      set route_design_finish [clock seconds]
+
+      set physopt2_directive "Explore"
+      if {$opt > 2} { set physopt2_directive "AggressiveExplore" }
+      if {$opt >= 2} {
+        puts "phys_opt_design -directive $physopt2_directive ..."
+        phys_opt_design -directive $physopt2_directive
+        set physopt2_finish [clock seconds]
+      }
+      set pnr_finish [clock seconds]
+
+      # report timing
+      set tr [file join [file dirname "@@REPORT_TIMING@@"] "pnr_timing_period${period}_opt${opt}.rpt"]
+      report_timing_summary -quiet -datasheet -file $tr
+      # report utilization
+      report_utilization -quiet -file [file join [file dirname "@@REPORT_UTILIZATION@@"] "pnr_utilization_period${period}_opt${opt}.rpt"]
+      set wns [tapasco::get_wns_from_timing_report $tr]
+      set clk [expr "$period - $wns"]
+
+      # write design checkpoint
+      write_checkpoint -force "@@IMPL_CHECKPOINT@@.O${opt}_P${period}.dcp"
+
+      puts "O$opt RESULT: WNS = $wns PERIOD = $clk F = [expr 1000.0 / $clk]"
+      puts $results_file "$period\t[expr 1000.0/$period]\t$opt\$wns\t$clk\t[expr 1000.0/$clk]"
+
+      puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\tpnr_opt_design\t$pnr_start\t$opt_design_finish\t[expr $opt_design_finish - $pnr_start]"
+      puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\tplace_design\t$opt_design_finish\t$place_design_finish\t[expr $place_design_finish - $opt_design_finish]"
+      puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\tphys_opt_design\t$place_design_finish\t$physopt1_finish\t[expr $physopt1_finish - $place_design_finish]"
+      puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\troute_design\t$physopt1_finish\t$route_design_finish\t[expr $route_design_finish - $physopt1_finish]"
+      if {$opt >= 2} {
+        puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\tphys_opt_design2\t$route_design_finish\t$physop2_finish\t[expr $physopt2_finish - $route_design_finish]"
+      }
+      puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\ttotal_pnr\t$pnr_start\t$pnr_finish\t[expr $pnr_finish - $pnr_start]"
     }
-
-    # write design checkpoint
-    write_checkpoint -force @@SYNTH_CHECKPOINT@@
-
-    # set clock
-    set clock_ports [get_ports -filter {DIRECTION == IN && (NAME =~ *clk* || NAME =~ *CLK* || NAME =~ clock)}]
-    puts "clock_ports = $clock_ports"
-    create_clock -name clk -period $period $clock_ports
-    #set_property HD.CLK_SRC BUFGCTRL_X0Y0 $clock_ports
-    set pnr_start [clock seconds]
-
-    # place and route
-    set opt_directive "RuntimeOptimized"
-    if {$opt >= 1} { set opt_directive "Default" }
-    if {$opt >= 2} { set opt_directive "Explore" }
-    puts "running opt_design -directive $opt_directive ..."
-    opt_design -directive $opt_directive
-    set opt_design_finish [clock seconds]
-
-    set place_directive "RuntimeOptimized"
-    if {$opt >= 1} { set place_directive "Default" }
-    if {$opt >= 1} { set place_directive "Explore" }
-    puts "running place_design -directive $place_directive ..."
-    place_design -directive $place_directive
-    set place_design_finish [clock seconds]
-
-    set physopt1_directive "RuntimeOptimized"
-    if {$opt >= 1} { set physopt1_directive "Default" }
-    if {$opt >= 2} { set physopt1_directive "Explore" }
-    if {$opt >= 3} { set physopt1_directive "AggressiveExplore" }
-    puts "running phys_opt_design -directive $physopt1_directive ..."
-    phys_opt_design -directive $physopt1_directive
-    set physopt1_finish [clock seconds]
-
-    set route_directive "RuntimeOptimized"
-    if {$opt >= 1} { set route_directive "Default" }
-    if {$opt >= 2} { set route_directive "Explore" }
-    puts "running route_design -directive $route_directive ..."
-    route_design -directive $route_directive
-    set route_design_finish [clock seconds]
-
-    set physopt2_directive "Explore"
-    if {$opt > 2} { set physopt2_directive "AggressiveExplore" }
-    if {$opt >= 2} {
-      puts "phys_opt_design -directive $physopt2_directive ..."
-      phys_opt_design -directive $physopt2_directive
-      set physopt2_finish [clock seconds]
-    }
-    set pnr_finish [clock seconds]
-
-    # report timing
-    set tr [file join [file dirname "@@REPORT_TIMING@@"] "pnr_timing_period${period}_opt${opt}.rpt"]
-    report_timing_summary -quiet -datasheet -file $tr
-    # report utilization
-    report_utilization -quiet -file [file join [file dirname "@@REPORT_UTILIZATION@@"] "pnr_utilization_period${period}_opt${opt}.rpt"]
-    set wns [tapasco::get_wns_from_timing_report $tr]
-    set clk [expr "$period - $wns"]
-    puts "O$opt RESULT: WNS = $wns PERIOD = $clk F = [expr 1000.0 / $clk]"
-    puts $results_file "$period\t[expr 1000.0/$period]\t$opt\$wns\t$clk\t[expr 1000.0/$clk]"
-
-    puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\tpnr_opt_design\t$pnr_start\t$opt_design_finish\t[expr $opt_design_finish - $pnr_start]"
-    puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\tplace_design\t$opt_design_finish\t$place_design_finish\t[expr $place_design_finish - $opt_design_finish]"
-    puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\tphys_opt_design\t$place_design_finish\t$physopt1_finish\t[expr $physopt1_finish - $place_design_finish]"
-    puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\troute_design\t$physopt1_finish\t$route_design_finish\t[expr $route_design_finish - $physopt1_finish]"
-    if {$opt >= 2} {
-      puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\tphys_opt_design2\t$route_design_finish\t$physop2_finish\t[expr $physopt2_finish - $route_design_finish]"
-    }
-    puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\ttotal_pnr\t$pnr_start\t$pnr_finish\t[expr $pnr_finish - $pnr_start]"
   }
   close $runtimes_file
   close $results_file
 }
-
-# write design checkpoint
-write_checkpoint -force @@IMPL_CHECKPOINT@@
 
 # report timing
 report_timing_summary -quiet -datasheet -file @@REPORT_TIMING@@
