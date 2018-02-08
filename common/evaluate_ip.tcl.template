@@ -59,7 +59,7 @@ foreach saif [glob -nocomplain *.saif] {
 set period @@PERIOD@@
 
 if {@@OPTIMIZATION@@ == 42} {
-  set result_file   [open [file join [file dirname "@@REPORTS_TIMING@@"] "synthesis_results.tsv"] "w+"]
+  set results_file   [open [file join [file dirname "@@REPORTS_TIMING@@"] "synthesis_results.tsv"] "w+"]
   puts $result_file "Target Period\tTarget F(MHz)\t\Opt\tWNS (ns)\tT (ns)\tF (ns)"
   set runtimes_file [open [file join [file dirname "@@REPORTS_TIMING@@"] "synthesis_runtimes.tsv"] "w+"]
   puts $runtimes_file "Target Period\tTarget F(Mhz)\tOpt\tPhase\tStart\t\End\tDuration (s)"
