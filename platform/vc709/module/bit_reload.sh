@@ -20,7 +20,7 @@
 
 # Script can run without parameters, use verbose as second for output and
 # drv_load/drv_reload driver, when driver should be inserted
-# Script usage e.g. ./bit_reload 'path_to_bitstream' drv_reload verbose  
+# Script usage e.g. ./bit_reload 'path_to_bitstream' drv_reload verbose
 # Pathes '*_path' have to be adapted to specific location
 
 # init paths
@@ -57,7 +57,7 @@ hotplug() {
 # init vars
 BITSTREAM=""
 VERBOSE=0
-RELOADD=1
+RELOADD=0
 
 OPTIND=1
 while getopts vd opt; do
