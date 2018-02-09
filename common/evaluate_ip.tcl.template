@@ -59,16 +59,16 @@ foreach saif [glob -nocomplain *.saif] {
 set period @@PERIOD@@
 
 if {@@OPTIMIZATION@@ == 42} {
-  set results_file   [open [file join [file dirname "@@REPORTS_TIMING@@"] "synthesis_results.tsv"] "w+"]
-  puts $result_file "Target Period\tTarget F(MHz)\t\Opt\tWNS (ns)\tT (ns)\tF (ns)"
-  set runtimes_file [open [file join [file dirname "@@REPORTS_TIMING@@"] "synthesis_runtimes.tsv"] "w+"]
+  set results_file   [open [file join [file dirname "@@REPORT_TIMING@@"] "synthesis_results.tsv"] "w+"]
+  puts $results_file "Target Period\tTarget F(MHz)\t\Opt\tWNS (ns)\tT (ns)\tF (ns)"
+  set runtimes_file [open [file join [file dirname "@@REPORT_TIMING@@"] "synthesis_runtimes.tsv"] "w+"]
   puts $runtimes_file "Target Period\tTarget F(Mhz)\tOpt\tPhase\tStart\t\End\tDuration (s)"
 
   for {set period 0.5} {$period <= 5.0} {set period [expr $period + 0.125]} {
     for {set opt 3} {$opt >= 0} {incr opt -1} {
       set synth_start [clock seconds]
-      set synth_options [list {-part} {@@PART@@} {-top} $top {-mode} {out_of_context}]
-      lappend synth_options @@SYNTH_OPTIONS@@
+      set synth_options [list @@SYNTH_OPTIONS@@]
+      lappend synth_options {-part} {@@PART@@} {-top} $top {-mode} {out_of_context}
 
       # synthesize and optimize netlist
       if {$opt >= 1} {
@@ -85,10 +85,10 @@ if {@@OPTIMIZATION@@ == 42} {
       opt_design
       set synth_finish [clock seconds]
 
-      set ur [file join [file dirname "@@REPORTS_UTILIZATION@@"] "synth_utilization_period${period}_opt${opt}.rpt"]
+      set ur [file join [file dirname "@@REPORT_UTILIZATION@@"] "synth_utilization_period${period}_opt${opt}.rpt"]
       puts "writing utilization report $ur ..."
       report_utilization -quiet -file $ur
-      set tr [file join [file dirname "@@REPORTS_TIMING@@"] "synth_timing_period${period}_opt${opt}.rpt"]
+      set tr [file join [file dirname "@@REPORT_TIMING@@"] "synth_timing_period${period}_opt${opt}.rpt"]
       puts "writing timing report summary $tr ..."
       report_timing_summary -quiet -file $tr
 
@@ -165,7 +165,7 @@ if {@@OPTIMIZATION@@ == 42} {
       puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\tphys_opt_design\t$place_design_finish\t$physopt1_finish\t[expr $physopt1_finish - $place_design_finish]"
       puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\troute_design\t$physopt1_finish\t$route_design_finish\t[expr $route_design_finish - $physopt1_finish]"
       if {$opt >= 2} {
-        puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\tphys_opt_design2\t$route_design_finish\t$physop2_finish\t[expr $physopt2_finish - $route_design_finish]"
+        puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\tphys_opt_design2\t$route_design_finish\t$physopt2_finish\t[expr $physopt2_finish - $route_design_finish]"
       }
       puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\ttotal_pnr\t$pnr_start\t$pnr_finish\t[expr $pnr_finish - $pnr_start]"
     }
