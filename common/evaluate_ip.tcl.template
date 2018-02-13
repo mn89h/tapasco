@@ -60,9 +60,9 @@ set period @@PERIOD@@
 
 if {@@OPTIMIZATION@@ == 42} {
   set results_file   [open [file join [file dirname "@@REPORT_TIMING@@"] "synthesis_results.tsv"] "w+"]
-  puts $results_file "Target Period\tTarget F(MHz)\t\Opt\tWNS (ns)\tT (ns)\tF (ns)"
+  puts $results_file "TT\tTF\t\O\tWNS\tOT\tOF"
   set runtimes_file [open [file join [file dirname "@@REPORT_TIMING@@"] "synthesis_runtimes.tsv"] "w+"]
-  puts $runtimes_file "Target Period\tTarget F(Mhz)\tOpt\tPhase\tStart\t\End\tDuration (s)"
+  puts $runtimes_file "TT\tTF\tO\tP\tS\t\E\tD"
 
   for {set period 0.5} {$period <= 5.0} {set period [expr $period + 0.125]} {
     for {set opt 3} {$opt >= 0} {incr opt -1} {
@@ -95,16 +95,16 @@ if {@@OPTIMIZATION@@ == 42} {
       puts "synth_design for O$opt took [expr $synth_finish - $opt_start] sec, opt_design took [expr $opt_start - $synth_finish] sec."
       puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\tsynth_design\t$synth_start\t$opt_start\t[expr $opt_start - $synth_start]"
       puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\topt_design\t$opt_start\t$synth_finish\t[expr $synth_finish - $opt_start]"
-      puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\ttotal_synth\t$synth_start\t$synth_finish\t[expr $synth_start - $synth_start]"
+      puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\ttotal_synth\t$synth_start\t$synth_finish\t[expr $synth_finish - $synth_start]"
 
       # write design checkpoint
-      write_checkpoint -force "@@SYNTH_CHECKPOINT@@.O${opt}_P${period}.dcp"
+      #write_checkpoint -force "@@SYNTH_CHECKPOINT@@.O${opt}_P${period}.dcp"
 
       # set clock
       set clock_ports [get_ports -filter {DIRECTION == IN && (NAME =~ *clk* || NAME =~ *CLK* || NAME =~ clock)}]
       puts "clock_ports = $clock_ports"
       create_clock -name clk -period $period $clock_ports
-      #set_property HD.CLK_SRC BUFGCTRL_X0Y0 $clock_ports
+      set_property HD.CLK_SRC BUFGCTRL_X0Y0 $clock_ports
       set pnr_start [clock seconds]
 
       # place and route
@@ -155,10 +155,10 @@ if {@@OPTIMIZATION@@ == 42} {
       set clk [expr "$period - $wns"]
 
       # write design checkpoint
-      write_checkpoint -force "@@IMPL_CHECKPOINT@@.O${opt}_P${period}.dcp"
+      #write_checkpoint -force "@@IMPL_CHECKPOINT@@.O${opt}_P${period}.dcp"
 
       puts "O$opt RESULT: WNS = $wns PERIOD = $clk F = [expr 1000.0 / $clk]"
-      puts $results_file "$period\t[expr 1000.0/$period]\t$opt\$wns\t$clk\t[expr 1000.0/$clk]"
+      puts $results_file "$period\t[expr 1000.0/$period]\t$opt\t$wns\t$clk\t[expr 1000.0/$clk]"
 
       puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\tpnr_opt_design\t$pnr_start\t$opt_design_finish\t[expr $opt_design_finish - $pnr_start]"
       puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\tplace_design\t$opt_design_finish\t$place_design_finish\t[expr $place_design_finish - $opt_design_finish]"
@@ -168,6 +168,9 @@ if {@@OPTIMIZATION@@ == 42} {
         puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\tphys_opt_design2\t$route_design_finish\t$physopt2_finish\t[expr $physopt2_finish - $route_design_finish]"
       }
       puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\ttotal_pnr\t$pnr_start\t$pnr_finish\t[expr $pnr_finish - $pnr_start]"
+
+      flush $runtimes_file
+      flush $results_file
     }
   }
   close $runtimes_file
