@@ -104,7 +104,6 @@ if {@@OPTIMIZATION@@ == 42} {
       set clock_ports [get_ports -filter {DIRECTION == IN && (NAME =~ *clk* || NAME =~ *CLK* || NAME =~ clock)}]
       puts "clock_ports = $clock_ports"
       create_clock -name clk -period $period $clock_ports
-      set_property HD.CLK_SRC BUFGCTRL_X0Y0 $clock_ports
       set pnr_start [clock seconds]
 
       # place and route

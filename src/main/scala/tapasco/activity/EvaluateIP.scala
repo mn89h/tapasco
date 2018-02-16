@@ -147,7 +147,7 @@ object EvaluateIP {
 
     // execute Vivado (max runtime: 1d)
     val r = InterruptibleProcess(Process(vivadoCmd, files.baseDir.toFile),
-        waitMillis = Some(24 * 60 * 60 * 1000)).!(io)
+        waitMillis = Some((if (optimization == 42) 14 else 1) * 24 * 60 * 60 * 1000)).!(io)
 
     if (r == InterruptibleProcess.TIMEOUT_RETCODE) {
       logger.error("%s: Vivado timeout error".format(runPrefix))
