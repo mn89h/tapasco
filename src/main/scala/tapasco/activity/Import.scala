@@ -129,7 +129,7 @@ object Import {
   private def evaluateCore(c: Core, t: Target, optimization: Int, synthOptions: Option[String] = None)
                           (implicit cfg: Configuration): Boolean = {
     logger.trace("looking for SynthesisReport ...")
-    val period = 0.5
+    val period = 1.0 
     val report = cfg.outputDir(c, t).resolve("ipcore").resolve("%s_export.xml".format(c.name))
     FileAssetManager.reports.synthReport(c.name, t) map { hls_report =>
       logger.trace("found existing synthesis report: " + hls_report)
