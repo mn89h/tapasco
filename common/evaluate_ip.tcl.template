@@ -76,10 +76,10 @@ for {} {$period <= $target_period} {set period [expr $period + 0.125]} {
 
     # synthesize and optimize netlist
     if {$opt >= 1} {
-      lappend synth_options {-retiming} {-fanout_limit} 400 {-shreg_min_size} 5 {-flatten_hierarchy} {full}
+      lappend synth_options {-retiming} {-fanout_limit} 400 {-shreg_min_size} 5
     }
     if {$opt >= 2} {
-      lappend synth_options {-fsm_extraction} {one_hot}
+      lappend synth_options {-fsm_extraction} {one_hot} {-flatten_hierarchy} {full}
     }
     if {$opt >= 3} {
       lappend synth_options {-keep_equivalent_registers} {-resource_sharing} {off} {-no_lc}
