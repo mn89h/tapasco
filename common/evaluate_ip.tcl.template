@@ -180,9 +180,9 @@ for {} {$period <= $target_period} {set period [expr $period + 0.125]} {
     flush $runtimes_file
     flush $results_file
   }
-  close $runtimes_file
-  close $results_file
 }
+close $runtimes_file
+close $results_file
 
 # report timing
 report_timing_summary -quiet -datasheet -file @@REPORT_TIMING@@
