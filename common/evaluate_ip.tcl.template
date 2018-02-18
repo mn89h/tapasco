@@ -180,7 +180,9 @@ for {} {$period <= $target_period} {set period [expr $period + 0.125]} {
     flush $runtimes_file
     flush $results_file
   }
+  if {$opt < 0} { set opt 3 }
 }
+
 close $runtimes_file
 close $results_file
 
