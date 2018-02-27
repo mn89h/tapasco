@@ -30,6 +30,9 @@ set_param general.maxThreads 1
 
 create_project -in_memory -part @@PART@@
 
+# add common IP
+set_property IP_REPO_PATHS "$::env(TAPASCO_HOME)/common/ip" [current_project]
+
 # add files
 add_files @@SRC_FILES@@
 # Read ngc/edif files, e.g. for primitives
