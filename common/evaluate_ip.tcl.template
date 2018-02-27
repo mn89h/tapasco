@@ -24,9 +24,8 @@
 # source base lib
 source -notrace "$::env(TAPASCO_HOME)/common/common.tcl"
 
-# suppress most messages except errors
+# suppress most messages except warnings and errors
 set_msg_config -severity INFO -suppress
-set_msg_config -severity WARNING -suppress
 set_param general.maxThreads 1
 
 create_project -in_memory -part @@PART@@
