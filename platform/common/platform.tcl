@@ -253,6 +253,7 @@ namespace eval platform {
           puts "    address map info: $me]"
           set range  [expr "max([dict get $me range], 4096)"]
           set offset [dict get $me "offset"]
+          set range  [expr "min($range, [get_property RANGE $intf])"]
           puts "      range: $range"
           puts "      offset: $offset"
           puts "      space: $space"
