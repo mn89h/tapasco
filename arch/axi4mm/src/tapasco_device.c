@@ -148,6 +148,15 @@ tapasco_res_t tapasco_device_job_set_arg(tapasco_dev_ctx_t *dev_ctx,
 	return tapasco_jobs_set_arg(dev_ctx->jobs, j_id, arg_idx, arg_len, arg_value);
 }
 
+tapasco_res_t tapasco_device_job_set_arg_transfer(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_job_id_t const job_id, uint32_t arg_idx,
+		size_t const arg_len, void *arg_value,
+		tapasco_device_alloc_flag_t const flags)
+{
+	return tapasco_jobs_set_arg_transfer(dev_ctx->jobs, job_id, arg_idx,
+			arg_len, arg_value, flags);
+}
+
 tapasco_res_t tapasco_device_job_get_return(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_job_id_t const j_id, size_t const ret_len,
 		void *ret_value)

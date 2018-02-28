@@ -397,6 +397,25 @@ tapasco_res_t tapasco_device_job_set_arg(tapasco_dev_ctx_t *dev_ctx,
 		size_t const arg_len, void const *arg_value);
 
 /**
+ * Sets the arg_idx'th argument of function func_id to trigger an automatic
+ * transfer to and from memory allocated internally. Copies data from arg_value
+ * to a newly allocated buffer before execution of the job, and copies data from
+ * the buffer back to arg_value after its end.
+ * Use flags to control memory location, e.g., pe-local memory.
+ * @param dev_ctx device context
+ * @param job_id job id
+ * @param arg_idx argument number
+ * @param arg_len length of arg_value in bytes (must be power of 4)
+ * @param arg_value data to set argument to.
+ * @param flags allocation flags, see @tapasco_device_alloc_flag_t.
+ * @return TAPASCO_SUCCESS if successful, TAPASCO_FAILURE otherwise.
+ **/
+tapasco_res_t tapasco_device_job_set_arg_transfer(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_job_id_t const job_id, uint32_t arg_idx,
+		size_t const arg_len, void *arg_value,
+		tapasco_device_alloc_flag_t const flags);
+
+/**
  * Gets the value of the arg_idx'th argument of function func_id.
  * @param dev_ctx device context
  * @param job_id job id
