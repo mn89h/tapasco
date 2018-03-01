@@ -132,6 +132,11 @@ Limitations
       support compaction, or other advanced features. If this proves to be a
       problem, it may need to be fixed.
 
-  6.  The C++ API does not support delayed transfers yet, use the C API.
+  6.  Current implementation of delayed transfers is inefficient: the scheduler
+      blocks other executions while waiting on data transfers. Should probably
+      be done in a separate data transfer thread. If the async launches feature
+      is ever implemented, the new architecture should take this into account.
 
-  7.  Explanatory example code is missing.
+  7.  The C++ API does not support delayed transfers yet, use the C API.
+
+  8.  Explanatory example code is missing.
