@@ -110,7 +110,7 @@ at the location of the execution.
 Limitations
 -----------
 
-  0.  This is an **alpha version**, a.k.a. hardhard area! I expect bugs, and so
+  0.  This is an **alpha version**, a.k.a. hardhat area! I expect bugs, and so
       should you.
 
   1.  Due to the fixed address layout, local memories currently cannot exceed
