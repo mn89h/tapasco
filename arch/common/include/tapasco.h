@@ -136,6 +136,8 @@ typedef enum {
 	TAPASCO_DEVICE_COPY_BLOCKING		= 0,
 	/** return immediately after transfer was scheduled **/
 	TAPASCO_DEVICE_COPY_NONBLOCKING		= 1,
+	/** copy to local memory **/
+	TAPASCO_DEVICE_COPY_PE_LOCAL            = 2,
 } tapasco_device_copy_flag_t;
 
 /** Flags for calls to tapasco_device_acquire_job_id. **/
@@ -301,8 +303,9 @@ tapasco_res_t tapasco_device_load_bitstream(tapasco_dev_ctx_t *dev_ctx, size_t c
  * @param flags device memory allocation flags
  * @return TAPASCO_SUCCESS if successful, error code otherwise
  **/
-tapasco_res_t tapasco_device_alloc(tapasco_dev_ctx_t *dev_ctx, tapasco_handle_t *handle,
-		size_t const len, tapasco_device_alloc_flag_t const flags);
+tapasco_res_t tapasco_device_alloc(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_handle_t *handle, size_t const len,
+		tapasco_device_alloc_flag_t const flags, ...);
 
 /**
  * Frees a previously allocated chunk of device memory.
@@ -311,7 +314,7 @@ tapasco_res_t tapasco_device_alloc(tapasco_dev_ctx_t *dev_ctx, tapasco_handle_t 
  * @param flags device memory allocation flags
  **/
 void tapasco_device_free(tapasco_dev_ctx_t *dev_ctx, tapasco_handle_t handle,
-		tapasco_device_alloc_flag_t const flags);
+		tapasco_device_alloc_flag_t const flags, ...);
 
 /**
  * Copys memory from main memory to the FPGA device.
@@ -322,9 +325,9 @@ void tapasco_device_free(tapasco_dev_ctx_t *dev_ctx, tapasco_handle_t handle,
  * @param flags	flags for copy operation, e.g., TAPASCO_COPY_NONBLOCKING
  * @return TAPASCO_SUCCESS if copy was successful, TAPASCO_FAILURE otherwise
  **/
-tapasco_res_t tapasco_device_copy_to(tapasco_dev_ctx_t *dev_ctx, void const *src,
-		tapasco_handle_t dst, size_t len,
-		tapasco_device_copy_flag_t const flags);
+tapasco_res_t tapasco_device_copy_to(tapasco_dev_ctx_t *dev_ctx,
+		void const *src, tapasco_handle_t dst, size_t len,
+		tapasco_device_copy_flag_t const flags, ...);
 
 /**
  * Copys memory from FPGA device memory to main memory.
@@ -335,8 +338,9 @@ tapasco_res_t tapasco_device_copy_to(tapasco_dev_ctx_t *dev_ctx, void const *src
  * @param flags	flags for copy operation, e.g., TAPASCO_COPY_NONBLOCKING
  * @return TAPASCO_SUCCESS if copy was successful, TAPASCO_FAILURE otherwise
  **/
-tapasco_res_t tapasco_device_copy_from(tapasco_dev_ctx_t *dev_ctx, tapasco_handle_t src,
-		void *dst, size_t len, tapasco_device_copy_flag_t const flags);
+tapasco_res_t tapasco_device_copy_from(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_handle_t src, void *dst, size_t len,
+		tapasco_device_copy_flag_t const flags, ...);
 
 /** @} **/
 

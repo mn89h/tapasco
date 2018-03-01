@@ -29,18 +29,23 @@
 #include <tapasco_logging.h>
 #include <platform.h>
 
+// TODO tapasco_scheduler needs refactoring
+
 static inline
 tapasco_res_t tapasco_transfer_to(tapasco_dev_ctx_t *dev_ctx,
-		tapasco_job_id_t const j_id, tapasco_transfer_t *t)
+		tapasco_job_id_t const j_id, tapasco_transfer_t *t,
+		tapasco_func_slot_id_t s_id)
 {
 	LOG(LALL_SCHEDULER, "job %lu: executing transfer to with length %zd bytes",
 			(unsigned long)j_id, (unsigned long)t->len);
-	tapasco_res_t res = tapasco_device_alloc(dev_ctx, &t->handle, t->len, t->flags);
+	tapasco_res_t res = tapasco_device_alloc(dev_ctx, &t->handle, t->len,
+			t->flags, s_id);
 	if (res != TAPASCO_SUCCESS) {
 		ERR("job %lu: memory allocation failed!", (unsigned long)j_id);
 		return res;
 	}
-	res = tapasco_device_copy_to(dev_ctx, t->data, t->handle, t->len, t->flags);
+	res = tapasco_device_copy_to(dev_ctx, t->data, t->handle, t->len,
+			t->flags, s_id);
 	if (res != TAPASCO_SUCCESS) {
 		ERR("job %lu: transfer failed - %zd bytes -> 0x%08x with flags %lu",
 				(unsigned long)j_id, t->len,
@@ -53,19 +58,19 @@ tapasco_res_t tapasco_transfer_to(tapasco_dev_ctx_t *dev_ctx,
 static inline
 tapasco_res_t tapasco_transfer_from(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_jobs_t *jobs, tapasco_job_id_t const j_id,
-		tapasco_transfer_t *t)
+		tapasco_transfer_t *t, tapasco_func_slot_id_t s_id)
 {
 	LOG(LALL_SCHEDULER, "job %lu: executing transfer from with length %zd bytes",
 			(unsigned long)j_id, (unsigned long)t->len);
 	tapasco_res_t res = tapasco_device_copy_from(dev_ctx, t->handle,
-			t->data, t->len, t->flags);
+			t->data, t->len, t->flags, s_id);
 	if (res != TAPASCO_SUCCESS) {
 		ERR("job %lu: transfer failed - %zd bytes <- 0x%08x with flags %lu",
 				(unsigned long)j_id, t->len,
 				(unsigned long)t->handle,
 				(unsigned long)t->flags);
 	}
-	tapasco_device_free(dev_ctx, t->handle, t->flags);
+	tapasco_device_free(dev_ctx, t->handle, t->flags, s_id, t->len);
 	return res;
 }
 
@@ -151,7 +156,7 @@ tapasco_res_t tapasco_scheduler_launch(
 		if (t->len > 0) {
 			LOG(LALL_SCHEDULER, "job %lu: transferring %zd byte arg #%u",
 					(unsigned long)j_id, t->len, a);
-			r = tapasco_transfer_to(dev_ctx, j_id, t);
+			r = tapasco_transfer_to(dev_ctx, j_id, t, slot_id);
 			if (r != TAPASCO_SUCCESS) { return r; }
 			LOG(LALL_SCHEDULER, "job %lu: writing handle to arg #%u (0x%08x)",
 					(unsigned long)j_id, a, t->handle);
@@ -201,7 +206,7 @@ tapasco_res_t tapasco_scheduler_launch(
 				j_id, a);
 		r = tapasco_read_arg(dev_ctx, jobs, j_id, h, a);
 		if (r != TAPASCO_SUCCESS) { return r; }
-		r = tapasco_transfer_from(dev_ctx, jobs, j_id, t);
+		r = tapasco_transfer_from(dev_ctx, jobs, j_id, t, slot_id);
 	}
 
 	// ack the interrupt

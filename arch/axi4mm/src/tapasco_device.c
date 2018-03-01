@@ -30,6 +30,7 @@
 #include <tapasco_scheduler.h>
 #include <tapasco_logging.h>
 #include <tapasco_status.h>
+#include <tapasco_local_mem.h>
 #include <platform.h>
 #include <platform_errors.h>
 
@@ -40,7 +41,23 @@ struct tapasco_dev_ctx {
 	tapasco_ctx_t *ctx;
 	tapasco_dev_id_t id;
 	tapasco_status_t *status;
+	tapasco_local_mem_t *lmem;
 };
+
+tapasco_functions_t *tapasco_device_functions(tapasco_dev_ctx_t *ctx)
+{
+	return ctx->functions;
+}
+
+tapasco_status_t *tapasco_device_status(tapasco_dev_ctx_t *ctx)
+{
+	return ctx->status;
+}
+
+tapasco_local_mem_t *tapasco_device_local_mem(tapasco_dev_ctx_t *ctx)
+{
+	return ctx->lmem;
+}
 
 /** Interrupt handler callback. */
 void irq_handler(int const event);
@@ -65,6 +82,7 @@ tapasco_res_t tapasco_create_device(tapasco_ctx_t *ctx, tapasco_dev_id_t const d
 		res = res == TAPASCO_SUCCESS ? tapasco_functions_init(p->status,
 				&p->functions) : res;
 		res = res == TAPASCO_SUCCESS ? tapasco_jobs_init(&p->jobs) : res;
+		res = res == TAPASCO_SUCCESS ? tapasco_local_mem_init(p->status, &p->lmem) : res;
 		if (res != TAPASCO_SUCCESS) return res;
 		p->ctx = ctx;
 		p->id = dev_id;
@@ -80,6 +98,7 @@ tapasco_res_t tapasco_create_device(tapasco_ctx_t *ctx, tapasco_dev_id_t const d
 void tapasco_destroy_device(tapasco_ctx_t *ctx, tapasco_dev_ctx_t *dev_ctx)
 {
 	platform_stop(0);
+	tapasco_local_mem_deinit(dev_ctx->lmem);
 	tapasco_jobs_deinit(dev_ctx->jobs);
 	tapasco_functions_deinit(dev_ctx->functions);
 	tapasco_status_deinit(dev_ctx->status);
