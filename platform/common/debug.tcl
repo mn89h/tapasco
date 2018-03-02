@@ -22,9 +22,8 @@
 # @author J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 #
 namespace eval ::platform::debug {
-  source -notrace "$::env(TAPASCO_HOME)/platform/common/plugins/debug.tcl"
+  namespace export debug_feature
 
-  # override empty debug nets
   proc get_debug_nets {} {
     puts "Adding default signals to the ILA core ..."
     set ret [list [get_nets -hier "*irq_out*"]]
@@ -57,7 +56,7 @@ namespace eval ::platform::debug {
         if {[llength $net] > 1} { lappend ret $net } { lappend ret [list $net] }
       }
     }
-    foreach m {"system_i/host/Host_M_AXI_GP0"} {
+    foreach m {"system_i/Host_M_AXI_GP0"} {
       foreach s $defsignals {
         set net [get_nets "$m$s"]
         puts "  adding net $net for signal $s ..."
@@ -67,4 +66,47 @@ namespace eval ::platform::debug {
     puts "  signal list: $ret"
     return $ret
   }
+
+  proc debug_feature {} {
+    if {[tapasco::is_feature_enabled "Debug"]} {
+      puts "Creating ILA debug core, will require re-run of synthesis."
+      # get config
+      set debug [tapasco::get_feature "Debug"]
+      puts "  Debug = $debug"
+      # default values
+      set depth        4096
+      set stages       0
+      set use_defaults true
+      set nets         {}
+      if {[dict exists $debug "depth"]} { set depth [dict get $debug "depth"] }
+      if {[dict exists $debug "stages"]} { set stages [dict get $debug "stages"] }
+      if {[dict exists $debug "use_defaults"]} { set use_defaults [dict get $debug "use_defaults"] }
+      if {[dict exists $debug "nets"]} { set nets [dict get $debug "nets"] }
+      set dnl {}
+      if {$use_defaults} { foreach n [get_debug_nets] { lappend dnl $n }}
+      if {[llength $nets] > 0} {
+        foreach n $nets {
+          set nnets [get_nets -hier $n]
+          puts "  for '$n' found [llength $nnets] nets: $nnets"
+          foreach nn $nnets { lappend dnl [list $nn] }
+        }
+      }
+      # create ILA core
+      tapasco::ip::create_debug_core  [system_i/clock_and_resets/design_clk] $dnl $depth $stages
+      reset_run synth
+    }
+    return {}
+  }
+
+  proc write_ltx {} {
+    global bitstreamname
+    if {[tapasco::is_feature_enabled "Debug"]} {
+      puts "Writing debug probes into file ${bitstreamname}.ltx ..."
+      write_debug_probes -force -verbose "${bitstreamname}.ltx"
+    }
+    return {}
+  }
 }
+
+tapasco::register_plugin "platform::vc709::debug::debug_feature" "post-synth"
+tapasco::register_plugin "platform::vc709::debug::write_ltx" "post-impl"

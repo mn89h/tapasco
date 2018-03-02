@@ -241,7 +241,17 @@ namespace eval platform {
               puts "    assuming internal connection, setting values as found in segment:"
               set range  [get_property RANGE $seg]
               puts "      range: $range"
+              if {$range eq ""} {
+                puts "      found no range on segment $seg, skipping"
+                report_property $seg
+                continue
+              }
               set offset [get_property OFFSET $seg]
+              if {$offset eq ""} {
+                puts "      found no offset on segment $seg, skipping"
+                report_property $seg
+                continue
+              }
               puts "      offset: $offset"
               set me [dict create "range" $range "offset" $offset "space" $space seg "$seg"]
             } else {
