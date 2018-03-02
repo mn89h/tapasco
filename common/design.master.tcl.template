@@ -88,7 +88,7 @@ tapasco::call_plugins "pre-platform"
 # instantiate and connect platform
 platform::create
 
-# event: post-platform
+# event: pre-wrapper
 tapasco::call_plugins "pre-wrapper"
 
 # create wrapper

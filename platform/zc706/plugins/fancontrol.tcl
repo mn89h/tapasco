@@ -47,5 +47,5 @@ namespace eval fancontrol {
   }
 }
 
-tapasco::register_plugin "platform::fancontrol::fancontrol_feature" "post-bd"
+tapasco::register_plugin "platform::fancontrol::fancontrol_feature" "pre-wrapper"
 tapasco::register_plugin "platform::fancontrol::fancontrol_falsepath" "post-synth"

@@ -80,4 +80,4 @@ namespace eval oled {
   }
 }
 
-tapasco::register_plugin "platform::oled::oled_feature" "post-bd"
+tapasco::register_plugin "platform::oled::oled_feature" "pre-wrapper"
