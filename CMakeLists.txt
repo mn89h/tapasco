@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.9 FATAL_ERROR)
 project(tapasco VERSION 1.0 LANGUAGES C CXX)
 
+SET(CPACK_GENERATOR "RPM" "DEB" "TGZ" "ZIP" "STGZ" "TBZ2")
+SET(CPACK_PACKAGE_CONTACT "Jens Korinth")
+SET(CPACK_PACKAGE_CONTACT "korinth@esa.tu-darmstadt.de")
+
+INCLUDE(CPack)
+
 include(GNUInstallDirs)
 
 set(CMNDIR "${CMAKE_CURRENT_SOURCE_DIR}/common")

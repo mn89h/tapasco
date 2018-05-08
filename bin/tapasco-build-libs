@@ -59,4 +59,4 @@ if not clean:
 	subprocess.call(['mkdir -p ' + bdir + ' && cd ' + bdir + ' && cmake '
 		+ ' -DCMAKE_BUILD_TYPE={} '.format(buildtype)
 		+ ' -DPLATFORM:STRING={} -DBUILD_SHARED_LIBS:BOOL={} .. \
-		&& make && make DESTDIR={}/install install'.format(os.environ['TAPASCO_PLATFORM'], libtype, bdir)], shell=True)
+		&& make && make DESTDIR={}/install install && make package'.format(os.environ['TAPASCO_PLATFORM'], libtype, bdir)], shell=True)
