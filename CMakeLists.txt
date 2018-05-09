@@ -12,6 +12,10 @@ set(CMNDIR "${CMAKE_CURRENT_SOURCE_DIR}/common")
 
 
 if(${CMAKE_VERSION} VERSION_LESS "3.9.0")
+    SET(CMAKE_AR  "gcc-ar")
+    SET(CMAKE_RANLIB  "gcc-ranlib")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -flto -fno-fat-lto-objects")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto -fno-fat-lto-objects")
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto -fno-fat-lto-objects")
 else()
     cmake_minimum_required(VERSION 3.9)
