@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.9)
 
 if(${CMAKE_VERSION} VERSION_LESS "3.9.0")
-    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
+    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto -fno-fat-lto-objects")
 else()
     cmake_minimum_required(VERSION 3.9)
     include(CheckIPOSupported)
