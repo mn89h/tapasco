@@ -30,7 +30,10 @@ target_link_libraries(tapasco platform atomic pthread)
 install(TARGETS tapasco EXPORT TapascoConfig
         ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR})
+        RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR}
+        )
+
+install(DIRECTORY ../common/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 install(EXPORT TapascoConfig DESTINATION share/Tapasco/cmake)
 
