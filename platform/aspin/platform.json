@@ -1,0 +1,9 @@
+{
+	"Name" : "aspin",
+	"Description" : "EXTOLL ASPIN 2.0 Board [incomplete open-source version]",
+	"TclLibrary" : "aspin.tcl",
+	"Part" : "xc7vx690tffg1926-3",
+	"TargetUtilization" : 90,
+	"HostFrequency" : 160.0,
+	"MemFrequency" : 160.0
+}
