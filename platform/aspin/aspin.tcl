@@ -54,6 +54,7 @@ namespace eval ::platform {
     update_ip_catalog -add_ip $repo_path/../esa.cs.tu-darmstadt.de_inca_extoll_network.zip -repo_path $repo_path
     update_ip_catalog
     set network [create_bd_cell -type ip -vlnv "esa.cs.tu-darmstadt.de:inca:extoll_network" "network"]
+    add_files -fileset constrs_1 [glob $repo_path/../*.xdc]
 
     # set global defines (had a global include before)
     set_property verilog_define { \
@@ -149,8 +150,12 @@ namespace eval ::platform {
       if {$name == "memory"} { set name "mem" }
       if {$name == "i2c"} {
 	# i2c has a non-standardized clock pin within this platform definition
-        set_property -dict [list CONFIG.CLKOUT${clkn}_USED {true} CONFIG.CLKOUT${clkn}_REQUESTED_OUT_FREQ $freq] $clk_wiz
-	set clkp [get_bd_pins "$clk_wiz/clk_out${clkn}"]
+        set_property -dict [list \
+	  CONFIG.CLKOUT${clkn}_USED {true} \
+	  CONFIG.CLKOUT${clkn}_REQUESTED_OUT_FREQ $freq \
+	  CONFIG.CLK_OUT${clkn}_PORT "${name}_clk" \
+	] $clk_wiz
+	set clkp [get_bd_pins "$clk_wiz/${name}_clk"]
 	set clk [create_bd_pin -type clk -dir O "i2c_clk"]
 	connect_bd_net $clkp $clk
 	incr clkn
@@ -171,8 +176,12 @@ namespace eval ::platform {
         connect_bd_net [get_bd_pins $rst_gen/peripheral_reset] $p_rst
         connect_bd_net [get_bd_pins $rst_gen/interconnect_aresetn] $i_rstn
       } {
-        set_property -dict [list CONFIG.CLKOUT${clkn}_USED {true} CONFIG.CLKOUT${clkn}_REQUESTED_OUT_FREQ $freq] $clk_wiz
-        set clkp [get_bd_pins "$clk_wiz/clk_out${clkn}"]
+	set_property -dict [list \
+          CONFIG.CLKOUT${clkn}_USED {true} \
+          CONFIG.CLKOUT${clkn}_REQUESTED_OUT_FREQ $freq \
+          CONFIG.CLK_OUT${clkn}_PORT "${name}_clk" \
+        ] $clk_wiz
+        set clkp [get_bd_pins "$clk_wiz/${name}_clk"]
         set rstgen [::tapasco::ip::create_rst_gen "${name}_rst_gen"]
         connect_bd_net $clkp $clk
         connect_bd_net $reset_in [get_bd_pins "$rstgen/ext_reset_in"]
