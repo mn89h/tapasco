@@ -70,6 +70,7 @@ namespace eval ::platform {
     set host_clk [tapasco::subsystem::get_port "host" "clk"]
     set host_res_n [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
     set design_clk [tapasco::subsystem::get_port "design" "clk"]
+    set design_res [tapasco::subsystem::get_port "design" "rst" "peripheral" "reset"]
     set design_res_n [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
     set mem_clk [tapasco::subsystem::get_port "mem" "clk"]
     set mem_res_n [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"]
@@ -91,15 +92,64 @@ namespace eval ::platform {
       connect_bd_net $eport [get_bd_pins "$network/$ep"]
     }
 
+    # add Commando Processor
+    set microblaze [create_bd_cell -type ip -vlnv xilinx.com:ip:microblaze:10.0 CoP]
+    set_property CONFIG.C_FSL_LINKS {1} $microblaze
+    set_property CONFIG.C_D_AXI {1} $microblaze
+    # add local memory to microblaze
+    set lmb_bram [create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen:8.4 lmb_bram]
+    set_property -dict [list \
+        CONFIG.Memory_Type {True_Dual_Port_RAM} \
+        CONFIG.use_bram_block {BRAM_Controller} \
+        CONFIG.Assume_Synchronous_Clk {true} \
+    ] $lmb_bram
+    set dlmb_ctrl [create_bd_cell -type ip -vlnv xilinx.com:ip:lmb_bram_if_cntlr:4.0 dlmb_ctrl]
+    connect_bd_intf_net [get_bd_intf_pins $dlmb_ctrl/BRAM_PORT] [get_bd_intf_pins $lmb_bram/BRAM_PORTA]
+    connect_bd_intf_net [get_bd_intf_pins $dlmb_ctrl/SLMB] [get_bd_intf_pins $microblaze/DLMB]
+    connect_bd_net [get_bd_pins $dlmb_ctrl/LMB_Clk] $design_clk
+    connect_bd_net [get_bd_pins $dlmb_ctrl/LMB_Rst] $design_res
+    set ilmb_ctrl [create_bd_cell -type ip -vlnv xilinx.com:ip:lmb_bram_if_cntlr:4.0 ilmb_ctrl]
+    connect_bd_intf_net [get_bd_intf_pins $ilmb_ctrl/BRAM_PORT] [get_bd_intf_pins $lmb_bram/BRAM_PORTB]
+    connect_bd_intf_net [get_bd_intf_pins $ilmb_ctrl/SLMB] [get_bd_intf_pins $microblaze/ILMB]
+    connect_bd_net [get_bd_pins $ilmb_ctrl/LMB_Clk] $design_clk
+    connect_bd_net [get_bd_pins $ilmb_ctrl/LMB_Rst] $design_res
+    assign_bd_address [get_bd_addr_segs {$dlmb_ctrl/SLMB/Mem}]
+    assign_bd_address [get_bd_addr_segs {$ilmb_ctrl/SLMB/Mem}]
+
+    # add AXI slave conversion logic
+    # careful: rx and tx naming on extoll cell may be a bit confusing
+    set tx_converter [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_tx]
+    set_property CONFIG.M_TDATA_NUM_BYTES {4} $tx_converter
+    set rx_converter [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_rx]
+    set_property CONFIG.M_TDATA_NUM_BYTES {64} $rx_converter
+    set axis_converter [create_bd_cell -type ip -vlnv esa.cs.tu-darmstadt.de:inca:extoll_axis_converter axis_converter]
+    connect_bd_intf_net [get_bd_intf_pins "$microblaze/S0_AXIS"] [get_bd_intf_pins "$tx_converter/M_AXIS"]
+    connect_bd_intf_net [get_bd_intf_pins "$microblaze/M0_AXIS"] [get_bd_intf_pins "$rx_converter/S_AXIS"]
+    connect_bd_intf_net [get_bd_intf_pins "$tx_converter/S_AXIS"] [get_bd_intf_pins "$axis_converter/tx_m_axis"]
+    connect_bd_intf_net [get_bd_intf_pins "$rx_converter/M_AXIS"] [get_bd_intf_pins "$axis_converter/rx_s_axis"]
+    connect_bd_intf_net [get_bd_intf_pins "$network/m_axis_tx_inca"] [get_bd_intf_pins "$axis_converter/tx_s_axis"]
+    connect_bd_intf_net [get_bd_intf_pins "$network/s_axis_rx_inca"] [get_bd_intf_pins "$axis_converter/rx_m_axis"]
+    connect_bd_net [get_bd_pins "$microblaze/Clk"] $design_clk
+    connect_bd_net [get_bd_pins "$microblaze/Reset"] $design_res
+    connect_bd_net [get_bd_pins "$tx_converter/aclk"] $design_clk
+    connect_bd_net [get_bd_pins "$tx_converter/aresetn"] $design_res_n
+    connect_bd_net [get_bd_pins "$rx_converter/aclk"] $design_clk
+    connect_bd_net [get_bd_pins "$rx_converter/aresetn"] $design_res_n
+    connect_bd_net [get_bd_pins "$axis_converter/clk"] $design_clk
+
     # add a AXI master (dummy for now)
     set axi_mm [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_mm2s_mapper:1.1 axi_mm2s_mapper_0]
     set_property -dict [list CONFIG.INTERFACES {M_AXI}] $axi_mm
     set m_axi_arch [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_ARCH"]
     set m_axi_tapasco_status [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_TAPASCO"]
-    connect_bd_intf_net [get_bd_intf_pins "$axi_mm/S_AXIS"] [get_bd_intf_pins "$network/m_axis_tx_inca"]
+#    connect_bd_intf_net [get_bd_intf_pins "$axi_mm/S_AXIS"] [get_bd_intf_pins "$network/m_axis_tx_inca"]
     connect_bd_intf_net [get_bd_intf_pins "$axi_mm/M_AXI"] $m_axi_arch
+    connect_bd_intf_net [get_bd_intf_pins "$microblaze/M_AXI_DP"] $m_axi_tapasco_status
     connect_bd_net [get_bd_pins "$axi_mm/aclk"] $design_clk
     connect_bd_net [get_bd_pins "$axi_mm/aresetn"] $design_res_n
+
+    # TODO
+    save_bd_design
   }
 
   proc create_subsystem_clocks_and_resets {} {
@@ -149,17 +199,17 @@ namespace eval ::platform {
       puts "current name: $name"
       if {$name == "memory"} { set name "mem" }
       if {$name == "i2c"} {
-	# i2c has a non-standardized clock pin within this platform definition
+        # i2c has a non-standardized clock pin within this platform definition
         set_property -dict [list \
-	  CONFIG.CLKOUT${clkn}_USED {true} \
-	  CONFIG.CLKOUT${clkn}_REQUESTED_OUT_FREQ $freq \
-	  CONFIG.CLK_OUT${clkn}_PORT "${name}_clk" \
-	] $clk_wiz
-	set clkp [get_bd_pins "$clk_wiz/${name}_clk"]
-	set clk [create_bd_pin -type clk -dir O "i2c_clk"]
-	connect_bd_net $clkp $clk
-	incr clkn
-	continue
+          CONFIG.CLKOUT${clkn}_USED {true} \
+          CONFIG.CLKOUT${clkn}_REQUESTED_OUT_FREQ $freq \
+          CONFIG.CLK_OUT${clkn}_PORT "${name}_clk" \
+        ] $clk_wiz
+        set clkp [get_bd_pins "$clk_wiz/${name}_clk"]
+        set clk [create_bd_pin -type clk -dir O "i2c_clk"]
+        connect_bd_net $clkp $clk
+        incr clkn
+        continue
       }
       set clk    [::tapasco::subsystem::get_port $name "clk"]
       set p_rstn [::tapasco::subsystem::get_port $name "rst" "peripheral" "resetn"]
@@ -176,7 +226,7 @@ namespace eval ::platform {
         connect_bd_net [get_bd_pins $rst_gen/peripheral_reset] $p_rst
         connect_bd_net [get_bd_pins $rst_gen/interconnect_aresetn] $i_rstn
       } {
-	set_property -dict [list \
+        set_property -dict [list \
           CONFIG.CLKOUT${clkn}_USED {true} \
           CONFIG.CLKOUT${clkn}_REQUESTED_OUT_FREQ $freq \
           CONFIG.CLK_OUT${clkn}_PORT "${name}_clk" \
