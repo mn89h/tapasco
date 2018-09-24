@@ -137,16 +137,21 @@ namespace eval ::platform {
     connect_bd_net [get_bd_pins "$rx_converter/aresetn"] $design_res_n
     connect_bd_net [get_bd_pins "$axis_converter/clk"] $design_clk
 
-    # add a AXI master (dummy for now)
-    set axi_mm [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_mm2s_mapper:1.1 axi_mm2s_mapper_0]
-    set_property -dict [list CONFIG.INTERFACES {M_AXI}] $axi_mm
+    # connect ARCH and STATUS to MicroBlaze
+    set mb_ic [tapasco::ip::create_axi_ic "mb_ic" 1 2]
+
     set m_axi_arch [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_ARCH"]
     set m_axi_tapasco_status [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_TAPASCO"]
-#    connect_bd_intf_net [get_bd_intf_pins "$axi_mm/S_AXIS"] [get_bd_intf_pins "$network/m_axis_tx_inca"]
-    connect_bd_intf_net [get_bd_intf_pins "$axi_mm/M_AXI"] $m_axi_arch
-    connect_bd_intf_net [get_bd_intf_pins "$microblaze/M_AXI_DP"] $m_axi_tapasco_status
-    connect_bd_net [get_bd_pins "$axi_mm/aclk"] $design_clk
-    connect_bd_net [get_bd_pins "$axi_mm/aresetn"] $design_res_n
+
+    connect_bd_intf_net [get_bd_intf_pins "$mb_ic/M00_AXI"] $m_axi_arch
+    connect_bd_intf_net [get_bd_intf_pins "$mb_ic/M01_AXI"] $m_axi_tapasco_status
+    connect_bd_intf_net [get_bd_intf_pins "$microblaze/M_AXI_DP"] [get_bd_intf_pins "$mb_ic/S00_AXI"]
+    connect_bd_net $design_clk [get_bd_pins -filter {NAME =~ "M*_ACLK"} -of_objects $mb_ic]
+    connect_bd_net $design_clk [get_bd_pins -filter {NAME =~ "S*_ACLK"} -of_objects $mb_ic]
+    connect_bd_net $design_res_n [get_bd_pins -filter {NAME =~ "M*_ARESETN"} -of_objects $mb_ic]
+    connect_bd_net $design_res_n [get_bd_pins -filter {NAME =~ "S*_ARESETN"} -of_objects $mb_ic]
+    connect_bd_net $design_clk [get_bd_pins -filter {NAME == "ACLK"} -of_objects $mb_ic]
+    connect_bd_net $design_res_n [get_bd_pins -filter {NAME == "ARESETN"} -of_objects $mb_ic]
 
     # TODO
     save_bd_design
