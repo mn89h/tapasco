@@ -153,6 +153,12 @@ namespace eval ::platform {
     connect_bd_net $design_clk [get_bd_pins -filter {NAME == "ACLK"} -of_objects $mb_ic]
     connect_bd_net $design_res_n [get_bd_pins -filter {NAME == "ARESETN"} -of_objects $mb_ic]
 
+    # connect RDMA bypass to memory
+    set ntl2htl_port [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 m_axis_tx_ntl]
+    connect_bd_intf_net $ntl2htl_port $network/m_axis_tx_data
+    set ntl2htl_port [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 s_axis_rx_ntl]
+    connect_bd_intf_net $ntl2htl_port $network/s_axis_rx_data
+
     # TODO
     save_bd_design
   }
@@ -161,7 +167,7 @@ namespace eval ::platform {
     # clocking infrastructure
     #  host_clk -> clk_extoll 160MHz
     #  design_clk -> clk_cr
-    #  mem_clk -> clk_hmc
+    #  mem_clk: from clk_hmc in MEM
     #  + clk_i2c 25 MHz
     set freqs [::tapasco::get_frequencies]
     lappend freqs  "i2c" 25
@@ -226,7 +232,9 @@ namespace eval ::platform {
         set rst_gen [get_bd_cells "[lindex $freqs $j]_rst_gen"]
         set ex_clk [::tapasco::subsystem::get_port [lindex $freqs $j] "clk"]
         puts "rst_gen = $rst_gen"
-        connect_bd_net -net [get_bd_nets -boundary_type lower -of_objects $ex_clk] $clk
+        if {$name != "mem"} {
+          connect_bd_net -net [get_bd_nets -boundary_type lower -of_objects $ex_clk] $clk
+        }
         connect_bd_net [get_bd_pins $rst_gen/peripheral_aresetn] $p_rstn
         connect_bd_net [get_bd_pins $rst_gen/peripheral_reset] $p_rst
         connect_bd_net [get_bd_pins $rst_gen/interconnect_aresetn] $i_rstn
@@ -238,15 +246,21 @@ namespace eval ::platform {
         ] $clk_wiz
         set clkp [get_bd_pins "$clk_wiz/${name}_clk"]
         set rstgen [::tapasco::ip::create_rst_gen "${name}_rst_gen"]
-        connect_bd_net $clkp $clk
+        if {$name != "mem"} {
+          connect_bd_net $clkp $clk
+          connect_bd_net $clkp [get_bd_pins "$rstgen/slowest_sync_clk"]
+        }
         connect_bd_net $reset_in [get_bd_pins "$rstgen/ext_reset_in"]
-        connect_bd_net $clkp [get_bd_pins "$rstgen/slowest_sync_clk"]
         connect_bd_net [get_bd_pins "$rstgen/peripheral_reset"] $p_rst
         connect_bd_net [get_bd_pins "$rstgen/peripheral_aresetn"] $p_rstn
         connect_bd_net [get_bd_pins "$rstgen/interconnect_aresetn"] $i_rstn
         incr clkn
       }
     }
+
+    # remove mem_clk, it is provided by /memory
+    set mem_clk [tapasco::subsystem::get_port "mem" "clk"]
+    delete_bd_objs $mem_clk
   }
   proc create_clock_port {{name "sys_clk"}} {
     puts "creating 127.273 MHz diff clock port ..."
@@ -278,6 +292,97 @@ namespace eval ::platform {
     connect_bd_intf_net $s_axi_mem [get_bd_intf_pins "$bram_ctrl/S_AXI"]
     connect_bd_net $s_axi_clk [get_bd_pins "$bram_ctrl/s_axi_aclk"]
     connect_bd_net $s_axi_aresetn [get_bd_pins "$bram_ctrl/s_axi_aresetn"]
+
+    # add openHMC
+    set openHMC [create_bd_cell -type ip -vlnv ra.ziti.uni-heidelberg.de:openHMC:openHMC:1.5 openHMC]
+    set_property -dict [list CONFIG.HMC_RX_AC_COUPLED {0} CONFIG.PASS_ERR_RSP {0} CONFIG.USE_RF {0} CONFIG.RX_RELAX_INIT_TIMING {0}] $openHMC
+
+    set openhmc_transceiver [create_bd_cell -type ip -vlnv esa.cs.tu-darmstadt.de:inca:openhmc_transceiver openhmc_transceiver]
+    set_property -dict [list CONFIG.LOG_NUM_LANES {3} CONFIG.NUM_LANES {8} CONFIG.LANE_WIDTH {64}] $openhmc_transceiver
+
+    set hmc_init [create_bd_cell -type ip -vlnv esa.cs.tu-darmstadt.de:inca:hmc_init hmc_init]
+
+    connect_bd_net [get_bd_pins $openhmc_transceiver/clk_hmc] [get_bd_pins $openHMC/clk_hmc]
+    connect_bd_net [get_bd_pins $openhmc_transceiver/to_serializers] [get_bd_pins $openHMC/phy_data_tx_link2phy]
+    connect_bd_net [get_bd_pins $openhmc_transceiver/from_deserializers] [get_bd_pins $openHMC/phy_data_rx_phy2link]
+    connect_bd_net [get_bd_pins $openHMC/phy_bit_slip] [get_bd_pins $openhmc_transceiver/bit_slip]
+    connect_bd_net [get_bd_pins $openhmc_transceiver/trans_rx_ready] [get_bd_pins $openHMC/phy_rx_ready]
+
+    connect_bd_net [get_bd_pins $hmc_init/hmc_init_res_n_phy] [get_bd_pins $openhmc_transceiver/hmc_init_res_n_phy]
+    connect_bd_net [get_bd_pins $openhmc_transceiver/hmc_init_cont_set] [get_bd_pins $hmc_init/hmc_init_cont_set]
+    connect_bd_net [get_bd_pins $openHMC/hmc_link_is_up] [get_bd_pins $hmc_init/hmc_link_is_up]
+    connect_bd_net [get_bd_pins $openHMC/err_cnt_not_zero_any] [get_bd_pins $hmc_init/openhmc_err_cnt_not_zero_any]
+
+    set init_rst_n_or [create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 init_rst_n_or]
+
+    # Make HMC interface pins external
+    # openhmc_transceiver
+    set external_pins [list {HMC_TXP_OUT} {HMC_TXN_OUT} {HMC_RXP_IN} {HMC_RXN_IN}]
+    foreach ep $external_pins {
+      set ep_pin [get_bd_pins $openhmc_transceiver/$ep]
+      set eport [create_bd_port -dir [get_property DIR $ep_pin] -from [get_property LEFT $ep_pin] -to 0 $ep]
+      connect_bd_net $eport $ep_pin
+    }
+    set external_pins [list {MGTREFCLKQ2_P_IN} {MGTREFCLKQ2_N_IN} {MGTREFCLKQ3_P_IN} {MGTREFCLKQ3_N_IN}]
+    foreach ep $external_pins {
+      set ep_pin [get_bd_pins $openhmc_transceiver/$ep]
+      set eport [create_bd_port -dir [get_property DIR $ep_pin] $ep]
+      connect_bd_net $eport $ep_pin
+    }
+    set ep "L0RXPS"
+    set ep_pin [get_bd_pins $openHMC/LXRXPS]
+    set eport [create_bd_port -dir [get_property DIR $ep_pin] $ep]
+    connect_bd_net $eport $ep_pin
+    # hmc_init
+    set external_pins [list {I2C_SDA} {I2C_SCL}]
+    foreach ep $external_pins {
+      set ep_pin [get_bd_pins $hmc_init/$ep]
+      set eport [create_bd_port -dir [get_property DIR $ep_pin] $ep]
+      connect_bd_net $eport $ep_pin
+    }
+    set ep "LED"
+    set ep_pin [get_bd_pins $hmc_init/$ep]
+    set eport [create_bd_port -dir [get_property DIR $ep_pin] -from [get_property LEFT $ep_pin] -to 0 $ep]
+    connect_bd_net $eport $ep_pin
+    # generate P_RST_N
+    set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {or} CONFIG.LOGO_FILE {data/sym_orgate.png}] $init_rst_n_or
+    connect_bd_net [get_bd_pins $openHMC/P_RST_N] [get_bd_pins $init_rst_n_or/Op1]
+    connect_bd_net [get_bd_pins $hmc_init/P_RST_N] [get_bd_pins $init_rst_n_or/Op2]
+    set ep "P_RST_N"
+    set ep_pin [get_bd_pins $init_rst_n_or/Res]
+    set eport [create_bd_port -dir [get_property DIR $ep_pin] $ep]
+    connect_bd_net $eport $ep_pin
+
+    # HTL
+    set htl [create_bd_cell -type ip -vlnv esa.cs.tu-darmstadt.de:inca:HTL HTL]
+    set_property -dict [list CONFIG.NUM_EXTOLL_CELLS {8} CONFIG.OPENHMC_CTRL_BITS {12} \
+      CONFIG.NTL2HTL_CTRL_BITS {9} CONFIG.HTL2NTL_CTRL_BITS {9} CONFIG.HTL_CTRL_BITS {12} \
+      CONFIG.NAM_TAG_SIZE {7} CONFIG.OPENHMC_TAG_SIZE {6} CONFIG.HMC_ADRS_SIZE {31} \
+      CONFIG.HTL_RF_AWIDTH {6}] $htl
+    connect_bd_intf_net [get_bd_intf_pins $htl/m_axis_tx_hmc] [get_bd_intf_pins $openHMC/s_axis_tx]
+    connect_bd_intf_net [get_bd_intf_pins $htl/s_axis_rx_hmc] [get_bd_intf_pins $openHMC/m_axis_rx]
+    set ntl2htl_port [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 s_axis_rx_htl]
+    #TODO -> arbiter first!
+    connect_bd_intf_net $ntl2htl_port $htl/in_arb
+    set ntl2htl_port [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 m_axis_tx_htl]
+    connect_bd_intf_net $ntl2htl_port $htl/out
+
+    # Connect clocks
+    set i2c_clk [create_bd_pin -type clk -dir I "i2c_clk"]
+    set mem_clk [tapasco::subsystem::get_port "mem" "clk"]
+    delete_bd_objs $mem_clk
+    set mem_clk [create_bd_pin -dir O -type clk "mem_clk"]
+    set mem_res_n [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"]
+    set i2c_res_n $mem_res_n
+    connect_bd_net $i2c_clk [get_bd_pins $hmc_init/clk_i2c]
+    connect_bd_net $i2c_res_n [get_bd_pins $hmc_init/res_n_i2c]
+    connect_bd_net $i2c_clk [get_bd_pins $openhmc_transceiver/clk_init]
+    connect_bd_net $mem_clk [get_bd_pins $openHMC/clk_user]
+    connect_bd_net $mem_clk [get_bd_pins $openhmc_transceiver/clk_hmc]
+    connect_bd_net $mem_clk [get_bd_pins $htl/clk]
+    connect_bd_net $mem_res_n [get_bd_pins $openHMC/res_n_user]
+    connect_bd_net $mem_res_n [get_bd_pins $openHMC/res_n_hmc]
+    connect_bd_net $mem_res_n [get_bd_pins $htl/res_n]
   }
 
   proc get_pe_base_address {} {

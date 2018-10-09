@@ -25,6 +25,7 @@ namespace eval i2c_clk {
   proc connect_i2c_clocks {{args {}}} {
     set i2c_clks [get_bd_pins */i2_clk]
     if {[llength i2c_clks] > 1} {
+      puts "Connecting i2c clocks."
       connect_bd_net [get_bd_pins */i2c_clk]
     }
     return {}
