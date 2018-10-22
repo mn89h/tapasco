@@ -138,13 +138,15 @@ namespace eval ::platform {
     connect_bd_net [get_bd_pins "$axis_converter/clk"] $design_clk
 
     # connect ARCH and STATUS to MicroBlaze
-    set mb_ic [tapasco::ip::create_axi_ic "mb_ic" 1 2]
+    set mb_ic [tapasco::ip::create_axi_ic "mb_ic" 1 3]
 
     set m_axi_arch [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_ARCH"]
+    set m_axi_mem [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_MEM_C"]
     set m_axi_tapasco_status [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_TAPASCO"]
 
     connect_bd_intf_net [get_bd_intf_pins "$mb_ic/M00_AXI"] $m_axi_arch
     connect_bd_intf_net [get_bd_intf_pins "$mb_ic/M01_AXI"] $m_axi_tapasco_status
+    connect_bd_intf_net [get_bd_intf_pins "$mb_ic/M02_AXI"] $m_axi_mem
     connect_bd_intf_net [get_bd_intf_pins "$microblaze/M_AXI_DP"] [get_bd_intf_pins "$mb_ic/S00_AXI"]
     connect_bd_net $design_clk [get_bd_pins -filter {NAME =~ "M*_ACLK"} -of_objects $mb_ic]
     connect_bd_net $design_clk [get_bd_pins -filter {NAME =~ "S*_ACLK"} -of_objects $mb_ic]
@@ -282,17 +284,6 @@ namespace eval ::platform {
     set s_axi_clk [tapasco::subsystem::get_port "design" "clk"]
     set s_axi_aresetn [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
 
-    # add a BRAM as dummy
-    set bram_mem [create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen:8.4 bram_mem]
-    set_property -dict [list CONFIG.Memory_Type {True_Dual_Port_RAM}] $bram_mem
-    set bram_ctrl [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.0 bram_ctrl]
-
-    connect_bd_intf_net [get_bd_intf_pins "$bram_ctrl/BRAM_PORTA"] [get_bd_intf_pins "$bram_mem/BRAM_PORTA"]
-    connect_bd_intf_net [get_bd_intf_pins "$bram_ctrl/BRAM_PORTB"] [get_bd_intf_pins "$bram_mem/BRAM_PORTB"]
-    connect_bd_intf_net $s_axi_mem [get_bd_intf_pins "$bram_ctrl/S_AXI"]
-    connect_bd_net $s_axi_clk [get_bd_pins "$bram_ctrl/s_axi_aclk"]
-    connect_bd_net $s_axi_aresetn [get_bd_pins "$bram_ctrl/s_axi_aresetn"]
-
     # add openHMC
     set openHMC [create_bd_cell -type ip -vlnv ra.ziti.uni-heidelberg.de:openHMC:openHMC:1.5 openHMC]
     set_property -dict [list CONFIG.HMC_RX_AC_COUPLED {0} CONFIG.PASS_ERR_RSP {0} CONFIG.USE_RF {0} CONFIG.RX_RELAX_INIT_TIMING {0}] $openHMC
@@ -361,18 +352,37 @@ namespace eval ::platform {
       CONFIG.HTL_RF_AWIDTH {6}] $htl
     connect_bd_intf_net [get_bd_intf_pins $htl/m_axis_tx_hmc] [get_bd_intf_pins $openHMC/s_axis_tx]
     connect_bd_intf_net [get_bd_intf_pins $htl/s_axis_rx_hmc] [get_bd_intf_pins $openHMC/m_axis_rx]
+    set htl2ntl_port [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 m_axis_tx_htl]
+    connect_bd_intf_net $htl2ntl_port $htl/out
+
+    # Arbitrate HTL input
+    set htl_in_arbiter [create_bd_cell -type ip -vlnv esa.cs.tu-darmstadt.de:inca:extoll_axis_arbiter axis_arbiter]
     set ntl2htl_port [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 s_axis_rx_htl]
-    #TODO -> arbiter first!
-    connect_bd_intf_net $ntl2htl_port $htl/in_arb
-    set ntl2htl_port [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 m_axis_tx_htl]
-    connect_bd_intf_net $ntl2htl_port $htl/out
+    connect_bd_intf_net $ntl2htl_port $htl_in_arbiter/s1_axis
+    connect_bd_intf_net $htl_in_arbiter/m_axis $htl/in_arb
+
+    # Add AXI-MM input to HTL arbiter
+    set axi_mm [create_bd_cell -type ip -vlnv esa.cs.tu-darmstadt.de:inca:aximm_to_extoll_axis axi_mm]
+    connect_bd_intf_net $axi_mm/m_axis $htl_in_arbiter/s0_axis
+    connect_bd_intf_net $axi_mm/s_axis $htl/out_cr
+    # Add Interconnect (Clock-Domain-Crossing + width conversion + second AXI slave port)
+    set mem_interconnect [tapasco::ip::create_axi_ic "mem_interconnect" 2 1]
+    set_property -dict [list CONFIG.NUM_SI {2} CONFIG.NUM_MI {1}] $mem_interconnect
+    # remove AXI IDs in interconnect
+    set_property -dict [list CONFIG.STRATEGY {1}] $mem_interconnect
+    set s_axi_mem_c [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_C"]
+    connect_bd_intf_net $s_axi_mem $mem_interconnect/S00_AXI
+    connect_bd_intf_net $s_axi_mem_c $mem_interconnect/S01_AXI
+    connect_bd_intf_net $axi_mm/s $mem_interconnect/M00_AXI
 
     # Connect clocks
     set i2c_clk [create_bd_pin -type clk -dir I "i2c_clk"]
     set mem_clk [tapasco::subsystem::get_port "mem" "clk"]
+    set design_clk [tapasco::subsystem::get_port "design" "clk"]
     delete_bd_objs $mem_clk
     set mem_clk [create_bd_pin -dir O -type clk "mem_clk"]
     set mem_res_n [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"]
+    set design_res_n [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
     set i2c_res_n $mem_res_n
     connect_bd_net $i2c_clk [get_bd_pins $hmc_init/clk_i2c]
     connect_bd_net $i2c_res_n [get_bd_pins $hmc_init/res_n_i2c]
@@ -380,9 +390,21 @@ namespace eval ::platform {
     connect_bd_net $mem_clk [get_bd_pins $openHMC/clk_user]
     connect_bd_net $mem_clk [get_bd_pins $openhmc_transceiver/clk_hmc]
     connect_bd_net $mem_clk [get_bd_pins $htl/clk]
+    connect_bd_net $mem_clk [get_bd_pins $htl_in_arbiter/clk]
+    connect_bd_net $mem_clk [get_bd_pins $axi_mm/clk]
+    connect_bd_net $mem_clk [get_bd_pins $mem_interconnect/ACLK]
+    connect_bd_net $mem_clk [get_bd_pins $mem_interconnect/M00_ACLK]
     connect_bd_net $mem_res_n [get_bd_pins $openHMC/res_n_user]
     connect_bd_net $mem_res_n [get_bd_pins $openHMC/res_n_hmc]
     connect_bd_net $mem_res_n [get_bd_pins $htl/res_n]
+    connect_bd_net $mem_res_n [get_bd_pins $htl_in_arbiter/res_n]
+    connect_bd_net $mem_res_n [get_bd_pins $axi_mm/res_n]
+    connect_bd_net $mem_res_n [get_bd_pins $mem_interconnect/ARESETN]
+    connect_bd_net $mem_res_n [get_bd_pins $mem_interconnect/M00_ARESETN]
+    connect_bd_net $design_clk [get_bd_pins $mem_interconnect/S00_ACLK]
+    connect_bd_net $design_clk [get_bd_pins $mem_interconnect/S01_ACLK]
+    connect_bd_net $design_res_n [get_bd_pins $mem_interconnect/S00_ARESETN]
+    connect_bd_net $design_res_n [get_bd_pins $mem_interconnect/S01_ARESETN]
   }
 
   proc get_pe_base_address {} {
@@ -399,7 +421,8 @@ namespace eval ::platform {
     foreach m [::tapasco::get_aximm_interfaces [get_bd_cells -filter "PATH !~ [::tapasco::subsystem::get arch]/*"]] {
       switch -glob [get_property NAME $m] {
         "M_TAPASCO" { foreach {base stride range comp} [list 0x77770000 0       0 "PLATFORM_COMPONENT_STATUS"] {} }
-        "M_INTC"    { foreach {base stride range comp} [list 0x81800000 0x10000 0 "PLATFORM_COMPONENT_INTC0"] {} }
+        "M_INTC"    { foreach {base stride range comp} [list 0x7a000000 0x10000 0 "PLATFORM_COMPONENT_INTC0"] {} }
+        "M_MEM_C"   { foreach {base stride range comp} [list 0x80000000 0       0x80000000 ""] {} }
         "M_ARCH"    { set base "skip" }
         default     { foreach {base stride range comp} [list 0 0 0 ""] {} }
       }
