@@ -231,14 +231,19 @@
     set_property -dict [list CONFIG.CLK_OUT1_PORT {design_clk} \
                         CONFIG.USE_SAFE_CLOCK_STARTUP {true} \
                         CONFIG.CLKOUT1_REQUESTED_OUT_FREQ [tapasco::get_design_frequency] \
-                        CONFIG.USE_LOCKED {false} \
-                        CONFIG.USE_RESET {false}] $design_clk_wiz
+                        CONFIG.USE_LOCKED {true} \
+                        CONFIG.USE_RESET {true} \
+                        CONFIG.RESET_TYPE {ACTIVE_LOW} \
+                        CONFIG.RESET_PORT {resetn} \
+                        ] $design_clk_wiz
+
+    connect_bd_net [get_bd_pins $design_clk_wiz/resetn] [get_bd_pins -regexp $mig/((mmcm_locked)|(c0_init_calib_complete))]
+    connect_bd_net [get_bd_pins $design_clk_wiz/locked] $design_aresetn
 
     # connect external design clk
-    connect_bd_net $pcie_p_aresetn $design_aresetn
     connect_bd_net [get_bd_pins $design_clk_wiz/design_clk] $design_clk
 
-    connect_bd_net [get_bd_pins $pcie_aclk] [get_bd_pins $design_clk_wiz/clk_in1]
+    connect_bd_net [get_bd_pins $ddr_aclk] [get_bd_pins $design_clk_wiz/clk_in1]
 
     if {[get_property CONFIG.POLARITY [get_bd_pins -regexp mig/(c0_ddr4_)?ui_clk_sync_rst]] == "ACTIVE_HIGH"} {
         set ddr_rst_inverter [tapasco::ip::create_logic_vector "ddr_rst_inverter"]

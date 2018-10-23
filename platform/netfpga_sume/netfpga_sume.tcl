@@ -27,20 +27,23 @@ namespace eval platform {
 
   proc create_mig_core {name} {
     puts "Creating MIG core for DDR ..."
+    file copy "$::env(TAPASCO_HOME)/platform/netfpga_sume/nf_sume_ddr3A.prj" "[get_property DIRECTORY [current_project]]/nf_sume_ddr3A.prj"
     # create the IP core itself
     set mig_7series_0 [tapasco::ip::create_mig_core $name]
     # set MIG properties
     set_property -dict [ list \
-    CONFIG.XML_INPUT_FILE "$::env(TAPASCO_HOME)/platform/netfpga_sume/nf_sume_ddr3A.prj" \
+    CONFIG.XML_INPUT_FILE "[get_property DIRECTORY [current_project]]/nf_sume_ddr3A.prj" \
     CONFIG.RESET_BOARD_INTERFACE {Custom} \
     CONFIG.MIG_DONT_TOUCH_PARAM {Custom} \
     CONFIG.BOARD_MIG_PARAM {Custom}] $mig_7series_0
 
-    set clk_ref_i [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 clk_ref ]
-    connect_bd_intf_net $clk_ref_i [get_bd_intf_pins $name/CLK_REF]
-
     set sys_clk [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 sys_clk ]
     connect_bd_intf_net $sys_clk [get_bd_intf_pins $name/SYS_CLK]
+    set_property CONFIG.FREQ_HZ 233333333 $sys_clk
+
+    set clk_ref_i [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 clk_ref ]
+    connect_bd_intf_net $clk_ref_i [get_bd_intf_pins $name/CLK_REF]
+    set_property CONFIG.FREQ_HZ 200000000 $clk_ref_i
 
     make_bd_pins_external  [get_bd_pins $name/sys_rst]
 
