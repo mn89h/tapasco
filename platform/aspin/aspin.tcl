@@ -370,10 +370,13 @@ namespace eval ::platform {
     set_property -dict [list CONFIG.NUM_SI {2} CONFIG.NUM_MI {1}] $mem_interconnect
     # remove AXI IDs in interconnect
     set_property -dict [list CONFIG.STRATEGY {1}] $mem_interconnect
+    # Add AXI wstrb remover
+    set axi_wstrb [create_bd_cell -type ip -vlnv esa.cs.tu-darmstadt.de:inca:axi_wstrb_remover axi_wstrb]
     set s_axi_mem_c [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_C"]
     connect_bd_intf_net $s_axi_mem $mem_interconnect/S00_AXI
     connect_bd_intf_net $s_axi_mem_c $mem_interconnect/S01_AXI
-    connect_bd_intf_net $axi_mm/s $mem_interconnect/M00_AXI
+    connect_bd_intf_net $axi_mm/s $axi_wstrb/m_axi
+    connect_bd_intf_net $axi_wstrb/s_axi $mem_interconnect/M00_AXI
 
     # Connect clocks
     set i2c_clk [create_bd_pin -type clk -dir I "i2c_clk"]
@@ -392,6 +395,7 @@ namespace eval ::platform {
     connect_bd_net $mem_clk [get_bd_pins $htl/clk]
     connect_bd_net $mem_clk [get_bd_pins $htl_in_arbiter/clk]
     connect_bd_net $mem_clk [get_bd_pins $axi_mm/clk]
+    connect_bd_net $mem_clk [get_bd_pins $axi_wstrb/clk]
     connect_bd_net $mem_clk [get_bd_pins $mem_interconnect/ACLK]
     connect_bd_net $mem_clk [get_bd_pins $mem_interconnect/M00_ACLK]
     connect_bd_net $mem_res_n [get_bd_pins $openHMC/res_n_user]
@@ -399,6 +403,7 @@ namespace eval ::platform {
     connect_bd_net $mem_res_n [get_bd_pins $htl/res_n]
     connect_bd_net $mem_res_n [get_bd_pins $htl_in_arbiter/res_n]
     connect_bd_net $mem_res_n [get_bd_pins $axi_mm/res_n]
+    connect_bd_net $mem_res_n [get_bd_pins $axi_wstrb/res_n]
     connect_bd_net $mem_res_n [get_bd_pins $mem_interconnect/ARESETN]
     connect_bd_net $mem_res_n [get_bd_pins $mem_interconnect/M00_ARESETN]
     connect_bd_net $design_clk [get_bd_pins $mem_interconnect/S00_ACLK]
