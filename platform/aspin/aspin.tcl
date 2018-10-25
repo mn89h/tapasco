@@ -116,7 +116,7 @@ namespace eval ::platform {
     assign_bd_address [get_bd_addr_segs {$dlmb_ctrl/SLMB/Mem}]
     assign_bd_address [get_bd_addr_segs {$ilmb_ctrl/SLMB/Mem}]
 
-    # add AXI slave conversion logic
+    # add AXIS slave conversion logic
     # careful: rx and tx naming on extoll cell may be a bit confusing
     set tx_converter [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_tx]
     set_property CONFIG.M_TDATA_NUM_BYTES {4} $tx_converter
@@ -138,7 +138,10 @@ namespace eval ::platform {
     connect_bd_net [get_bd_pins "$axis_converter/clk"] $design_clk
 
     # connect ARCH and STATUS to MicroBlaze
+    # manual address map settings below
     set mb_ic [tapasco::ip::create_axi_ic "mb_ic" 1 3]
+
+    set axi_offset [create_bd_cell -type ip -vlnv {esa.informatik.tu-darmstadt.de:user:MicroBlazeAXIOffset:1.0} axi_offset]
 
     set m_axi_arch [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_ARCH"]
     set m_axi_mem [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_MEM_C"]
@@ -146,12 +149,15 @@ namespace eval ::platform {
 
     connect_bd_intf_net [get_bd_intf_pins "$mb_ic/M00_AXI"] $m_axi_arch
     connect_bd_intf_net [get_bd_intf_pins "$mb_ic/M01_AXI"] $m_axi_tapasco_status
-    connect_bd_intf_net [get_bd_intf_pins "$mb_ic/M02_AXI"] $m_axi_mem
+    connect_bd_intf_net [get_bd_intf_pins "$mb_ic/M02_AXI"] $axi_offset/S_AXI
+    connect_bd_intf_net $axi_offset/M_AXI $m_axi_mem
     connect_bd_intf_net [get_bd_intf_pins "$microblaze/M_AXI_DP"] [get_bd_intf_pins "$mb_ic/S00_AXI"]
     connect_bd_net $design_clk [get_bd_pins -filter {NAME =~ "M*_ACLK"} -of_objects $mb_ic]
     connect_bd_net $design_clk [get_bd_pins -filter {NAME =~ "S*_ACLK"} -of_objects $mb_ic]
+    connect_bd_net $design_clk [get_bd_pins $axi_offset/CLK]
     connect_bd_net $design_res_n [get_bd_pins -filter {NAME =~ "M*_ARESETN"} -of_objects $mb_ic]
     connect_bd_net $design_res_n [get_bd_pins -filter {NAME =~ "S*_ARESETN"} -of_objects $mb_ic]
+    connect_bd_net $design_res_n [get_bd_pins $axi_offset/RST_N]
     connect_bd_net $design_clk [get_bd_pins -filter {NAME == "ACLK"} -of_objects $mb_ic]
     connect_bd_net $design_res_n [get_bd_pins -filter {NAME == "ARESETN"} -of_objects $mb_ic]
 
@@ -423,11 +429,15 @@ namespace eval ::platform {
     puts "Computing addresses for PEs ..."
     set peam [::arch::get_address_map $pe_base]
     puts "Computing addresses for masters ..."
-    foreach m [::tapasco::get_aximm_interfaces [get_bd_cells -filter "PATH !~ [::tapasco::subsystem::get arch]/*"]] {
+    foreach m [::tapasco::get_aximm_interfaces [concat [get_bd_cells -filter "PATH !~ [::tapasco::subsystem::get arch]/*"] [get_bd_cells "/host/mb_ic"]]] {
       switch -glob [get_property NAME $m] {
         "M_TAPASCO" { foreach {base stride range comp} [list 0x77770000 0       0 "PLATFORM_COMPONENT_STATUS"] {} }
         "M_INTC"    { foreach {base stride range comp} [list 0x7a000000 0x10000 0 "PLATFORM_COMPONENT_INTC0"] {} }
-        "M_MEM_C"   { foreach {base stride range comp} [list 0x80000000 0       0x80000000 ""] {} }
+        "M_MEM_0"   { foreach {base stride range comp} [list 0 0 0x80000000 ""] {} }
+        "M_MEM_C"   { foreach {base stride range comp} [list 0 0 0x80000000 ""] {} }
+        "M00_AXI"   { set base "skip" }
+        "M01_AXI"   { set base "skip" }
+        "M02_AXI"   { foreach {base stride range comp} [list 0x80000000 0 0x80000000 ""] {} }
         "M_ARCH"    { set base "skip" }
         default     { foreach {base stride range comp} [list 0 0 0 ""] {} }
       }
