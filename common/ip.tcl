@@ -423,6 +423,10 @@ namespace eval ::tapasco::ip {
     puts "  address map = $addr"
     foreach intf [dict keys $addr] {
       puts "  processing $intf: [dict get $addr $intf kind] ..."
+      if {[string first {target_ip_} $intf] == -1} {
+        puts "    not a PE, skipping..."
+        continue
+      }
       switch [dict get $addr $intf "kind"] {
         "register" {
           set kind [format "%d" [regsub {.*target_ip_([0-9][0-9]).*} $intf {\1}]]
