@@ -141,7 +141,7 @@ namespace eval ::platform {
     # manual address map settings below
     set mb_ic [tapasco::ip::create_axi_ic "mb_ic" 1 3]
 
-    set axi_offset [create_bd_cell -type ip -vlnv {esa.informatik.tu-darmstadt.de:user:MicroBlazeAXIOffset:1.0} axi_offset]
+    set axi_offset [create_bd_cell -type ip -vlnv {esa.cs.tu-darmstadt.de:axi:axi_offset} axi_offset]
 
     set m_axi_arch [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_ARCH"]
     set m_axi_mem [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_MEM_C"]
