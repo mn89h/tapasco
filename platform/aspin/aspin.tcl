@@ -139,17 +139,19 @@ namespace eval ::platform {
 
     # connect ARCH and STATUS to MicroBlaze
     # manual address map settings below
-    set mb_ic [tapasco::ip::create_axi_ic "mb_ic" 1 3]
+    set mb_ic [tapasco::ip::create_axi_ic "mb_ic" 1 4]
 
     set axi_offset [create_bd_cell -type ip -vlnv {esa.cs.tu-darmstadt.de:axi:axi_offset} axi_offset]
 
     set m_axi_arch [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_ARCH"]
+    set m_axi_intc [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_INTC"]
     set m_axi_mem [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_MEM_C"]
     set m_axi_tapasco_status [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_TAPASCO"]
 
     connect_bd_intf_net [get_bd_intf_pins "$mb_ic/M00_AXI"] $m_axi_arch
-    connect_bd_intf_net [get_bd_intf_pins "$mb_ic/M01_AXI"] $m_axi_tapasco_status
-    connect_bd_intf_net [get_bd_intf_pins "$mb_ic/M02_AXI"] $axi_offset/S_AXI
+    connect_bd_intf_net [get_bd_intf_pins "$mb_ic/M01_AXI"] $m_axi_intc
+    connect_bd_intf_net [get_bd_intf_pins "$mb_ic/M02_AXI"] $m_axi_tapasco_status
+    connect_bd_intf_net [get_bd_intf_pins "$mb_ic/M03_AXI"] $axi_offset/S_AXI
     connect_bd_intf_net $axi_offset/M_AXI $m_axi_mem
     connect_bd_intf_net [get_bd_intf_pins "$microblaze/M_AXI_DP"] [get_bd_intf_pins "$mb_ic/S00_AXI"]
     connect_bd_net $design_clk [get_bd_pins -filter {NAME =~ "M*_ACLK"} -of_objects $mb_ic]
@@ -278,10 +280,47 @@ namespace eval ::platform {
   }
 
   proc create_subsystem_intc {} {
-    # TODO it cannot be empty, so adding random stuff
-    set host_clk [tapasco::subsystem::get_port "host" "clk"]
-    set intc [create_bd_cell -type ip -vlnv xilinx.com:ip:c_counter_binary:12.0 c_counter_binary_0]
-    connect_bd_net $host_clk [get_bd_pins "$intc/CLK"]
+    set irqs [arch::get_irqs]
+    puts "Number of architecture interrupts: [llength $irqs]"
+
+    # create hierarchical ports
+    set s_axi [create_bd_intf_pin -mode Slave -vlnv [::tapasco::ip::get_vlnv "aximm_intf"] "S_INTC"]
+    # use design clock for now, as CoP (host) uses it too
+    set aclk [::tapasco::subsystem::get_port "design" "clk"]
+    set ic_aresetn [::tapasco::subsystem::get_port "design" "rst" "interconnect"]
+    set p_aresetn [::tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
+    set irq_out [create_bd_pin -type "intr" -dir O -to [expr "[llength $irqs] - 1"] "irq_0"]
+
+    # create interrupt controllers
+    set intcs [list]
+    foreach irq $irqs {
+      set intc [tapasco::ip::create_axi_irqc [format "axi_intc_%02d" [llength $intcs]]]
+      connect_bd_net $irq [get_bd_pins -of $intc -filter {NAME=="intr"}]
+      lappend intcs $intc
+    }
+
+    # create axi interconnect
+    set intcic [tapasco::ip::create_axi_ic "axi_intc_ic" 1 [llength $intcs]]
+    set i 0
+    foreach intc $intcs {
+      set slave [get_bd_intf_pins -of $intc -filter { MODE == "Slave" }]
+      set master [get_bd_intf_pins -of $intcic -filter "NAME == [format "M%02d_AXI" $i]"]
+      puts "Connecting $master to $slave ..."
+      connect_bd_intf_net -boundary_type upper $master $slave
+      incr i
+    }
+
+    # connect internal clocks
+    connect_bd_net -net intc_clock_net $aclk [get_bd_pins -of_objects [get_bd_cells] -filter {TYPE == "clk" && DIR == "I"}]
+    # connect internal interconnect resets
+    set ic_resets [get_bd_pins -of_objects [get_bd_cells -filter {VLNV =~ "*:axi_interconnect:*"}] -filter {NAME == "ARESETN"}]
+    connect_bd_net -net intc_ic_reset_net $ic_aresetn $ic_resets
+    # connect internal peripheral resets
+    set p_resets [get_bd_pins -of_objects [get_bd_cells] -filter {TYPE == rst && DIR == I && NAME != "ARESETN"}]
+    connect_bd_net -net intc_p_reset_net $p_aresetn $p_resets
+
+    # connect S_AXI
+    connect_bd_intf_net $s_axi [get_bd_intf_pins -of_objects $intcic -filter {NAME == "S00_AXI"}]
   }
 
   proc create_subsystem_memory {} {
@@ -437,7 +476,8 @@ namespace eval ::platform {
         "M_MEM_C"   { foreach {base stride range comp} [list 0 0 0x80000000 ""] {} }
         "M00_AXI"   { set base "skip" }
         "M01_AXI"   { set base "skip" }
-        "M02_AXI"   { foreach {base stride range comp} [list 0x80000000 0 0x80000000 ""] {} }
+        "M02_AXI"   { set base "skip" }
+        "M03_AXI"   { foreach {base stride range comp} [list 0x80000000 0 0x80000000 ""] {} }
         "M_ARCH"    { set base "skip" }
         default     { foreach {base stride range comp} [list 0 0 0 ""] {} }
       }
