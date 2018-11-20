@@ -95,6 +95,7 @@ namespace eval ::platform {
     # add Commando Processor
     set microblaze [create_bd_cell -type ip -vlnv xilinx.com:ip:microblaze:10.0 CoP]
     set_property CONFIG.C_FSL_LINKS {1} $microblaze
+    set_property CONFIG.C_USE_EXTENDED_FSL_INSTR {1} $microblaze
     set_property CONFIG.C_D_AXI {1} $microblaze
     # add local memory to microblaze
     set lmb_bram [create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen:8.4 lmb_bram]
