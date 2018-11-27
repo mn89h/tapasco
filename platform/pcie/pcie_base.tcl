@@ -29,6 +29,13 @@
   namespace export create_subsystem_intc
   namespace export create_subsystem_tapasco
 
+  if { ! [info exists pcie_width] } {
+    puts "No PCIe width defined. Assuming x8..."
+    set pcie_width "x8"
+  } else {
+    puts "Using PCIe width $pcie_width."
+  }
+
   # scan plugin directory
   foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME)/platform/pcie/plugins" "*.tcl"] {
     source -notrace $f
@@ -176,7 +183,12 @@
     # create instances of cores: MIG core, DMA, system cache
     set mig [create_mig_core "mig"]
 
-    set dma [tapasco::ip::create_bluedma "dma"]
+    variable pcie_width
+    if { $pcie_width == "x8" } {
+      set dma [tapasco::ip::create_bluedma "dma"]
+    } else {
+      set dma [tapasco::ip::create_bluedma_x16 "dma"]
+    }
     connect_bd_net [get_bd_pins $dma/IRQ_read] $irq_read
     connect_bd_net [get_bd_pins $dma/IRQ_write] $irq_write
 
@@ -191,11 +203,13 @@
       set cache [tapasco::ip::create_axi_cache "cache_l2" 1 \
           [dict get [tapasco::get_feature "Cache"] "size"] \
           [dict get [tapasco::get_feature "Cache"] "associativity"]]
+      # set slave port width to 512bit, otherwise uses (not working) width conversion in SmartConnect
+      set_property CONFIG.C_S0_AXI_GEN_DATA_WIDTH {512} $cache
 
       # connect mig_ic master to cache_l2
       connect_bd_intf_net [get_bd_intf_pins mig_ic/M00_AXI] [get_bd_intf_pins $cache/S0_AXI_GEN]
       # connect cache_l2 to MIG
-      connect_bd_intf_net [get_bd_intf_pins $cache/M_AXI] [get_bd_intf_pins  -regexp mig/(C0_DDR4_)?S_AXI]
+      connect_bd_intf_net [get_bd_intf_pins $cache/M0_AXI] [get_bd_intf_pins -regexp mig/(C0_DDR4_)?S_AXI]
     } {
       puts "Platform configured w/o L2 Cache"
       # no cache - connect directly to MIG
@@ -264,6 +278,8 @@
   }
 
   proc create_subsystem_host {} {
+    variable pcie_width
+
     puts "Creating PCIe subsystem ..."
 
     # create hierarchical ports
@@ -279,14 +295,27 @@
     # create instances of cores: PCIe core, mm_to_lite
     set pcie [create_pcie_core]
 
-    connect_bd_intf_net $msix_interface [get_bd_intf_pins $pcie/pcie_cfg_msix]
+    set trans [get_bd_cells -filter {NAME == "MSIxTranslator"}]
+    if { $trans != "" } {
+        connect_bd_intf_net $msix_interface [get_bd_intf_pins $trans/fromMSIxController]
+    } else {
+        connect_bd_intf_net $msix_interface [get_bd_intf_pins $pcie/pcie_cfg_msix]
+    }
 
-    set bridge [create_bd_cell -type ip -vlnv esa.informatik.tu-darmstadt.de:user:PCIeBridgeToLite:1.0 "PCIeBridgeToLite"]
+    if { $pcie_width == "x8" } {
+      puts "Using PCIe IP for x8..."
+      set bridge [tapasco::ip::create_pciebridgetolite "PCIeBridgeToLite"]
+    } else {
+      puts "Using PCIe IP for x16..."
+      set bridge [tapasco::ip::create_pciebridgetolite_x16 "PCIeBridgeToLite"]
+    }
     connect_bd_net [get_bd_pins axi_pcie3_0/axi_aclk] [get_bd_pins $bridge/S_AXI_ACLK]
     connect_bd_net [get_bd_pins axi_pcie3_0/axi_aresetn] [get_bd_pins $bridge/S_AXI_ARESETN]
 
     connect_bd_intf_net [get_bd_intf_pins -regexp $pcie/M_AXI(_B)?] \
       [get_bd_intf_pins -of_objects $bridge -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Slave"]
+
+    #assign_bd_address [get_bd_addr_segs {$bridge/S_AXI/reg0 }]
 
     set out_ic [tapasco::ip::create_axi_sc "out_ic" 1 4]
     tapasco::ip::connect_sc_default_clocks $out_ic "host"
