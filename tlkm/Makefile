@@ -40,10 +40,11 @@ tlkm-objs := \
 	pcie/pcie_irq.o \
 	pcie/pcie_ioctl.o \
 	dma/tlkm_dma.o \
-	dma/blue_dma.o
+	dma/blue_dma.o \
+	hsa/char_device_hsa.o
 
 
-CPPFLAGS+=-Werror -I$(TAPASCO_HOME)/tlkm -I$(TAPASCO_HOME)/tlkm/device -I$(TAPASCO_HOME)/tlkm/tlkm -I$(TAPASCO_HOME)/tlkm/user -I$(TAPASCO_HOME)/platform/include
+CPPFLAGS+=-Werror -I$(TAPASCO_HOME)/tlkm -I$(TAPASCO_HOME)/tlkm/device -I$(TAPASCO_HOME)/tlkm/tlkm -I$(TAPASCO_HOME)/tlkm/user -I$(TAPASCO_HOME)/platform/include -I$(TAPASCO_HOME)/tlkm/hsa
 
 .PHONY:	all clean
 
