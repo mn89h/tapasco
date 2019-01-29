@@ -418,11 +418,45 @@ namespace eval ::platform {
     set_property -dict [list CONFIG.STRATEGY {1}] $mem_interconnect
     # Add AXI wstrb remover
     set axi_wstrb [create_bd_cell -type ip -vlnv esa.cs.tu-darmstadt.de:inca:axi_wstrb_remover axi_wstrb]
+    set_property CONFIG.SUPPORTS_NARROW_BURST 0 [get_bd_intf_pins $axi_wstrb/m_axi]
     set s_axi_mem_c [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_C"]
+    # Add system cache
+    # FIXME this belongs into a plugin
+    # TODO investigate problem with Microblaze PE
+    set cache_en [tapasco::is_feature_enabled "Cache"]
+    if {$cache_en} {
+      set cf [tapasco::get_feature "Cache"]
+      puts "Platform configured w/L2 Cache, implementing ..."
+      set cache [tapasco::ip::create_axi_cache "cache_l2" 1 \
+          [dict get [tapasco::get_feature "Cache"] "size"] \
+          [dict get [tapasco::get_feature "Cache"] "associativity"]]
+      # set slave port width to 128bit
+      set_property CONFIG.C_S0_AXI_GEN_DATA_WIDTH {128} $cache
+      #set_property CONFIG.C_M0_AXI_THREAD_ID_WIDTH {0} $cache
+
+      # Add Interconnect to remove thread id
+      # second port needed for advanced configuration
+      set cache_interconnect [tapasco::ip::create_axi_ic "cache_interconnect" 2 1]
+      set_property -dict [list \
+        CONFIG.S00_HAS_REGSLICE {0} \
+        CONFIG.M00_HAS_REGSLICE {0} \
+      ] $cache_interconnect
+      # remove AXI IDs in interconnect
+      set_property CONFIG.STRATEGY {1} $cache_interconnect
+
+      # connect memory ic master to cache_l2
+      connect_bd_intf_net $mem_interconnect/M00_AXI [get_bd_intf_pins $cache/S0_AXI_GEN]
+      # connect cache_l2 to wstrb remover
+      connect_bd_intf_net $cache/M0_AXI  $cache_interconnect/S00_AXI
+      connect_bd_intf_net $cache_interconnect/M00_AXI  $axi_wstrb/s_axi
+    } {
+      puts "Platform configured w/o L2 Cache"
+      # no cache - connect directly to wstrb remover
+      connect_bd_intf_net $mem_interconnect/M00_AXI $axi_wstrb/s_axi
+    }
     connect_bd_intf_net $s_axi_mem $mem_interconnect/S00_AXI
     connect_bd_intf_net $s_axi_mem_c $mem_interconnect/S01_AXI
     connect_bd_intf_net $axi_mm/s $axi_wstrb/m_axi
-    connect_bd_intf_net $axi_wstrb/s_axi $mem_interconnect/M00_AXI
 
     # Connect clocks
     set i2c_clk [create_bd_pin -type clk -dir I "i2c_clk"]
@@ -456,6 +490,12 @@ namespace eval ::platform {
     connect_bd_net $design_clk [get_bd_pins $mem_interconnect/S01_ACLK]
     connect_bd_net $design_res_n [get_bd_pins $mem_interconnect/S00_ARESETN]
     connect_bd_net $design_res_n [get_bd_pins $mem_interconnect/S01_ARESETN]
+    if {$cache_en} {
+      connect_bd_net $mem_clk [get_bd_pins $cache/ACLK]
+      connect_bd_net $mem_clk [get_bd_pins $cache_interconnect/*ACLK]
+      connect_bd_net $mem_res_n [get_bd_pins $cache/ARESETN]
+      connect_bd_net $mem_res_n [get_bd_pins $cache_interconnect/*ARESETN]
+    }
   }
 
   proc get_pe_base_address {} {
