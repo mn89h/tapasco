@@ -5,358 +5,491 @@ after_script:
   - echo "Done with the work"
 
 stages:
-  - build_tests
+  - test_scala_toolflow
+  - build_scala_toolflow
+  - build_kernel
+  - build_runtime
+  - build_hw
 
-build_sbt_tapasco_ubuntu_16_04:
-  stage: build_tests
-  image: ubuntu:xenial
+.test_tapasco:
+  stage: test_scala_toolflow
+  retry: 2
+  variables:
+    JAVA_VERSION: "8.0.222-zulu"
+  image: ubuntu:latest
   tags:
-    - CAD
     - High
   script:
     - apt-get -y update && apt-get -y install unzip git zip findutils curl
     - curl -s "https://get.sdkman.io" | bash
     - source "/root/.sdkman/bin/sdkman-init.sh"
-    - sdk install java
-    - sdk install sbt
-    - sbt version
+    - sdk install java $JAVA_VERSION
     - source setup.sh
-    - sbt assembly
+    - cd ${TAPASCO_HOME_TOOLFLOW}/scala
+    - ./gradlew test
 
-build_sbt_tapasco_ubuntu_18_04:
-  stage: build_tests
-  image: ubuntu:cosmic
+test_tapasco_java_8:
+  variables:
+    JAVA_VERSION: "8.0.222-zulu"
+  extends: .test_tapasco
+
+test_tapasco_java_9:
+  variables:
+    JAVA_VERSION: "9.0.7-zulu"
+  extends: .test_tapasco
+
+test_tapasco_java_10:
+  variables:
+    JAVA_VERSION: "10.0.2-zulu"
+  extends: .test_tapasco
+
+test_tapasco_java_11:
+  variables:
+    JAVA_VERSION: "11.0.2-open"
+  extends: .test_tapasco
+
+.build_scala_tapasco:
+  stage: build_scala_toolflow
+  retry: 2
   tags:
-    - CAD
     - High
   script:
-    - apt-get -y update && apt-get -y install unzip git zip findutils curl
     - curl -s "https://get.sdkman.io" | bash
     - source "/root/.sdkman/bin/sdkman-init.sh"
-    - sdk install java
-    - sdk install sbt
-    - sbt version
+    - sdk install java 11.0.4-zulu
     - source setup.sh
-    - sbt assembly
+    - cd ${TAPASCO_HOME_TOOLFLOW}/scala
+    - ./gradlew installDist
 
-build_sbt_tapasco_fedora_27:
-  stage: build_tests
+.build_scala_tapasco_fedora:
+  before_script:
+    - dnf -y install which unzip git zip tar findutils
+  extends: .build_scala_tapasco
+
+build_scala_tapasco_fedora_24:
+  image: fedora:24
+  extends: .build_scala_tapasco_fedora
+
+build_scala_tapasco_fedora_25:
+  image: fedora:25
+  extends: .build_scala_tapasco_fedora
+
+build_scala_tapasco_fedora_26:
+  image: fedora:26
+  extends: .build_scala_tapasco_fedora
+
+build_scala_tapasco_fedora_27:
   image: fedora:27
-  tags:
-    - CAD
-    - High
-  script:
-    - dnf -y install which unzip git zip findutils
-    - curl -s "https://get.sdkman.io" | bash
-    - source "/root/.sdkman/bin/sdkman-init.sh"
-    - sdk install java
-    - sdk install sbt
-    - sbt version
-    - source setup.sh
-    - sbt assembly
+  extends: .build_scala_tapasco_fedora
 
-build_sbt_tapasco_fedora_28:
-  stage: build_tests
+build_scala_tapasco_fedora_28:
   image: fedora:28
+  extends: .build_scala_tapasco_fedora
+
+build_scala_tapasco_fedora_29:
+  image: fedora:29
+  extends: .build_scala_tapasco_fedora
+
+build_scala_tapasco_fedora_30:
+  image: fedora:30
+  extends: .build_scala_tapasco_fedora
+
+build_scala_tapasco_fedora_31:
+  image: fedora:31
+  extends: .build_scala_tapasco_fedora
+
+.build_scala_tapasco_ubuntu:
+  before_script:
+    - apt-get -y update && apt-get -y install unzip git zip findutils curl
+  extends: .build_scala_tapasco
+
+build_scala_tapasco_ubuntu_16_04:
+  image: ubuntu:xenial
+  extends: .build_scala_tapasco_ubuntu
+
+build_scala_tapasco_ubuntu_18_04:
+  image: ubuntu:bionic
+  extends: .build_scala_tapasco_ubuntu
+
+build_scala_tapasco_ubuntu_18_10:
+  image: ubuntu:cosmic
+  extends: .build_scala_tapasco_ubuntu
+
+build_scala_tapasco_ubuntu_19_04:
+  image: ubuntu:disco
+  extends: .build_scala_tapasco_ubuntu
+
+# build kernel module
+# as we are running in a docker instance, we cannot use tapasco-build-libs
+.build_kernel_ubuntu:
+  stage: build_kernel
+  retry: 2
+  variables:
+    MODE: "release"
   tags:
-    - CAD
-    - High
+    - Normal
   script:
-    - dnf -y install which unzip git zip findutils
-    - curl -s "https://get.sdkman.io" | bash
-    - source "/root/.sdkman/bin/sdkman-init.sh"
-    - sdk install java
-    - sdk install sbt
-    - sbt version
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
     - source setup.sh
-    - sbt assembly
+    - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd runtime/kernel; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j 1 $MODE; popd; done
+  artifacts:
+    paths:
+      - runtime/kernel/tlkm.ko
 
 build_kernel_ubuntu_16_04:
-  stage: build_tests
   image: ubuntu:xenial
-  tags:
-    - CAD
-    - Normal
-  script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
-    - source setup.sh
-    - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j release; popd; done
-  artifacts:
-    paths:
-      - tlkm/tlkm.ko
+  extends: .build_kernel_ubuntu
 
 build_kernel_ubuntu_18_04:
-  stage: build_tests
+  image: ubuntu:bionic
+  extends: .build_kernel_ubuntu
+
+build_kernel_ubuntu_18_10:
   image: ubuntu:cosmic
-  tags:
-    - CAD
-    - Normal
-  script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
-    - source setup.sh
-    - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j release; popd; done
-  artifacts:
-    paths:
-      - tlkm/tlkm.ko
+  extends: .build_kernel_ubuntu
 
-build_kernel_fedora_27:
-  stage: build_tests
-  image: fedora:27
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
-    - source setup.sh
-    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j release; popd; done
-  artifacts:
-    paths:
-      - tlkm/tlkm.ko
-
-build_kernel_fedora_28:
-  stage: build_tests
-  image: fedora:28
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
-    - source setup.sh
-    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j release; popd; done
-  artifacts:
-    paths:
-      - tlkm/tlkm.ko
-
-build_kernel_fedora_29:
-  stage: build_tests
-  image: fedora:29
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
-    - source setup.sh
-    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j release; popd; done
-  artifacts:
-    paths:
-      - tlkm/tlkm.ko
+build_kernel_ubuntu_19_04:
+  image: ubuntu:disco
+  extends: .build_kernel_ubuntu
 
 build_kernel_ubuntu_16_04_debug:
-  stage: build_tests
+  variables:
+    MODE: "all"
   image: ubuntu:xenial
-  tags:
-    - CAD
-    - Normal
-  script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
-    - source setup.sh
-    - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j; popd; done
-  artifacts:
-    paths:
-      - tlkm/tlkm.ko
+  extends: .build_kernel_ubuntu
 
 build_kernel_ubuntu_18_04_debug:
-  stage: build_tests
+  variables:
+    MODE: "all"
+  image: ubuntu:bionic
+  extends: .build_kernel_ubuntu
+
+build_kernel_ubuntu_18_10_debug:
+  variables:
+    MODE: "all"
   image: ubuntu:cosmic
+  extends: .build_kernel_ubuntu
+
+build_kernel_ubuntu_19_04_debug:
+  variables:
+    MODE: "all"
+  image: ubuntu:disco
+  extends: .build_kernel_ubuntu
+
+.build_kernel_fedora:
+  stage: build_kernel
+  retry: 2
+  variables:
+    MODE: "release"
   tags:
-    - CAD
     - Normal
   script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
     - source setup.sh
-    - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j; popd; done
+    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd runtime/kernel; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j 1 $MODE; popd; done
   artifacts:
     paths:
-      - tlkm/tlkm.ko
+      - runtime/kernel/tlkm.ko
+
+build_kernel_fedora_24:
+  image: fedora:24
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_25:
+  image: fedora:25
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_26:
+  image: fedora:26
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_27:
+  image: fedora:27
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_28:
+  image: fedora:28
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_29:
+  image: fedora:29
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_30:
+  image: fedora:30
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_31:
+  image: fedora:31
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_24_debug:
+  variables:
+    MODE: "all"
+  image: fedora:24
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_25_debug:
+  variables:
+    MODE: "all"
+  image: fedora:25
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_26_debug:
+  variables:
+    MODE: "all"
+  image: fedora:26
+  extends: .build_kernel_fedora
 
 build_kernel_fedora_27_debug:
-  stage: build_tests
+  variables:
+    MODE: "all"
   image: fedora:27
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
-    - source setup.sh
-    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j; popd; done
-  artifacts:
-    paths:
-      - tlkm/tlkm.ko
+  extends: .build_kernel_fedora
 
 build_kernel_fedora_28_debug:
-  stage: build_tests
+  variables:
+    MODE: "all"
   image: fedora:28
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
-    - source setup.sh
-    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j; popd; done
-  artifacts:
-    paths:
-      - tlkm/tlkm.ko
+  extends: .build_kernel_fedora
 
 build_kernel_fedora_29_debug:
-  stage: build_tests
+  variables:
+    MODE: "all"
   image: fedora:29
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
-    - source setup.sh
-    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j; popd; done
-  artifacts:
-    paths:
-      - tlkm/tlkm.ko
+  extends: .build_kernel_fedora
 
-build_tapasco_ubuntu_16_04:
-  stage: build_tests
-  image: ubuntu:xenial
-  tags:
-    - CAD
-    - Normal
-  script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm
-    - source setup.sh
-    - tapasco-build-libs --mode=release --skip_driver
-    - cd build && make package
-  artifacts:
-    paths:
-      - build/tapasco-2018.2.1-Linux.deb
+build_kernel_fedora_30_debug:
+  variables:
+    MODE: "all"
+  image: fedora:30
+  extends: .build_kernel_fedora
 
-build_tapasco_ubuntu_18_04:
-  stage: build_tests
-  image: ubuntu:cosmic
+build_kernel_fedora_31_debug:
+  variables:
+    MODE: "all"
+  image: fedora:31
+  extends: .build_kernel_fedora
+
+.build_tapasco:
+  stage: build_runtime
+  retry: 2
+  variables:
+    MODE: "release"
   tags:
-    - CAD
     - Normal
   script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm
     - source setup.sh
-    - tapasco-build-libs --mode=release --skip_driver
+    - tapasco-build-libs --mode=$MODE --skip_driver
     - cd build && make package
+
+.build_tapasco_fedora:
+  before_script:
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
   artifacts:
     paths:
-      - build/tapasco-2018.2.1-Linux.deb
+      - build/tapasco-*-Linux.rpm
+  extends: .build_tapasco
+
+build_tapasco_fedora_24:
+  image: fedora:24
+  extends: .build_tapasco_fedora
+
+build_tapasco_fedora_25:
+  image: fedora:25
+  extends: .build_tapasco_fedora
+
+build_tapasco_fedora_26:
+  image: fedora:26
+  extends: .build_tapasco_fedora
 
 build_tapasco_fedora_27:
-  stage: build_tests
   image: fedora:27
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
-    - source setup.sh
-    - tapasco-build-libs --mode=release --skip_driver
-    - cd build && make package
-  artifacts:
-    paths:
-      - build/tapasco-2018.2.1-Linux.rpm
+  extends: .build_tapasco_fedora
 
 build_tapasco_fedora_28:
-  stage: build_tests
   image: fedora:28
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
-    - source setup.sh
-    - tapasco-build-libs --mode=release --skip_driver
-    - cd build && make package
-  artifacts:
-    paths:
-      - build/tapasco-2018.2.1-Linux.rpm
+  extends: .build_tapasco_fedora
 
 build_tapasco_fedora_29:
-  stage: build_tests
-  image: fedora:28
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
-    - source setup.sh
-    - tapasco-build-libs --mode=release --skip_driver
-    - cd build && make package
-  artifacts:
-    paths:
-      - build/tapasco-2018.2.1-Linux.rpm
+  image: fedora:29
+  extends: .build_tapasco_fedora
 
-build_tapasco_ubuntu_16_04_debug:
-  stage: build_tests
-  image: ubuntu:xenial
-  tags:
-    - CAD
-    - Normal
-  script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm
-    - source setup.sh
-    - tapasco-build-libs --mode=debug --skip_driver
-    - cd build && make package
-  artifacts:
-    paths:
-      - build/tapasco-2018.2.1-Linux.deb
+build_tapasco_fedora_30:
+  image: fedora:30
+  extends: .build_tapasco_fedora
 
-build_tapasco_ubuntu_18_04_debug:
-  stage: build_tests
-  image: ubuntu:cosmic
-  tags:
-    - CAD
-    - Normal
-  script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm
-    - source setup.sh
-    - tapasco-build-libs --mode=debug --skip_driver
-    - cd build && make package
-  artifacts:
-    paths:
-      - build/tapasco-2018.2.1-Linux.deb
+build_tapasco_fedora_31:
+  image: fedora:31
+  extends: .build_tapasco_fedora
+
+build_tapasco_fedora_26_debug:
+  variables:
+    MODE: "debug"
+  image: fedora:26
+  extends: .build_tapasco_fedora
 
 build_tapasco_fedora_27_debug:
-  stage: build_tests
+  variables:
+    MODE: "debug"
   image: fedora:27
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
-    - source setup.sh
-    - tapasco-build-libs --mode=debug --skip_driver
-    - cd build && make package
-  artifacts:
-    paths:
-      - build/tapasco-2018.2.1-Linux.rpm
+  extends: .build_tapasco_fedora
 
 build_tapasco_fedora_28_debug:
-  stage: build_tests
+  variables:
+    MODE: "debug"
   image: fedora:28
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
-    - source setup.sh
-    - tapasco-build-libs --mode=debug --skip_driver
-    - cd build && make package
-  artifacts:
-    paths:
-      - build/tapasco-2018.2.1-Linux.rpm
+  extends: .build_tapasco_fedora
 
 build_tapasco_fedora_29_debug:
-  stage: build_tests
+  variables:
+    MODE: "debug"
   image: fedora:29
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
-    - source setup.sh
-    - tapasco-build-libs --mode=debug --skip_driver
-    - cd build && make package
+  extends: .build_tapasco_fedora
+
+build_tapasco_fedora_30_debug:
+  variables:
+    MODE: "debug"
+  image: fedora:30
+  extends: .build_tapasco_fedora
+
+build_tapasco_fedora_31_debug:
+  variables:
+    MODE: "debug"
+  image: fedora:31
+  extends: .build_tapasco_fedora
+
+.build_tapasco_ubuntu:
+  before_script:
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm
   artifacts:
     paths:
-      - build/tapasco-2018.2.1-Linux.rpm
+      - build/tapasco-*-Linux.deb
+  extends: .build_tapasco
+
+build_tapasco_ubuntu_16_04:
+  image: ubuntu:xenial
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_ubuntu_18_04:
+  image: ubuntu:bionic
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_ubuntu_18_10:
+  image: ubuntu:cosmic
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_ubuntu_19_04:
+  image: ubuntu:disco
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_ubuntu_16_04_debug:
+  variables:
+    MODE: "debug"
+  image: ubuntu:xenial
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_ubuntu_18_04_debug:
+  variables:
+    MODE: "debug"
+  image: ubuntu:bionic
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_ubuntu_18_10_debug:
+  variables:
+    MODE: "debug"
+  image: ubuntu:cosmic
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_ubuntu_19_04_debug:
+  variables:
+    MODE: "debug"
+  image: ubuntu:disco
+  extends: .build_tapasco_ubuntu
+
+tapasco_hls:
+  stage: build_hw
+  variables:
+    VIVADO_VERSION: "2018.2"
+    XILINX_VIVADO: "/opt/cad/xilinx/vivado/Vivado/${VIVADO_VERSION}"
+    XILINXD_LICENSE_FILE: "/opt/cad/keys/xilinx"
+  tags:
+    - CAD
+  image: fedora:28
+  before_script:
+    - dnf -y install which unzip git zip tar findutils libX11 gcc gcc-c++
+    - ln -s /lib64/libtinfo.so.6 /lib64/libtinfo.so.5
+  script:
+    - source $XILINX_VIVADO/settings64.sh
+    - which vivado
+    - which vivado_hls
+    - curl -s "https://get.sdkman.io" | bash
+    - source "/root/.sdkman/bin/sdkman-init.sh"
+    - sdk install java 11.0.4-zulu
+    - source $XILINX_VIVADO/settings64.sh
+    - source setup.sh
+    - pushd ${TAPASCO_HOME_TOOLFLOW}/scala
+    - ./gradlew installDist
+    - popd
+    - tapasco -v --kernelDir ${TAPASCO_HOME_TOOLFLOW}/examples/kernel-examples hls counter -p pynq
+
+.tapasco_compose:
+  stage: build_hw
+  retry: 2
+  variables:
+    VIVADO_VERSION: "2018.2"
+    XILINX_VIVADO: "/opt/cad/xilinx/vivado/Vivado/${VIVADO_VERSION}"
+    XILINXD_LICENSE_FILE: "/opt/cad/keys/xilinx"
+    PLATFORM: "pynq"
+  tags:
+    - CAD
+    - High
+  image: fedora:28
+  before_script:
+    - dnf -y install which unzip git zip tar findutils libX11 gcc gcc-c++ python
+    - ln -s /lib64/libtinfo.so.6 /lib64/libtinfo.so.5
+  script:
+    - source $XILINX_VIVADO/settings64.sh
+    - which vivado
+    - which vivado_hls
+    - curl -s "https://get.sdkman.io" | bash
+    - source "/root/.sdkman/bin/sdkman-init.sh"
+    - sdk install java 11.0.4-zulu
+    - source $XILINX_VIVADO/settings64.sh
+    - source setup.sh
+    - pushd ${TAPASCO_HOME_TOOLFLOW}/scala
+    - ./gradlew installDist
+    - popd
+    - tapasco --kernelDir ${TAPASCO_HOME_TOOLFLOW}/examples/kernel-examples hls counter -p $PLATFORM
+    - tapasco -v --maxThreads 3 compose [counter x 3] @ 100 MHz -p $PLATFORM
+
+tapasco_compose_17_4:
+  variables:
+    VIVADO_VERSION: "2017.4"
+  extends: .tapasco_compose
+
+tapasco_compose_18_1:
+  variables:
+    VIVADO_VERSION: "2018.1"
+  extends: .tapasco_compose
+
+tapasco_compose_18_2:
+  variables:
+    VIVADO_VERSION: "2018.2"
+  extends: .tapasco_compose
+
+tapasco_compose_18_3:
+  variables:
+    VIVADO_VERSION: "2018.3"
+  extends: .tapasco_compose
+
+tapasco_compose_19_1:
+  variables:
+    VIVADO_VERSION: "2019.1"
+  extends: .tapasco_compose
+
+tapasco_compose_pcie:
+  variables:
+    VIVADO_VERSION: "2018.3"
+    PLATFORM: "vc709"
+  extends: .tapasco_compose

@@ -1,13 +1,18 @@
 The Task Parallel System Composer (TaPaSCo)
 ===========================================
-<img src="icon/tapasco_icon.png" alt="Tapasco logo"/>
+![Tapasco logo](misc/icon/tapasco_icon.png)
+
+Master Branch Status: [![pipeline status](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/badges/master/pipeline.svg)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/commits/master)
+Dev Branch Status: [![pipeline status](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/badges/develop/pipeline.svg)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/commits/develop)
 
 System Requirements
 -------------------
 TaPaSCo is known to work in this environment:
 
 *   Intel x86_64 arch
-*   Fedora 24/25, Ubuntu 14.04/16.01
+*   Linux kernel 4.4+
+*   Fedora 26+, Ubuntu 16.04+
+*   Fedora 24/25 does not support debug mode due to GCC bug
 *   Bash Shell 4.2.x+
 
 Other setups likely work as well, but are untested.
@@ -16,15 +21,36 @@ Prerequisites
 -------------
 To use TaPaSCo, you'll need working installations of
 
-*   Vivado Design Suite 2016.3 or newer
-*   Java SDK 7+
-*   sbt 0.13.x
+*   Vivado Design Suite 2017.4 or newer
+*   Java SDK 8 - 11
+*   sbt 0.13.x or newer (use [SDKMAN!](http://sdkman.io/) for easy installation)
 *   git
+*   python
+*   GCC newer than 5.x.x for C++11 support
+*   *OPTIONAL:* libncurses for the tapasco-debug application
+*   Ubuntu
+    ```bash
+    sudo apt-get -y update && sudo apt-get -y install unzip git zip findutils curl build-essential \
+        linux-headers-generic python cmake libelf-dev libncurses-dev rpm
+    curl -s "https://get.sdkman.io" | bash
+    source "$HOME/.sdkman/bin/sdkman-init.sh"
+    sdk install java
+    sdk install sbt
+    ```
+*   Fedora
+    ```bash
+    sudo dnf -y install which unzip git zip tar findutils kernel-devel make gcc gcc-c++ \
+        elfutils-libelf-devel cmake ncurses-devel python libatomic rpm-build
+    curl -s "https://get.sdkman.io" | bash
+    source "$HOME/.sdkman/bin/sdkman-init.sh"
+    sdk install java
+    sdk install sbt
+    ```
 
 If you want to use the High-Level Synthesis flow for generating custom IP
 cores, you'll also need:
 
-*   Vivado HLS 2016.3+
+*   Vivado HLS 2017.4+
 
 Check that at least the following are in your `$PATH`:
 
@@ -33,24 +59,6 @@ Check that at least the following are in your `$PATH`:
 *   `git`
 *   `bash`
 *   \[`vivado_hls`\]
-
-Install sbt
------------
-Installing multiple versions of Java, Scala and tools like sbt can be a hassle.
-[SDKman!](http://sdkman.io/) simplifies the process by managing the
-installations without root requirements. To install sbt, simply
-```
-curl -s "https://get.sdkman.io" | bash
-```
-Then, run in a new terminal:
-```
-sdk install sbt
-```
-Try if this worked, via
-```
-sbt version
-```
-If `sbt` was successfully installed, it will return its version number.
 
 Basic Setup
 -------------------
@@ -61,13 +69,27 @@ Basic Setup
 2.  Build TaPaSCo: `sbt compile` (this may take a while, `sbt` needs to fetch
     all dependencies etc. once).
 2.  Create the necessary jar files with `sbt assembly`.
-4.  Run TaPaSCo unit tests: `sbt test`
+4.  _Optional_: Run TaPaSCo unit tests: `sbt test`
 5.  _Optional_: Generate sample configuration file: `tapasco -n config.json`
     TaPaSCo should exit immediately and `config.json` will include a full
     configuration that can be read with `--configFile`, including one example
     for each kind of job.
+6.  Build libraries and _tlkm_ kernel module: `tapasco-build-libs`
 
 When everything completed successfully, **TaPaSCo is ready to use!**
+
+Build a TaPaSCo design
+----------------------
+1.  Import your kernels
+    *   HDL flow: `tapasco import <ZIP> as <ID>`
+    *   HLS flow: `tapasco hls <KERNELS>`
+2.  Create a composition: `tapasco compose [<KERNEL> x <COUNT>] @ <NUM> MHz -p <PLATFORM>`
+3.  Load the bitstream: `tapasco-load-bitstream <BITSTREAM>`
+4.  Implement your host software
+    *   C API
+    *   C++ API
+
+You can get more information about commands with `tapasco help <COMMAND>`.
 
 Acknowledgements
 ----------------
@@ -91,29 +113,29 @@ We provided pre-compiled packages for many popular Linux distributions. All pack
 ### Ubuntu 16.04
 [Kernel Driver](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_ubuntu_16_04)
 [Kernel Driver Debug](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_ubuntu_16_04_debug)
-[Runtime (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.deb?job=build_tapasco_ubuntu_16_04)
-[Runtime Debug (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.deb?job=build_tapasco_ubuntu_16_04_debug)
+[Runtime (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.6.0-Linux.deb?job=build_tapasco_ubuntu_16_04)
+[Runtime Debug (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.6.0-Linux.deb?job=build_tapasco_ubuntu_16_04_debug)
 
 ### Ubuntu 18.04
 [Kernel Driver](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_ubuntu_18_04)
 [Kernel Driver Debug](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_ubuntu_18_04_debug)
-[Runtime (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.deb?job=build_tapasco_ubuntu_18_04)
-[Runtime Debug (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.deb?job=build_tapasco_ubuntu_18_04_debug)
+[Runtime (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.6.0-Linux.deb?job=build_tapasco_ubuntu_18_04)
+[Runtime Debug (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.6.0-Linux.deb?job=build_tapasco_ubuntu_18_04_debug)
 
 ### Fedora 27
 [Kernel Driver](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_fedora_27)
 [Kernel Driver Debug](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_fedora_27_debug)
-[Runtime (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.rpm?job=build_tapasco_fedora_27)
-[Runtime Debug (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.rpm?job=build_tapasco_fedora_27_debug)
+[Runtime (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.6.0-Linux.rpm?job=build_tapasco_fedora_27)
+[Runtime Debug (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.6.0-Linux.rpm?job=build_tapasco_fedora_27_debug)
 
 ### Fedora 28
 [Kernel Driver](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_fedora_28)
 [Kernel Driver Debug](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_fedora_28_debug)
-[Runtime (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.rpm?job=build_tapasco_fedora_28)
-[Runtime Debug (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.rpm?job=build_tapasco_fedora_28_debug)
+[Runtime (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.6.0-Linux.rpm?job=build_tapasco_fedora_28)
+[Runtime Debug (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.6.0-Linux.rpm?job=build_tapasco_fedora_28_debug)
 
 ### Fedora 29
 [Kernel Driver](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_fedora_29)
 [Kernel Driver Debug](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_fedora_29_debug)
-[Runtime (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.rpm?job=build_tapasco_fedora_29)
-[Runtime Debug (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.rpm?job=build_tapasco_fedora_29_debug)
+[Runtime (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.6.0-Linux.rpm?job=build_tapasco_fedora_29)
+[Runtime Debug (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.6.0-Linux.rpm?job=build_tapasco_fedora_29_debug)
