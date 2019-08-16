@@ -20,7 +20,6 @@
 # @brief        Implementation for EXTOLL ASPIN board.
 # @author       C. Heinz, TU Darmstadt (heinz@esa.tu-darmstadt.de)
 #
-source -notrace $::env(TAPASCO_HOME)/platform/common/platform.tcl
 
 namespace eval ::platform {
   namespace export max_masters
@@ -32,7 +31,7 @@ namespace eval ::platform {
   namespace export number_of_interrupt_controllers
 
   # scan plugin directory
-  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME)/platform/aspin/plugins" "*.tcl"] {
+  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME_TCL)/platform/aspin/plugins" "*.tcl"] {
     source -notrace $f
   }
 
@@ -45,7 +44,7 @@ namespace eval ::platform {
 
     # Add proprietary ip
     set ip_paths [get_property IP_REPO_PATHS [current_project]]
-    set repo_path "$::env(TAPASCO_HOME)/platform/aspin/ip_repo"
+    set repo_path "$::env(TAPASCO_HOME_TCL)/platform/aspin/ip_repo"
     lappend ip_paths $repo_path
     file delete -force $repo_path
     file mkdir $repo_path
@@ -93,7 +92,7 @@ namespace eval ::platform {
     }
 
     # add Commando Processor
-    set microblaze [create_bd_cell -type ip -vlnv xilinx.com:ip:microblaze:10.0 CoP]
+    set microblaze [create_bd_cell -type ip -vlnv xilinx.com:ip:microblaze CoP]
     set_property CONFIG.C_FSL_LINKS {1} $microblaze
     set_property CONFIG.C_USE_EXTENDED_FSL_INSTR {1} $microblaze
     set_property CONFIG.C_D_AXI {1} $microblaze
@@ -155,10 +154,16 @@ namespace eval ::platform {
     connect_bd_intf_net [get_bd_intf_pins "$mb_ic/M03_AXI"] $axi_offset/S_AXI
     connect_bd_intf_net $axi_offset/M_AXI $m_axi_mem
     connect_bd_intf_net [get_bd_intf_pins "$microblaze/M_AXI_DP"] [get_bd_intf_pins "$mb_ic/S00_AXI"]
-    connect_bd_net $design_clk [get_bd_pins -filter {NAME =~ "M*_ACLK"} -of_objects $mb_ic]
+    connect_bd_net $design_clk [get_bd_pins $mb_ic/M00_ACLK]
+    connect_bd_net $design_clk [get_bd_pins $mb_ic/M01_ACLK]
+    connect_bd_net $host_clk [get_bd_pins $mb_ic/M02_ACLK]
+    connect_bd_net $design_clk [get_bd_pins $mb_ic/M03_ACLK]
     connect_bd_net $design_clk [get_bd_pins -filter {NAME =~ "S*_ACLK"} -of_objects $mb_ic]
     connect_bd_net $design_clk [get_bd_pins $axi_offset/CLK]
-    connect_bd_net $design_res_n [get_bd_pins -filter {NAME =~ "M*_ARESETN"} -of_objects $mb_ic]
+    connect_bd_net $design_res_n [get_bd_pins $mb_ic/M00_ARESETN]
+    connect_bd_net $design_res_n [get_bd_pins $mb_ic/M01_ARESETN]
+    connect_bd_net $host_res_n [get_bd_pins $mb_ic/M02_ARESETN]
+    connect_bd_net $design_res_n [get_bd_pins $mb_ic/M03_ARESETN]
     connect_bd_net $design_res_n [get_bd_pins -filter {NAME =~ "S*_ARESETN"} -of_objects $mb_ic]
     connect_bd_net $design_res_n [get_bd_pins $axi_offset/RST_N]
     connect_bd_net $design_clk [get_bd_pins -filter {NAME == "ACLK"} -of_objects $mb_ic]
@@ -502,6 +507,10 @@ namespace eval ::platform {
     return 0x02000000
   }
 
+  proc get_platform_base_address {} {
+    return 0
+  }
+
   proc get_address_map {{pe_base ""}} {
     # from zynq.tcl
     set max32 [expr "1 << 32"]
@@ -530,5 +539,13 @@ namespace eval ::platform {
 
   proc number_of_interrupt_controllers {} {
     return 0
+  }
+
+  proc get_ignored_segments { } {
+    set ignored [list]
+    # MicroBlaze segments get auto assigned addresses during /host creation
+    lappend ignored "/host/ilmb_ctrl/SLMB/Mem"
+    lappend ignored "/host/dlmb_ctrl/SLMB/Mem"
+    return $ignored
   }
 }
