@@ -40,3 +40,7 @@ dict set stdcomps   hsa_wrapper          vlnv   "esa.informatik.tu-darmstadt.de:
 dict set stdcomps   axis_arbiter         vlnv   "esa.informatik.tu-darmstadt.de:user:AXIS_Arbiter:1.0"
 dict set stdcomps   axi_bram_ctrl        vlnv   "xilinx.com:ip:axi_bram_ctrl"
 dict set stdcomps   bram_ctrl            vlnv   "xilinx.com:ip:blk_mem_gen"
+dict set stdcomps   noc_arke_router      vlnv   "esa.informatik.tu-darmstadt.de:user:arke_noc_router:1.0" 
+dict set stdcomps   noc_arke_arch_ifc    vlnv   "esa.informatik.tu-darmstadt.de:user:arke_noc_arch_ifc:1.0" 
+dict set stdcomps   noc_arke_pe_ifc      vlnv   "esa.informatik.tu-darmstadt.de:user:arke_noc_pe_ifc:1.0" 
+dict set stdcomps   noc_arke_mem_ifc     vlnv   "esa.informatik.tu-darmstadt.de:user:arke_noc_mem_ifc:1.0" 
