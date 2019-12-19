@@ -2,32 +2,32 @@ namespace eval BuildPEIfc {
   namespace export build
 
   proc create_proj {} {
-    create_project project_pe_ifc /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/project_pe_ifc -part xc7z020clg400-1
-    add_files -norecurse -scan_for_includes {/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/common/src/STD_FIFO.vhd /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/common/src/AXI4_Full_Slave.vhd /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/common/src/AXI4_Lite_Master.vhd /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/common/src/NIC_pkg.vhd /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/common/src/Arke_pkg.vhd /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc/src/PE_Ifc.vhd}
-    set_property library work [get_files  {/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/common/src/STD_FIFO.vhd /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/common/src/AXI4_Full_Slave.vhd /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/common/src/AXI4_Lite_Master.vhd /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/common/src/NIC_pkg.vhd /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/common/src/Arke_pkg.vhd /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc/src/PE_Ifc.vhd}]
+    create_project project_pe_ifc $::script_path/project_pe_ifc -part xc7z020clg400-1
+    add_files -norecurse -scan_for_includes {$::script_path/common/src/STD_FIFO.vhd $::script_path/common/src/AXI4_Full_Slave.vhd $::script_path/common/src/AXI4_Lite_Master.vhd $::script_path/common/src/NIC_pkg.vhd $::script_path/common/src/Arke_pkg.vhd $::script_path/noc_arke_pe_ifc/src/PE_Ifc.vhd}
+    set_property library work [get_files  {$::script_path/common/src/STD_FIFO.vhd $::script_path/common/src/AXI4_Full_Slave.vhd $::script_path/common/src/AXI4_Lite_Master.vhd $::script_path/common/src/NIC_pkg.vhd $::script_path/common/src/Arke_pkg.vhd $::script_path/noc_arke_pe_ifc/src/PE_Ifc.vhd}]
   }
 
   proc open_proj {} {
     if {[catch {current_project} result ]} {
       puts "DEBUG:$result"
-      open_project /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/project_pe_ifc/project_pe_ifc.xpr
+      open_project $::script_path/project_pe_ifc/project_pe_ifc.xpr
     } else {
       if { $result == "project_pe_ifc" } {
         puts "$result is already open"
       } else {
-        open_project /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/project_pe_ifc/project_pe_ifc.xpr
+        open_project $::script_path/project_pe_ifc/project_pe_ifc.xpr
       }
     }
   }
 
   proc package_project {} {
-    ipx::package_project -root_dir /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc -vendor user.org -library user -taxonomy /UserIP -import_files -set_current false
-    ipx::unload_core /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc/component.xml
-    ipx::edit_ip_in_project -upgrade true -name tmp_edit_project -directory /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc/component.xml
+    ipx::package_project -root_dir $::script_path/noc_arke_pe_ifc -vendor user.org -library user -taxonomy /UserIP -import_files -set_current false
+    ipx::unload_core $::script_path/noc_arke_pe_ifc/component.xml
+    ipx::edit_ip_in_project -upgrade true -name tmp_edit_project -directory $::script_path/noc_arke_pe_ifc $::script_path/noc_arke_pe_ifc/component.xml
   }
 
   proc open_ip {} {
-    ipx::open_ipxact_file /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc/component.xml
+    ipx::open_ipxact_file $::script_path/noc_arke_pe_ifc/component.xml
   }
 
   proc set_infos {} {
@@ -91,7 +91,7 @@ namespace eval BuildPEIfc {
 
   proc import_parameters {} {
     ipx::remove_all_hdl_parameter -remove_inferred_params [ipx::current_core]
-    ipx::add_model_parameters_from_hdl [ipx::current_core] -top_level_hdl_file /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc/src/PE_Ifc.vhd -top_module_name PE_Ifc
+    ipx::add_model_parameters_from_hdl [ipx::current_core] -top_level_hdl_file $::script_path/noc_arke_pe_ifc/src/PE_Ifc.vhd -top_module_name PE_Ifc
     ipx::infer_user_parameters [ipx::current_core]
     ipgui::add_param -name {A4L_addr_width} -component [ipx::current_core] -display_name {A4L_addr_width}
     ipgui::add_param -name {A4L_data_width} -component [ipx::current_core] -display_name {A4L_data_width}
@@ -126,8 +126,8 @@ namespace eval BuildPEIfc {
     ipx::create_xgui_files [ipx::current_core]
     ipx::update_checksums [ipx::current_core]
     ipx::save_core [ipx::current_core]
-    #update_ip_catalog -rebuild -repo_path /home/malte/tapasco/toolflow/vivado/common
-    ipx::unload_core /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc/component.xml
+    #update_ip_catalog -rebuild -repo_path $::tapascopath/toolflow/vivado/common
+    ipx::unload_core $::script_path/noc_arke_pe_ifc/component.xml
   }
 
   proc close_proj {} {

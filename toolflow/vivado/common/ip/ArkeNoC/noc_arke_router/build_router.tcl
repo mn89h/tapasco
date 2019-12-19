@@ -2,32 +2,32 @@ namespace eval BuildRouter {
   namespace export build
 
   proc create_proj {} {
-    create_project project_router /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/project_router -part xc7z020clg400-1
-    add_files -scan_for_includes {/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router/src/InputBuffer.vhd /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router/src/SwitchControl.vhd /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router/src/ProgramablePriorityEncoder.vhd /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router/src/Crossbar.vhd /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router/src/Router.vhd /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/common/src/Arke_pkg.vhd}
-    set_property library work [get_files  {/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router/src/InputBuffer.vhd /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router/src/SwitchControl.vhd /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router/src/ProgramablePriorityEncoder.vhd /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router/src/Crossbar.vhd /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router/src/Router.vhd /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/common/src/Arke_pkg.vhd}]
+    create_project project_router $::script_path/project_router -part xc7z020clg400-1
+    add_files -scan_for_includes {$::script_path/noc_arke_router/src/InputBuffer.vhd $::script_path/noc_arke_router/src/SwitchControl.vhd $::script_path/noc_arke_router/src/ProgramablePriorityEncoder.vhd $::script_path/noc_arke_router/src/Crossbar.vhd $::script_path/noc_arke_router/src/Router.vhd $::script_path/common/src/Arke_pkg.vhd}
+    set_property library work [get_files  {$::script_path/noc_arke_router/src/InputBuffer.vhd $::script_path/noc_arke_router/src/SwitchControl.vhd $::script_path/noc_arke_router/src/ProgramablePriorityEncoder.vhd $::script_path/noc_arke_router/src/Crossbar.vhd $::script_path/noc_arke_router/src/Router.vhd $::script_path/common/src/Arke_pkg.vhd}]
   }
 
   proc open_proj {} {
     if {[catch {current_project} result ]} {
       puts "DEBUG:$result"
-      open_project /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/project_router/project_router.xpr
+      open_project $::script_path/project_router/project_router.xpr
     } else {
       if { $result == "project_router" } {
         puts "$result is already open"
       } else {
-        open_project /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/project_router/project_router.xpr
+        open_project $::script_path/project_router/project_router.xpr
       }
     }
   }
 
   proc package_project {} {
-    ipx::package_project -root_dir /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router -vendor user.org -library user -taxonomy /UserIP -import_files -set_current false
-    ipx::unload_core /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router/component.xml
-    ipx::edit_ip_in_project -upgrade true -name tmp_edit_project -directory /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router/component.xml
+    ipx::package_project -root_dir $::script_path/noc_arke_router -vendor user.org -library user -taxonomy /UserIP -import_files -set_current false
+    ipx::unload_core $::script_path/noc_arke_router/component.xml
+    ipx::edit_ip_in_project -upgrade true -name tmp_edit_project -directory $::script_path/noc_arke_router $::script_path/noc_arke_router/component.xml
   }
 
   proc open_ip {} {
-    ipx::open_ipxact_file /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router/component.xml
+    ipx::open_ipxact_file $::script_path/noc_arke_router/component.xml
   }
 
   proc set_infos {} {
@@ -201,8 +201,8 @@ namespace eval BuildRouter {
     ipx::create_xgui_files [ipx::current_core]
     ipx::update_checksums [ipx::current_core]
     ipx::save_core [ipx::current_core]
-    #update_ip_catalog -rebuild -repo_path /home/malte/tapasco/toolflow/vivado/common
-    ipx::unload_core /home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router/component.xml
+    #update_ip_catalog -rebuild -repo_path $::tapascopath/toolflow/vivado/common
+    ipx::unload_core $::script_path/noc_arke_router/component.xml
   }
 
   proc close_proj {} {
