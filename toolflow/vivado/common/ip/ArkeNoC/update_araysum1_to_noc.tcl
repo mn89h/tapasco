@@ -98,9 +98,11 @@ connect_bd_net [get_bd_pins arch/design_peripheral_aresetn] [get_bd_pins arch/ar
 connect_bd_net [get_bd_pins arch/design_clk] [get_bd_pins arch/tIP0/axi_interconnect_0/ACLK] -boundary_type upper
 connect_bd_net [get_bd_pins arch/design_clk] [get_bd_pins arch/tIP0/axi_interconnect_0/S00_ACLK] -boundary_type upper
 connect_bd_net [get_bd_pins arch/design_clk] [get_bd_pins arch/tIP0/axi_interconnect_0/M00_ACLK] -boundary_type upper
+connect_bd_net [get_bd_pins arch/design_peripheral_aresetn] [get_bd_pins arch/tIP0/axi_interconnect_0/S00_ARESETN]
+connect_bd_net [get_bd_pins arch/design_peripheral_aresetn] [get_bd_pins arch/tIP0/axi_interconnect_0/M00_ARESETN]
+
 
 delete_bd_objs [get_bd_intf_nets arch/S_ARCH_1]
-endgroup
 connect_bd_intf_net [get_bd_intf_pins arch/S_ARCH] -boundary_type upper [get_bd_intf_pins arch/axi_interconnect_1/S00_AXI]
 connect_bd_intf_net [get_bd_intf_pins arch/arke_noc_arch_ifc_0/AXI] -boundary_type upper [get_bd_intf_pins arch/axi_interconnect_1/M00_AXI]
 

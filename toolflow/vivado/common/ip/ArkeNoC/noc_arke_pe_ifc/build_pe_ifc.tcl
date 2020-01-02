@@ -99,17 +99,11 @@ namespace eval BuildPEIfc {
     ipgui::add_param -name {A4F_data_width} -component [ipx::current_core] -display_name {A4F_data_width}
     ipgui::add_param -name {A4F_id_width} -component [ipx::current_core] -display_name {A4F_id_width}
     ipgui::add_param -name {NoC_address} -component [ipx::current_core] -display_name {NoC_address}
-    ipgui::add_param -name {NoC_address_map} -component [ipx::current_core] -display_name {NoC_address_map}
+    ipgui::add_param -name {NoC_address_mem} -component [ipx::current_core] -display_name {NoC_address_mem}
+    ipgui::add_param -name {NoC_address_arch} -component [ipx::current_core] -display_name {NoC_address_arch}
   }
 
   proc set_default_driver_values {} {
-    set_property widget {hexEdit} [ipgui::get_guiparamspec -name "NoC_address_map" -component [ipx::current_core] ]
-    set_property value {"000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001"} [ipx::get_user_parameters NoC_address_map -of_objects [ipx::current_core]]
-    set_property value {"000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001000001"} [ipx::get_hdl_parameters NoC_address_map -of_objects [ipx::current_core]]
-    set_property value_bit_string_length 162 [ipx::get_user_parameters NoC_address_map -of_objects [ipx::current_core]]
-    set_property value_bit_string_length 162 [ipx::get_hdl_parameters NoC_address_map -of_objects [ipx::current_core]]
-    set_property value_format bitString [ipx::get_user_parameters NoC_address_map -of_objects [ipx::current_core]]
-    set_property value_format bitString [ipx::get_hdl_parameters NoC_address_map -of_objects [ipx::current_core]]
     set_property widget {hexEdit} [ipgui::get_guiparamspec -name "NoC_address" -component [ipx::current_core] ]
     set_property value {"000010"} [ipx::get_user_parameters NoC_address -of_objects [ipx::current_core]]
     set_property value {"000010"} [ipx::get_hdl_parameters NoC_address -of_objects [ipx::current_core]]
@@ -117,6 +111,20 @@ namespace eval BuildPEIfc {
     set_property value_bit_string_length 6 [ipx::get_hdl_parameters NoC_address -of_objects [ipx::current_core]]
     set_property value_format bitString [ipx::get_user_parameters NoC_address -of_objects [ipx::current_core]]
     set_property value_format bitString [ipx::get_hdl_parameters NoC_address -of_objects [ipx::current_core]]
+    set_property widget {hexEdit} [ipgui::get_guiparamspec -name "NoC_address_mem" -component [ipx::current_core] ]
+    set_property value {"000000"} [ipx::get_user_parameters NoC_address_mem -of_objects [ipx::current_core]]
+    set_property value {"000000"} [ipx::get_hdl_parameters NoC_address_mem -of_objects [ipx::current_core]]
+    set_property value_bit_string_length 6 [ipx::get_user_parameters NoC_address_mem -of_objects [ipx::current_core]]
+    set_property value_bit_string_length 6 [ipx::get_hdl_parameters NoC_address_mem -of_objects [ipx::current_core]]
+    set_property value_format bitString [ipx::get_user_parameters NoC_address_mem -of_objects [ipx::current_core]]
+    set_property value_format bitString [ipx::get_hdl_parameters NoC_address_mem -of_objects [ipx::current_core]]
+    set_property widget {hexEdit} [ipgui::get_guiparamspec -name "NoC_address_arch" -component [ipx::current_core] ]
+    set_property value {"000000"} [ipx::get_user_parameters NoC_address_arch -of_objects [ipx::current_core]]
+    set_property value {"000000"} [ipx::get_hdl_parameters NoC_address_arch -of_objects [ipx::current_core]]
+    set_property value_bit_string_length 6 [ipx::get_user_parameters NoC_address_arch -of_objects [ipx::current_core]]
+    set_property value_bit_string_length 6 [ipx::get_hdl_parameters NoC_address_arch -of_objects [ipx::current_core]]
+    set_property value_format bitString [ipx::get_user_parameters NoC_address_arch -of_objects [ipx::current_core]]
+    set_property value_format bitString [ipx::get_hdl_parameters NoC_address_arch -of_objects [ipx::current_core]]
   }
   
   #axi memory map editing?

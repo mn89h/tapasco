@@ -202,7 +202,8 @@ architecture Behavioral of Arch_Ifc is
                 if (rdrqA_get_valid = '1') then
                     if (controlIn(STALL_GO) = '1') then
                         rdrqA_get_data_tmp  := rdrqA_get_data;
-                        dest_address        := address_map_c(to_Integer(unsigned(rdrqA_get_data_tmp(AXI_araddr'left downto AXI_araddr'right))) + 1);
+                        --dest_address        := address_map_c(to_Integer(unsigned(rdrqA_get_data_tmp(AXI_araddr'left downto AXI_araddr'right))) + 1);
+                        dest_address        := address_map_c(1);
                         dataOut             <= '0' & "00" & ZERO(dataOut'left - 3 downto rdrqA_get_data_tmp'length + NoC_addr_width) & rdrqA_get_data_tmp & dest_address;
                         controlOut(TX)      <= '1';
                         controlOut(EOP)     <= '1';
@@ -230,7 +231,8 @@ architecture Behavioral of Arch_Ifc is
                 if (wrrqA_get_valid = '1') then
                     if (controlIn(STALL_GO) = '1') then
                         wrrqA_get_data_tmp  := wrrqA_get_data;
-                        dest_address        := address_map_c(to_Integer(unsigned(wrrqA_get_data_tmp(AXI_awaddr'left downto AXI_awaddr'right))) + 1);
+                        --dest_address        := address_map_c(to_Integer(unsigned(wrrqA_get_data_tmp(AXI_awaddr'left downto AXI_awaddr'right))) + 1);
+                        dest_address        := address_map_c(1);
                         dataOut             <= '0' & "10" & ZERO(dataOut'left - 3 downto wrrqA_get_data_tmp'length + NoC_addr_width) & wrrqA_get_data_tmp & dest_address;
                         controlOut(TX)      <= '1';
                         controlOut(EOP)     <= '0';

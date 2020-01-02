@@ -32,8 +32,7 @@ entity Mem_Ifc is
         A4F_addr_width  : integer;
         A4F_data_width  : integer;
         A4F_id_width    : integer;
-        NoC_address     : std_logic_vector;
-        NoC_address_map : std_logic_vector
+        NoC_address     : std_logic_vector
     );
     port (
         signal clk              : in  std_logic := '1';
@@ -99,22 +98,8 @@ architecture Behavioral of Mem_Ifc is
     constant DIM_Z_W    : integer := Log2(DIM_Z);
     constant ADDR_W     : integer := DIM_X_W + DIM_Y_W + DIM_Z_W;
 
-    type ADDR_MAP_TYPE is array (0 to DIM_X * DIM_Y * DIM_Z - 1) of std_logic_vector(ADDR_W - 1 downto 0);
     type State is (RdRsp, WrRsp, RdRqA, WrRqA, WrRqD);
     type StallState is (None, RdRqA, WrRqA, WrRqD);
-
-    function to_ADDR_MAP_TYPE (
-        slv : std_logic_vector
-        ) return ADDR_MAP_TYPE is
-        variable result : ADDR_MAP_TYPE := (others => (others => '0'));
-    begin
-        for i in 0 to DIM_X * DIM_Y * DIM_Z - 1 loop
-            result(i) := slv(i * NoC_addr_width to (i+1) * NoC_addr_width - 1);
-        end loop;
-        return result;
-    end function;
-
-    constant address_map_c : ADDR_MAP_TYPE := to_ADDR_MAP_TYPE(NoC_address_map);
 
     signal rdrqA_put_ready : std_logic;
     signal rdrqA_put_en    : std_logic;
@@ -242,7 +227,7 @@ architecture Behavioral of Mem_Ifc is
                     if (controlIn(STALL_GO) = '1') then
                         rdrsp_get_data_tmp  := rdrsp_get_data;
                         dest_address        := rdrsp_get_data(AXI_rid'left downto AXI_rid'right + A4F_id_width);
-                        dataOut             <= '0' & "00" & ZERO(dataOut'left - 3 downto rdrsp_get_data_tmp'length + NoC_addr_width) & rdrsp_get_data_tmp & dest_address;
+                        dataOut             <= '1' & "00" & ZERO(dataOut'left - 3 downto rdrsp_get_data_tmp'length + NoC_addr_width) & rdrsp_get_data_tmp & dest_address;
                         controlOut(TX)      <= '1';
                         controlOut(EOP)     <= '1';
 
@@ -268,8 +253,8 @@ architecture Behavioral of Mem_Ifc is
                 if (wrrsp_get_valid = '1') then
                     if (controlIn(STALL_GO) = '1') then
                         wrrsp_get_data_tmp  := wrrsp_get_data;
-                        dest_address        := rdrsp_get_data(AXI_bid'left downto AXI_bid'right + A4F_id_width);
-                        dataOut             <= '0' & "10" & ZERO(dataOut'left - 3 downto wrrsp_get_data_tmp'length + NoC_addr_width) & wrrsp_get_data_tmp & dest_address;
+                        dest_address        := wrrsp_get_data(AXI_bid'left downto AXI_bid'right + A4F_id_width);
+                        dataOut             <= '1' & "10" & ZERO(dataOut'left - 3 downto wrrsp_get_data_tmp'length + NoC_addr_width) & wrrsp_get_data_tmp & dest_address;
                         controlOut(TX)      <= '1';
                         controlOut(EOP)     <= '0';
 

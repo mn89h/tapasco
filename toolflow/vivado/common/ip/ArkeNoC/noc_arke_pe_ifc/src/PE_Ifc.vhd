@@ -35,7 +35,8 @@ entity PE_Ifc is
         A4F_data_width  : integer;
         A4F_id_width    : integer;
         NoC_address     : std_logic_vector;
-        NoC_address_map : std_logic_vector
+        NoC_address_mem : std_logic_vector;
+        NoC_address_arch: std_logic_vector
     );
     port (
         signal clk                  : in  std_logic := '1';
@@ -127,22 +128,8 @@ architecture Behavioral of PE_Ifc is
     constant DIM_Z_W    : integer := Log2(DIM_Z);
     constant ADDR_W     : integer := DIM_X_W + DIM_Y_W + DIM_Z_W;
 
-    type ADDR_MAP_TYPE is array (0 to DIM_X * DIM_Y * DIM_Z - 1) of std_logic_vector(ADDR_W - 1 downto 0);
     type State is (RdRsp, WrRsp, RdRqA, WrRqA, WrRqD);
     type StallState is (None, RdRsp, WrRsp, RdRqA, WrRqA, WrRqD);
-
-    function to_ADDR_MAP_TYPE (
-        slv : std_logic_vector
-        ) return ADDR_MAP_TYPE is
-        variable result : ADDR_MAP_TYPE := (others => (others => '0'));
-    begin
-        for i in 0 to DIM_X * DIM_Y * DIM_Z - 1 loop
-            result(i) := slv(i * NoC_addr_width to (i+1) * NoC_addr_width - 1);
-        end loop;
-        return result;
-    end function;
-
-    constant address_map_c : ADDR_MAP_TYPE := to_ADDR_MAP_TYPE(NoC_address_map);
 
     signal A4L_rdrqA_put_ready : std_logic;
     signal A4L_rdrqA_put_en    : std_logic;
@@ -239,7 +226,7 @@ architecture Behavioral of PE_Ifc is
             AXI_arvalid     => A4F_AXI_arvalid,
             AXI_arready     => A4F_AXI_arready,
             AXI_araddr      => A4F_AXI_araddr,
-            AXI_arid        => A4F_AXI_arid,
+            AXI_arid        => "AND"(NoC_address, A4F_AXI_arid),
             AXI_arlen       => A4F_AXI_arlen,
             AXI_arsize      => A4F_AXI_arsize,
             AXI_arburst     => A4F_AXI_arburst,
@@ -250,7 +237,7 @@ architecture Behavioral of PE_Ifc is
             AXI_awvalid     => A4F_AXI_awvalid,
             AXI_awready     => A4F_AXI_awready,
             AXI_awaddr      => A4F_AXI_awaddr,
-            AXI_awid        => A4F_AXI_awid,
+            AXI_awid        => "AND"(NoC_address, A4F_AXI_awid),
             AXI_awlen       => A4F_AXI_awlen,
             AXI_awsize      => A4F_AXI_awsize,
             AXI_awburst     => A4F_AXI_awburst,
@@ -261,7 +248,7 @@ architecture Behavioral of PE_Ifc is
             AXI_wvalid      => A4F_AXI_wvalid,
             AXI_wready      => A4F_AXI_wready,
             AXI_wdata       => A4F_AXI_wdata,
-            AXI_wid         => A4F_AXI_wid,
+            AXI_wid         => "AND"(NoC_address, A4F_AXI_wid),
             AXI_wstrb       => A4F_AXI_wstrb,
             AXI_wlast       => A4F_AXI_wlast,
             AXI_rready      => A4F_AXI_rready,
@@ -339,7 +326,7 @@ architecture Behavioral of PE_Ifc is
                 if (A4L_rdrsp_get_valid = '1') then
                     if (controlIn(STALL_GO) = '1') then
                         A4L_rdrsp_get_data_tmp  := A4L_rdrsp_get_data;
-                        dest_address        := ZERO(NoC_addr_width - 1 downto 0);
+                        dest_address        := NoC_address_arch;
                         dataOut             <= '0' & "00" & ZERO(dataOut'left - 3 downto A4L_rdrsp_get_data_tmp'length + NoC_addr_width) & A4L_rdrsp_get_data_tmp & dest_address;
                         controlOut(TX)      <= '1';
                         controlOut(EOP)     <= '1';
@@ -369,10 +356,10 @@ architecture Behavioral of PE_Ifc is
                 if (A4L_wrrsp_get_valid = '1') then
                     if (controlIn(STALL_GO) = '1') then
                         A4L_wrrsp_get_data_tmp  := A4L_wrrsp_get_data;
-                        dest_address        := ZERO(NoC_addr_width - 1 downto 0);
+                        dest_address        := NoC_address_arch;
                         dataOut             <= '0' & "10" & ZERO(dataOut'left - 3 downto A4L_wrrsp_get_data_tmp'length + NoC_addr_width) & A4L_wrrsp_get_data_tmp & dest_address;
                         controlOut(TX)      <= '1';
-                        controlOut(EOP)     <= '0';
+                        controlOut(EOP)     <= '1';
 
                         A4L_wrrsp_get_en    <= '1';
                         state_send          <= RdRqA;
@@ -399,10 +386,10 @@ architecture Behavioral of PE_Ifc is
                 if (A4F_rdrqA_get_valid = '1') then
                     if (controlIn(STALL_GO) = '1') then
                         A4F_rdrqA_get_data_tmp  := A4F_rdrqA_get_data;
-                        dest_address        := A4F_rdrqA_get_data(A4F_AXI_arid'left downto A4F_AXI_arid'right + A4F_id_width);
-                        dataOut             <= '0' & "10" & ZERO(dataOut'left - 3 downto A4F_rdrqA_get_data_tmp'length + NoC_addr_width) & A4F_rdrqA_get_data_tmp & dest_address;
+                        dest_address        := NoC_address_mem;
+                        dataOut             <= '1' & "00" & ZERO(dataOut'left - 3 downto A4F_rdrqA_get_data_tmp'length + NoC_addr_width) & A4F_rdrqA_get_data_tmp & dest_address;
                         controlOut(TX)      <= '1';
-                        controlOut(EOP)     <= '0';
+                        controlOut(EOP)     <= '1';
 
                         A4F_rdrqA_get_en    <= '1';
                         state_send          <= WrRqA;
@@ -429,10 +416,10 @@ architecture Behavioral of PE_Ifc is
                 if (A4F_wrrqA_get_valid = '1') then
                     if (controlIn(STALL_GO) = '1') then
                         A4F_wrrqA_get_data_tmp  := A4F_wrrqA_get_data;
-                        dest_address        := A4F_wrrqA_get_data(A4F_AXI_awid'left downto A4F_AXI_awid'right + A4F_id_width);
-                        dataOut             <= '0' & "10" & ZERO(dataOut'left - 3 downto A4F_wrrqA_get_data_tmp'length + NoC_addr_width) & A4F_wrrqA_get_data_tmp & dest_address;
+                        dest_address        := NoC_address_mem;
+                        dataOut             <= '1' & "10" & ZERO(dataOut'left - 3 downto A4F_wrrqA_get_data_tmp'length + NoC_addr_width) & A4F_wrrqA_get_data_tmp & dest_address;
                         controlOut(TX)      <= '1';
-                        controlOut(EOP)     <= '0';
+                        controlOut(EOP)     <= '1';
 
                         A4F_wrrqA_get_en    <= '1';
                         state_send          <= WrRqD;
@@ -459,10 +446,10 @@ architecture Behavioral of PE_Ifc is
                 if (A4F_wrrqD_get_valid = '1') then
                     if (controlIn(STALL_GO) = '1') then
                         A4F_wrrqD_get_data_tmp  := A4F_wrrqD_get_data;
-                        dest_address        := A4F_wrrqD_get_data(A4F_AXI_wid'left downto A4F_AXI_wid'right + A4F_id_width);
-                        dataOut             <= '0' & "10" & ZERO(dataOut'left - 3 downto A4F_wrrqD_get_data_tmp'length + NoC_addr_width) & A4F_wrrqD_get_data_tmp & dest_address;
+                        dest_address        := NoC_address_mem;
+                        dataOut             <= '1' & "11" & ZERO(dataOut'left - 3 downto A4F_wrrqD_get_data_tmp'length + NoC_addr_width) & A4F_wrrqD_get_data_tmp & dest_address;
                         controlOut(TX)      <= '1';
-                        controlOut(EOP)     <= '0';
+                        controlOut(EOP)     <= '1';
 
                         A4F_wrrqD_get_en    <= '1';
                         state_send          <= RdRsp;
