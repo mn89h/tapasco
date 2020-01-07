@@ -33,7 +33,10 @@ entity Arch_Ifc is
         A4L_addr_width  : integer := 32;
         A4L_data_width  : integer := 32;
         NoC_address     : std_logic_vector;
-        NoC_address_map : std_logic_vector
+
+        AXI_base_addr   : std_logic_vector;
+        AXI_ranges      : std_logic_vector;
+        PE_count        : integer := 18
     );
     port (
         signal clk              : in  std_logic := '1';
@@ -80,22 +83,66 @@ architecture Behavioral of Arch_Ifc is
     constant DIM_Z_W    : integer := Log2(DIM_Z);
     constant ADDR_W     : integer := DIM_X_W + DIM_Y_W + DIM_Z_W;
 
-    type ADDR_MAP_TYPE is array (0 to DIM_X * DIM_Y * DIM_Z - 1) of std_logic_vector(ADDR_W - 1 downto 0);
     type State is (RdRqA, WrRqA, WrRqD);
     type StallState is (None, RdRsp, WrRsp);
+
     
-    function to_ADDR_MAP_TYPE (
-        slv : std_logic_vector
-        ) return ADDR_MAP_TYPE is
-        variable result : ADDR_MAP_TYPE := (others => (others => '0'));
+    -- AXI ADDRESS MAP GENERATION --
+    type AXI_ADDR_MAP_TYPE is array (0 to PE_count) of std_logic_vector(AXI_base_addr'range);
+
+    function generate_AXI_ADDR_MAP return AXI_ADDR_MAP_TYPE is
+        constant one_c          : unsigned(AXI_base_addr'range) := unsigned(ZERO(AXI_base_addr'reverse_range)) + unsigned'(B"1");
+        variable bits_to_shift  : integer := 0;
+        variable result         : AXI_ADDR_MAP_TYPE := (others => (others => '0'));
     begin
-        for i in 0 to DIM_X * DIM_Y * DIM_Z - 1 loop
-            result(i) := slv(i * NoC_addr_width to (i+1) * NoC_addr_width - 1);
+        -- lower border of PE(0)
+        result(0) := AXI_base_addr;
+        for i in 0 to PE_count - 1 loop
+            -- the 5 bits representing the axi address range of the PE determine the shift amount, minimum shift is 2 representing a 4k range
+            bits_to_shift   := 2 + to_integer(unsigned(AXI_ranges(i * 5 to (i+1) * 5 - 1)));
+            -- write upper border by shifting 1 by the determined shift amount and adding the lower border
+            result(i+1)     := std_logic_vector(unsigned(result(i)) + shift_left(one_c, bits_to_shift));
         end loop;
         return result;
     end function;
 
-    constant address_map_c : ADDR_MAP_TYPE := to_ADDR_MAP_TYPE(NoC_address_map);
+
+    -- NOC ADDRESS MAP GENERATION --
+    type NOC_ADDR_MAP_TYPE is array (0 to PE_count - 1) of std_logic_vector(ADDR_W - 1 downto 0);
+
+    function generate_NOC_ADDR_MAP return NOC_ADDR_MAP_TYPE is
+        variable result : NOC_ADDR_MAP_TYPE := (others => (others => '0'));
+        variable i      : integer := 0;
+        variable x_addr : std_logic_vector(DIM_X_W - 1 downto 0) := (others => '0');
+        variable y_addr : std_logic_vector(DIM_Y_W - 1 downto 0) := (others => '0');
+        variable z_addr : std_logic_vector(DIM_Z_W - 1 downto 0) := (others => '0');
+    begin
+        -- iterate through the axes
+        for z in 0 to DIM_Z - 1 loop
+            for y in 0 to DIM_Y - 1 loop
+                for x in 0 to DIM_X - 1 loop
+                    -- array boundary check
+                    if (i < PE_count) then 
+                        -- leaving 0,0,0 out for arch_ifc
+                        if ((x = 0) and (y = 0) and (z = 0)) then
+                            null;   
+                        else
+                            x_addr := std_logic_vector(to_unsigned(x, x_addr'length));
+                            y_addr := std_logic_vector(to_unsigned(y, y_addr'length));
+                            z_addr := std_logic_vector(to_unsigned(z, z_addr'length));
+                            result(i) := x_addr & y_addr & z_addr;
+                            i := i + 1;
+                        end if;
+                    end if;
+                end loop;
+            end loop;
+        end loop;
+        return result;
+    end function;
+
+    -- GENERATE THE CONSTANTS --
+    constant axi_addr_map_c : AXI_ADDR_MAP_TYPE := generate_AXI_ADDR_MAP;
+    constant noc_addr_map_c : NOC_ADDR_MAP_TYPE := generate_NOC_ADDR_MAP;
 
     signal rdrqA_get_valid : std_logic;
     signal rdrqA_get_en    : std_logic;
@@ -117,7 +164,24 @@ architecture Behavioral of Arch_Ifc is
     signal put_last_state  : StallState;
     signal put_stalled     : std_logic;
     signal state_send      : State;
-    
+
+
+    procedure determineTargetPE(variable axi_address    : in  std_logic_vector;
+                                variable dest_address   : out std_logic_vector) is
+        variable targetPE : integer := 0;
+    begin
+        -- compare every axi range to the given axi_address and determine the targetPE
+        for i in 0 to PE_count - 1 loop
+            if (unsigned(axi_addr_map_c(i)) <= unsigned(axi_address) and
+                unsigned(axi_address) < unsigned(axi_addr_map_c(i+1))) then
+                targetPE := i;
+            end if;
+        end loop;
+        -- select the noc address
+        dest_address := noc_addr_map_c(targetPE);
+    end procedure;
+
+
     begin
         AXI_Slave : AXI4_Lite_Slave
         generic map (
@@ -183,6 +247,7 @@ architecture Behavioral of Arch_Ifc is
                 state_send          <= RdRqA;
                 put_last_state      <= RdRsp;
                 put_stalled         <= '0';
+                dest_address        := (others => '1');
             else
 
             -------------------------------------
@@ -202,8 +267,8 @@ architecture Behavioral of Arch_Ifc is
                 if (rdrqA_get_valid = '1') then
                     if (controlIn(STALL_GO) = '1') then
                         rdrqA_get_data_tmp  := rdrqA_get_data;
-                        --dest_address        := address_map_c(to_Integer(unsigned(rdrqA_get_data_tmp(AXI_araddr'left downto AXI_araddr'right))) + 1);
-                        dest_address        := address_map_c(1);
+                        determineTargetPE(rdrqA_get_data_tmp(AXI_araddr'left downto AXI_araddr'right),
+                                          dest_address);
                         dataOut             <= '0' & "00" & ZERO(dataOut'left - 3 downto rdrqA_get_data_tmp'length + NoC_addr_width) & rdrqA_get_data_tmp & dest_address;
                         controlOut(TX)      <= '1';
                         controlOut(EOP)     <= '1';
@@ -231,8 +296,8 @@ architecture Behavioral of Arch_Ifc is
                 if (wrrqA_get_valid = '1') then
                     if (controlIn(STALL_GO) = '1') then
                         wrrqA_get_data_tmp  := wrrqA_get_data;
-                        --dest_address        := address_map_c(to_Integer(unsigned(wrrqA_get_data_tmp(AXI_awaddr'left downto AXI_awaddr'right))) + 1);
-                        dest_address        := address_map_c(1);
+                        determineTargetPE(wrrqA_get_data_tmp(AXI_awaddr'left downto AXI_awaddr'right),
+                                          dest_address);
                         dataOut             <= '0' & "10" & ZERO(dataOut'left - 3 downto wrrqA_get_data_tmp'length + NoC_addr_width) & wrrqA_get_data_tmp & dest_address;
                         controlOut(TX)      <= '1';
                         controlOut(EOP)     <= '0';
@@ -260,7 +325,7 @@ architecture Behavioral of Arch_Ifc is
                 if (wrrqD_get_valid = '1') then
                     if (controlIn(STALL_GO) = '1') then
                         wrrqD_get_data_tmp  := wrrqD_get_data;
-                        dataOut             <= '0' & "11" & ZERO(dataOut'left - 3 downto wrrqD_get_data_tmp'length) & wrrqD_get_data_tmp;
+                        dataOut             <= '0' & "11" & ZERO(dataOut'left - 3 downto wrrqD_get_data_tmp'length + NoC_addr_width) & wrrqD_get_data_tmp & dest_address;
                         controlOut(TX)      <= '1';
                         controlOut(EOP)     <= '1';
 
@@ -276,7 +341,7 @@ architecture Behavioral of Arch_Ifc is
                     end if;
 
                     wrrqD_get_en        <= '0';
-                    --if not valid remain until valid to complete the packet
+                    --if not valid remain in state until valid to complete the packet
                 end if;
             end if;
             

@@ -1312,21 +1312,21 @@
       <xilinx:displayName>Mem Ifc</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:coreRevision>1</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2020-01-02T10:45:53Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2020-01-07T13:20:10Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@18957e47_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@3c214646_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@4a37a13f_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@38136471_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@78b73f70_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@1ed40983_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@3509f630_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@517a5ceb_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@5905f110_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@1fd0452c_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@504075d5_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@1739df33_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@1d99493d_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@26768f38_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@fb29708_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@1ef0c9fd_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@25dc7de5_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@7266519a_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@73402e53_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@661c51dc_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@385cc37e_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@32baa5d9_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@5e6a0fd7_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@4f447160_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@1f59b34c_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@58fe0c41_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_mem_ifc</xilinx:tag>
       </xilinx:tags>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
