@@ -98,6 +98,7 @@ namespace eval BuildPEIfc {
     ipgui::add_param -name {A4F_addr_width} -component [ipx::current_core] -display_name {A4F_addr_width}
     ipgui::add_param -name {A4F_data_width} -component [ipx::current_core] -display_name {A4F_data_width}
     ipgui::add_param -name {A4F_id_width} -component [ipx::current_core] -display_name {A4F_id_width}
+    ipgui::add_param -name {A4F_strb_width} -component [ipx::current_core] -display_name {A4F_strb_width}
     ipgui::add_param -name {NoC_address} -component [ipx::current_core] -display_name {NoC_address}
     ipgui::add_param -name {NoC_address_mem} -component [ipx::current_core] -display_name {NoC_address_mem}
     ipgui::add_param -name {NoC_address_arch} -component [ipx::current_core] -display_name {NoC_address_arch}

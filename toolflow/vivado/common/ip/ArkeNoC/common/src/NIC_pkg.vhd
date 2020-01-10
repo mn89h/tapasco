@@ -176,7 +176,8 @@ package NIC_pkg is
         generic (
             A4F_addr_width  : integer;
             A4F_data_width  : integer;
-            A4F_id_width    : integer
+            A4F_id_width    : integer;
+            A4F_strb_width  : integer
         );
         Port (
             clk             : in  std_logic;
@@ -184,33 +185,32 @@ package NIC_pkg is
 
             AXI_arready     : in  std_logic;
             AXI_arvalid     : out std_logic;
-            AXI_araddr      : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + 20 downto A4F_id_width + 20 );
-            AXI_arid        : out std_logic_vector( A4F_id_width - 1 + 20 downto 20 );
-            AXI_arlen       : out std_logic_vector( 19 downto 16 );
-            AXI_arsize      : out std_logic_vector( 15 downto 13 );
-            AXI_arburst     : out std_logic_vector( 12 downto 11 );
-            AXI_arlock      : out std_logic_vector( 10 downto 9 );
-            AXI_arcache     : out std_logic_vector(  8 downto 6 );
-            AXI_arprot      : out std_logic_vector(  5 downto 3 );
-            AXI_arqos       : out std_logic_vector(  2 downto 0 );
+            AXI_araddr      : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + 25 downto A4F_id_width + 25 );
+            AXI_arid        : out std_logic_vector( A4F_id_width - 1 + 25 downto 25 );
+            AXI_arlen       : out std_logic_vector( 24 downto 17 );
+            AXI_arsize      : out std_logic_vector( 16 downto 14 );
+            AXI_arburst     : out std_logic_vector( 13 downto 12 );
+            AXI_arlock      : out std_logic_vector( 11 downto 11 );
+            AXI_arcache     : out std_logic_vector( 10 downto 7 );
+            AXI_arprot      : out std_logic_vector(  6 downto 4 );
+            AXI_arqos       : out std_logic_vector(  3 downto 0 );
 
             AXI_awready     : in  std_logic;
             AXI_awvalid     : out std_logic;    
-            AXI_awaddr      : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + 20 downto A4F_id_width + 20 );
-            AXI_awid        : out std_logic_vector( A4F_id_width - 1 + 20 downto 20 );
-            AXI_awlen       : out std_logic_vector( 19 downto 16 );
-            AXI_awsize      : out std_logic_vector( 15 downto 13 );
-            AXI_awburst     : out std_logic_vector( 12 downto 11 );
-            AXI_awlock      : out std_logic_vector( 10 downto 9 );
-            AXI_awcache     : out std_logic_vector(  8 downto 6 );
-            AXI_awprot      : out std_logic_vector(  5 downto 3 );
-            AXI_awqos       : out std_logic_vector(  2 downto 0 );
+            AXI_awaddr      : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + 25 downto A4F_id_width + 25 );
+            AXI_awid        : out std_logic_vector( A4F_id_width - 1 + 25 downto 25 );
+            AXI_awlen       : out std_logic_vector( 24 downto 17 );
+            AXI_awsize      : out std_logic_vector( 16 downto 14 );
+            AXI_awburst     : out std_logic_vector( 13 downto 12 );
+            AXI_awlock      : out std_logic_vector( 11 downto 11 );
+            AXI_awcache     : out std_logic_vector( 10 downto 7 );
+            AXI_awprot      : out std_logic_vector(  6 downto 4 );
+            AXI_awqos       : out std_logic_vector(  3 downto 0 );
 
             AXI_wready      : in  std_logic;
             AXI_wvalid      : out std_logic;
-            AXI_wdata       : out std_logic_vector( A4F_data_width - 1 + A4F_id_width + 5 downto A4F_id_width + 5 );
-            AXI_wid         : out std_logic_vector( A4F_id_width - 1 + 5 downto 5 );
-            AXI_wstrb       : out std_logic_vector(  4 downto 1 );
+            AXI_wdata       : out std_logic_vector( A4F_addr_width - 1 + A4F_strb_width + 1 downto A4F_strb_width + 1 );
+            AXI_wstrb       : out std_logic_vector( A4F_strb_width - 1 + 1 downto 1 );
             AXI_wlast       : out std_logic_vector(  0 downto 0 );
 
             AXI_rready      : out std_logic;
@@ -251,7 +251,8 @@ package NIC_pkg is
         generic (
             A4F_addr_width  : integer;
             A4F_data_width  : integer;
-            A4F_id_width    : integer
+            A4F_id_width    : integer;
+            A4F_strb_width  : integer
         );
         Port (
             clk             : in  std_logic;
@@ -259,33 +260,32 @@ package NIC_pkg is
 
             AXI_arready     : out std_logic;
             AXI_arvalid     : in  std_logic;
-            AXI_araddr      : in  std_logic_vector( A4F_addr_width - 1 + A4F_id_width + 20 downto A4F_id_width + 20 );
-            AXI_arid        : in  std_logic_vector( A4F_id_width - 1 + 20 downto 20 );
-            AXI_arlen       : in  std_logic_vector( 19 downto 16 );
-            AXI_arsize      : in  std_logic_vector( 15 downto 13 );
-            AXI_arburst     : in  std_logic_vector( 12 downto 11 );
-            AXI_arlock      : in  std_logic_vector( 10 downto 9 );
-            AXI_arcache     : in  std_logic_vector(  8 downto 6 );
-            AXI_arprot      : in  std_logic_vector(  5 downto 3 );
-            AXI_arqos       : in  std_logic_vector(  2 downto 0 );
+            AXI_araddr      : in  std_logic_vector( A4F_addr_width - 1 + A4F_id_width + 25 downto A4F_id_width + 25 );
+            AXI_arid        : in  std_logic_vector( A4F_id_width - 1 + 25 downto 25 );
+            AXI_arlen       : in  std_logic_vector( 24 downto 17 );
+            AXI_arsize      : in  std_logic_vector( 16 downto 14 );
+            AXI_arburst     : in  std_logic_vector( 13 downto 12 );
+            AXI_arlock      : in  std_logic_vector( 11 downto 11 );
+            AXI_arcache     : in  std_logic_vector( 10 downto 7 );
+            AXI_arprot      : in  std_logic_vector(  6 downto 4 );
+            AXI_arqos       : in  std_logic_vector(  3 downto 0 );
 
             AXI_awready     : out std_logic;
             AXI_awvalid     : in  std_logic;    
-            AXI_awaddr      : in  std_logic_vector( A4F_addr_width - 1 + A4F_id_width + 20 downto A4F_id_width + 20 );
-            AXI_awid        : in  std_logic_vector( A4F_id_width - 1 + 20 downto 20 );
-            AXI_awlen       : in  std_logic_vector( 19 downto 16 );
-            AXI_awsize      : in  std_logic_vector( 15 downto 13 );
-            AXI_awburst     : in  std_logic_vector( 12 downto 11 );
-            AXI_awlock      : in  std_logic_vector( 10 downto 9 );
-            AXI_awcache     : in  std_logic_vector(  8 downto 6 );
-            AXI_awprot      : in  std_logic_vector(  5 downto 3 );
-            AXI_awqos       : in  std_logic_vector(  2 downto 0 );
+            AXI_awaddr      : in  std_logic_vector( A4F_addr_width - 1 + A4F_id_width + 25 downto A4F_id_width + 25 );
+            AXI_awid        : in  std_logic_vector( A4F_id_width - 1 + 25 downto 25 );
+            AXI_awlen       : in  std_logic_vector( 24 downto 17 );
+            AXI_awsize      : in  std_logic_vector( 16 downto 14 );
+            AXI_awburst     : in  std_logic_vector( 13 downto 12 );
+            AXI_awlock      : in  std_logic_vector( 11 downto 11 );
+            AXI_awcache     : in  std_logic_vector( 10 downto 7 );
+            AXI_awprot      : in  std_logic_vector(  6 downto 4 );
+            AXI_awqos       : in  std_logic_vector(  3 downto 0 );
 
             AXI_wready      : out std_logic;
             AXI_wvalid      : in  std_logic;
-            AXI_wdata       : in  std_logic_vector( A4F_data_width - 1 + A4F_id_width + 5 downto A4F_id_width + 5 );
-            AXI_wid         : in  std_logic_vector( A4F_id_width - 1 + 5 downto 5 );
-            AXI_wstrb       : in  std_logic_vector(  4 downto 1 );
+            AXI_wdata       : in  std_logic_vector( A4F_addr_width - 1 + A4F_strb_width + 1 downto A4F_strb_width + 1 );
+            AXI_wstrb       : in  std_logic_vector( A4F_strb_width - 1 + 1 downto 1 );
             AXI_wlast       : in  std_logic_vector(  0 downto 0 );
 
             AXI_rready      : in  std_logic;

@@ -32,6 +32,7 @@ entity Mem_Ifc is
         A4F_addr_width  : integer;
         A4F_data_width  : integer;
         A4F_id_width    : integer;
+        A4F_strb_width  : integer;
         NoC_address     : std_logic_vector
     );
     port (
@@ -39,31 +40,30 @@ entity Mem_Ifc is
         signal rst              : in  std_logic := '1';
         signal AXI_arvalid      : out std_logic;
         signal AXI_arready      : in  std_logic;
-        signal AXI_araddr       : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + NoC_addr_width + 20 downto A4F_id_width + NoC_addr_width + 20 );
-        signal AXI_arid         : out std_logic_vector( A4F_id_width + NoC_addr_width - 1 + 20 downto 20 );
-        signal AXI_arlen        : out std_logic_vector( 19 downto 16 );
-        signal AXI_arsize       : out std_logic_vector( 15 downto 13 );
-        signal AXI_arburst      : out std_logic_vector( 12 downto 11 );
-        signal AXI_arlock       : out std_logic_vector( 10 downto 9 );
-        signal AXI_arcache      : out std_logic_vector(  8 downto 6 );
-        signal AXI_arprot       : out std_logic_vector(  5 downto 3 );
-        signal AXI_arqos        : out std_logic_vector(  2 downto 0 );
+        signal AXI_araddr       : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + NoC_addr_width + 25 downto A4F_id_width + NoC_addr_width + 25 );
+        signal AXI_arid         : out std_logic_vector( A4F_id_width + NoC_addr_width - 1 + 25 downto 25 );
+        signal AXI_arlen        : out std_logic_vector( 24 downto 17 );
+        signal AXI_arsize       : out std_logic_vector( 16 downto 14 );
+        signal AXI_arburst      : out std_logic_vector( 13 downto 12 );
+        signal AXI_arlock       : out std_logic_vector( 11 downto 11 );
+        signal AXI_arcache      : out std_logic_vector( 10 downto 7 );
+        signal AXI_arprot       : out std_logic_vector(  6 downto 4 );
+        signal AXI_arqos        : out std_logic_vector(  3 downto 0 );
         signal AXI_awvalid      : out std_logic;
         signal AXI_awready      : in  std_logic;
-        signal AXI_awaddr       : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + NoC_addr_width + 20 downto A4F_id_width + NoC_addr_width + 20 );
-        signal AXI_awid         : out std_logic_vector( A4F_id_width + NoC_addr_width - 1 + 20 downto 20 );
-        signal AXI_awlen        : out std_logic_vector( 19 downto 16 );
-        signal AXI_awsize       : out std_logic_vector( 15 downto 13 );
-        signal AXI_awburst      : out std_logic_vector( 12 downto 11 );
-        signal AXI_awlock       : out std_logic_vector( 10 downto 9 );
-        signal AXI_awcache      : out std_logic_vector(  8 downto 6 );
-        signal AXI_awprot       : out std_logic_vector(  5 downto 3 );
-        signal AXI_awqos        : out std_logic_vector(  2 downto 0 );
+        signal AXI_awaddr       : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + NoC_addr_width + 25 downto A4F_id_width + NoC_addr_width + 25 );
+        signal AXI_awid         : out std_logic_vector( A4F_id_width + NoC_addr_width - 1 + 25 downto 25 );
+        signal AXI_awlen        : out std_logic_vector( 24 downto 17 );
+        signal AXI_awsize       : out std_logic_vector( 16 downto 14 );
+        signal AXI_awburst      : out std_logic_vector( 13 downto 12 );
+        signal AXI_awlock       : out std_logic_vector( 11 downto 11 );
+        signal AXI_awcache      : out std_logic_vector( 10 downto 7 );
+        signal AXI_awprot       : out std_logic_vector(  6 downto 4 );
+        signal AXI_awqos        : out std_logic_vector(  3 downto 0 );
         signal AXI_wvalid       : out std_logic;
         signal AXI_wready       : in  std_logic;
-        signal AXI_wdata        : out std_logic_vector( A4F_data_width - 1 + A4F_id_width + NoC_addr_width + 5 downto A4F_id_width + NoC_addr_width + 5 );
-        signal AXI_wid          : out std_logic_vector( A4F_id_width + NoC_addr_width - 1 + 5 downto 5 );
-        signal AXI_wstrb        : out std_logic_vector(  4 downto 1 );
+        signal AXI_wdata        : out std_logic_vector( A4F_addr_width - 1 + A4F_strb_width + 1 downto A4F_strb_width + 1 );
+        signal AXI_wstrb        : out std_logic_vector( A4F_strb_width - 1 + 1 downto 1 );
         signal AXI_wlast        : out std_logic_vector(  0 downto 0 );
         signal AXI_rready       : out std_logic;
         signal AXI_rvalid       : in  std_logic;
@@ -87,9 +87,9 @@ end Mem_Ifc;
 
 architecture Behavioral of Mem_Ifc is
 
-    constant A4F_rdrqa_width    : natural := A4F_addr_width + A4F_id_width + NoC_addr_width + 20;
-    constant A4F_wrrqa_width    : natural := A4F_addr_width + A4F_id_width + NoC_addr_width + 20;
-    constant A4F_wrrqd_width    : natural := A4F_data_width + A4F_id_width + NoC_addr_width + 5;
+    constant A4F_rdrqa_width    : natural := A4F_addr_width + A4F_id_width + NoC_addr_width + 25;
+    constant A4F_wrrqa_width    : natural := A4F_addr_width + A4F_id_width + NoC_addr_width + 25;
+    constant A4F_wrrqd_width    : natural := A4F_data_width + A4F_strb_width + 1;
     constant A4F_rdrsp_width    : natural := A4F_data_width + A4F_id_width + NoC_addr_width + 3;
     constant A4F_wrrsp_width    : natural := A4F_id_width + NoC_addr_width + 2;
 
@@ -98,8 +98,7 @@ architecture Behavioral of Mem_Ifc is
     constant DIM_Z_W    : integer := Log2(DIM_Z);
     constant ADDR_W     : integer := DIM_X_W + DIM_Y_W + DIM_Z_W;
 
-    type State is (RdRsp, WrRsp, RdRqA, WrRqA, WrRqD);
-    type StallState is (None, RdRqA, WrRqA, WrRqD);
+    type ChannelsType is (None, RdRsp, WrRsp, RdRqA, WrRqA, WrRqD);
 
     signal rdrqA_put_ready : std_logic;
     signal rdrqA_put_en    : std_logic;
@@ -118,9 +117,10 @@ architecture Behavioral of Mem_Ifc is
     signal wrrsp_get_data  : std_logic_vector(A4F_wrrsp_width - 1 downto 0);
 
     signal dataInStalled   : std_logic_vector(dataIn'range);
-    signal put_last_state  : StallState;
+    signal put_last_state  : ChannelsType;
     signal put_stalled     : std_logic;
-    signal state_send      : State;
+    signal state_send      : ChannelsType;
+    signal send_stalled    : std_logic;
 
     begin
 
@@ -128,7 +128,8 @@ architecture Behavioral of Mem_Ifc is
         generic map (
             A4F_addr_width  => A4F_addr_width,
             A4F_data_width  => A4F_data_width,
-            A4F_id_width    => A4F_id_width + NoC_addr_width
+            A4F_id_width    => A4F_id_width + NoC_addr_width,
+            A4F_strb_width  => A4F_strb_width
         )
         port map (
             clk             => clk,
@@ -158,7 +159,6 @@ architecture Behavioral of Mem_Ifc is
             AXI_wvalid      => AXI_wvalid,
             AXI_wready      => AXI_wready,
             AXI_wdata       => AXI_wdata,
-            AXI_wid         => AXI_wid,
             AXI_wstrb       => AXI_wstrb,
             AXI_wlast       => AXI_wlast,
             AXI_rready      => AXI_rready,
@@ -197,6 +197,7 @@ architecture Behavioral of Mem_Ifc is
             variable wrrsp_get_data_tmp : std_logic_vector(A4F_wrrsp_width - 1 downto 0);
             
             variable dest_address       : std_logic_vector(NoC_addr_width - 1 downto 0);
+            variable dataOutNext        : std_logic_vector(DATA_WIDTH - 1 downto 0);
             
         begin if rising_edge(clk) then
             -----------
@@ -205,7 +206,7 @@ architecture Behavioral of Mem_Ifc is
             if (rst = '1') then
                 controlOut          <= "100";
                 dataOut             <= (others => '0');
-                state_send          <= RdRsp;
+                state_send          <= None;
                 put_stalled         <= '0';
                 put_last_state      <= RdRqA;
             else
@@ -219,58 +220,88 @@ architecture Behavioral of Mem_Ifc is
             -- The network destination is chosen by a address map in conjunction with the AXI address.
             --------------------------------------
             
-            -- STATE 1: RDRSP
-            if (state_send = RdRsp) then
-                wrrsp_get_en        <= '0';
+            -- STATE 0: INIT
+            if (state_send = None) then
+                send_stalled    <= '0';
+                rdrsp_get_en    <= '1';
+                state_send      <= RdRsp;
+
+            -- STATE 1: RDRSP w/ Burst Mode
+            elsif (state_send = RdRsp) then
 
                 if (rdrsp_get_valid = '1') then
-                    if (controlIn(STALL_GO) = '1') then
-                        rdrsp_get_data_tmp  := rdrsp_get_data;
-                        dest_address        := rdrsp_get_data(AXI_rid'left downto AXI_rid'right + A4F_id_width);
-                        dataOut             <= '1' & "00" & ZERO(dataOut'left - 3 downto rdrsp_get_data_tmp'length + NoC_addr_width) & rdrsp_get_data_tmp & dest_address;
-                        controlOut(TX)      <= '1';
-                        controlOut(EOP)     <= '1';
+                    if(send_stalled = '0') then
+                        dest_address    := rdrsp_get_data(AXI_rid'left downto AXI_rid'right + A4F_id_width);
+                        dataOutNext     := '1' & "00" & ZERO(dataOut'left - 3 downto rdrsp_get_data'length + NoC_addr_width) & rdrsp_get_data & dest_address;
+                    end if;
 
-                        rdrsp_get_en    <= '1';
-                        state_send          <= WrRsp;
+                    if (controlIn(STALL_GO) = '1') then
+                        send_stalled    <= '0';
+                        dataOut         <= dataOutNext;
+                        controlOut(TX)  <= '1';
+
+                        if (rdrsp_get_data(AXI_rlast'right) = '1') then
+                            rdrsp_get_en    <= '0';
+
+                            controlOut(EOP) <= '1';
+                            wrrsp_get_en    <= '1';
+                            state_send      <= WrRsp;
+                        else
+                            wrrsp_get_en    <= '0';
+                            
+                            controlOut(EOP) <= '0';
+                            rdrsp_get_en    <= '1';
+                        end if;
                     else
+                        send_stalled    <= '1';
+                        wrrsp_get_en    <= '0';
                         rdrsp_get_en    <= '0';
                     end if;
                 else
-                    if (controlIn(STALL_GO) = '1') then
-                        controlOut(TX)      <= '0';
-                        controlOut(EOP)     <= '0';
-                    end if;
+                    send_stalled    <= '0';
+                    rdrsp_get_en    <= '0';
 
-                    rdrsp_get_en        <= '0';
-                    state_send              <= WrRsp;
+                    if (controlIn(STALL_GO) = '1') then
+                        controlOut(TX)  <= '0';
+                        controlOut(EOP) <= '0';
+                    end if;
+                    
+                    wrrsp_get_en    <= '1';
+                    state_send      <= WrRsp;
                 end if;
 
             -- STATE 2: WRRSP
             elsif (state_send = WrRsp) then
-                rdrsp_get_en        <= '0';
+                wrrsp_get_en    <= '0';
 
                 if (wrrsp_get_valid = '1') then
-                    if (controlIn(STALL_GO) = '1') then
-                        wrrsp_get_data_tmp  := wrrsp_get_data;
-                        dest_address        := wrrsp_get_data(AXI_bid'left downto AXI_bid'right + A4F_id_width);
-                        dataOut             <= '1' & "10" & ZERO(dataOut'left - 3 downto wrrsp_get_data_tmp'length + NoC_addr_width) & wrrsp_get_data_tmp & dest_address;
-                        controlOut(TX)      <= '1';
-                        controlOut(EOP)     <= '0';
+                    if(send_stalled = '0') then
+                        dest_address    := wrrsp_get_data(AXI_bid'left downto AXI_bid'right + A4F_id_width);
+                        dataOutNext     := '1' & "10" & ZERO(dataOut'left - 3 downto wrrsp_get_data'length + NoC_addr_width) & wrrsp_get_data & dest_address;
+                    end if;
 
-                        wrrsp_get_en    <= '1';
-                        state_send          <= RdRsp;
+                    if (controlIn(STALL_GO) = '1') then
+                        send_stalled    <= '0';
+                        dataOut         <= dataOutNext;
+                        controlOut(TX)  <= '1';
+                        controlOut(EOP) <= '0';
+
+                        rdrsp_get_en    <= '1';
+                        state_send      <= RdRsp;
                     else
-                        wrrsp_get_en    <= '0';
+                        send_stalled    <= '1';
+                        rdrsp_get_en    <= '0';
                     end if;
                 else
+                    send_stalled    <= '0';
+
                     if (controlIn(STALL_GO) = '1') then
-                        controlOut(TX)      <= '0';
-                        controlOut(EOP)     <= '0';
+                        controlOut(TX)  <= '0';
+                        controlOut(EOP) <= '0';
                     end if;
 
-                    wrrsp_get_en        <= '0';
-                    state_send              <= RdRsp;
+                    rdrsp_get_en    <= '1';
+                    state_send      <= RdRsp;
                 end if;
             end if;
 
@@ -370,7 +401,7 @@ architecture Behavioral of Mem_Ifc is
                     wrrqA_put_en    <= '0';
                 end if;
                 if(wrrqD_put_ready = '1') then
-                    wrrqA_put_en    <= '0';
+                    wrrqD_put_en    <= '0';
                 end if;
                 if(rdrqA_put_ready = '1') then
                     rdrqA_put_en    <= '0';

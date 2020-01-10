@@ -26,7 +26,8 @@ entity AXI4_Full_Slave is
   generic (
     A4F_addr_width  : integer;
     A4F_data_width  : integer;
-    A4F_id_width    : integer
+    A4F_id_width    : integer;
+    A4F_strb_width  : integer
   );
   port (
     ------------------------
@@ -44,39 +45,38 @@ entity AXI4_Full_Slave is
     ------------------------
     AXI_arready : out std_logic;
     AXI_arvalid : in  std_logic;
-    AXI_araddr  : in  std_logic_vector( A4F_addr_width - 1 + A4F_id_width + 20 downto A4F_id_width + 20 );
-    AXI_arid    : in  std_logic_vector( A4F_id_width - 1 + 20 downto 20 );
-    AXI_arlen   : in  std_logic_vector( 19 downto 16 );
-    AXI_arsize  : in  std_logic_vector( 15 downto 13 );
-    AXI_arburst : in  std_logic_vector( 12 downto 11 );
-    AXI_arlock  : in  std_logic_vector( 10 downto 9 );
-    AXI_arcache : in  std_logic_vector(  8 downto 6 );
-    AXI_arprot  : in  std_logic_vector(  5 downto 3 );
-    AXI_arqos   : in  std_logic_vector(  2 downto 0 );
+    AXI_araddr  : in  std_logic_vector( A4F_addr_width - 1 + A4F_id_width + 25 downto A4F_id_width + 25 );
+    AXI_arid    : in  std_logic_vector( A4F_id_width - 1 + 25 downto 25 );
+    AXI_arlen   : in  std_logic_vector( 24 downto 17 );
+    AXI_arsize  : in  std_logic_vector( 16 downto 14 );
+    AXI_arburst : in  std_logic_vector( 13 downto 12 );
+    AXI_arlock  : in  std_logic_vector( 11 downto 11 );
+    AXI_arcache : in  std_logic_vector( 10 downto 7 );
+    AXI_arprot  : in  std_logic_vector(  6 downto 4 );
+    AXI_arqos   : in  std_logic_vector(  3 downto 0 );
 
     ------------------------
     -- Write address channel    
     ------------------------
     AXI_awready : out std_logic;
     AXI_awvalid : in  std_logic;    
-    AXI_awaddr  : in  std_logic_vector( A4F_addr_width - 1 + A4F_id_width + 20 downto A4F_id_width + 20 );
-    AXI_awid    : in  std_logic_vector( A4F_id_width - 1 + 20 downto 20 );
-    AXI_awlen   : in  std_logic_vector( 19 downto 16 );
-    AXI_awsize  : in  std_logic_vector( 15 downto 13 );
-    AXI_awburst : in  std_logic_vector( 12 downto 11 );
-    AXI_awlock  : in  std_logic_vector( 10 downto 9 );
-    AXI_awcache : in  std_logic_vector(  8 downto 6 );
-    AXI_awprot  : in  std_logic_vector(  5 downto 3 );
-    AXI_awqos   : in  std_logic_vector(  2 downto 0 );
+    AXI_awaddr  : in  std_logic_vector( A4F_addr_width - 1 + A4F_id_width + 25 downto A4F_id_width + 25 );
+    AXI_awid    : in  std_logic_vector( A4F_id_width - 1 + 25 downto 25 );
+    AXI_awlen   : in  std_logic_vector( 24 downto 17 );
+    AXI_awsize  : in  std_logic_vector( 16 downto 14 );
+    AXI_awburst : in  std_logic_vector( 13 downto 12 );
+    AXI_awlock  : in  std_logic_vector( 11 downto 11 );
+    AXI_awcache : in  std_logic_vector( 10 downto 7 );
+    AXI_awprot  : in  std_logic_vector(  6 downto 4 );
+    AXI_awqos   : in  std_logic_vector(  3 downto 0 );
 
     ------------------------
     -- Write Data channel    
     ------------------------
     AXI_wready  : out std_logic;
     AXI_wvalid  : in  std_logic;
-    AXI_wdata   : in  std_logic_vector( A4F_addr_width - 1 + A4F_id_width + 5 downto A4F_id_width + 5 );
-    AXI_wid     : in  std_logic_vector( A4F_id_width - 1 + 5 downto 5 );
-    AXI_wstrb   : in  std_logic_vector(  4 downto 1 );
+    AXI_wdata   : in  std_logic_vector( A4F_addr_width - 1 + A4F_strb_width + 1 downto A4F_strb_width + 1 );
+    AXI_wstrb   : in  std_logic_vector( A4F_strb_width - 1 + 1 downto 1 );
     AXI_wlast   : in  std_logic_vector(  0 downto 0 );
 
     ------------------------
@@ -84,7 +84,7 @@ entity AXI4_Full_Slave is
     ------------------------
     AXI_rready  : in  std_logic;
     AXI_rvalid  : out std_logic;
-    AXI_rdata   : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + 3 downto A4F_id_width + 3 );
+    AXI_rdata   : out std_logic_vector( A4F_data_width - 1 + A4F_id_width + 3 downto A4F_id_width + 3 );
     AXI_rid     : out std_logic_vector( A4F_id_width - 1 + 3 downto 3 );
     AXI_rresp   : out std_logic_vector(  2 downto 1 );
     AXI_rlast   : out std_logic_vector(  0 downto 0 );
@@ -128,9 +128,9 @@ end AXI4_Full_Slave;
 
 architecture Behavioral of AXI4_Full_Slave is
     
-    constant A4F_rdrqa_width    : natural := A4F_addr_width + A4F_id_width + 20;
-    constant A4F_wrrqa_width    : natural := A4F_addr_width + A4F_id_width + 20;
-    constant A4F_wrrqd_width    : natural := A4F_data_width + A4F_id_width + 5;
+    constant A4F_rdrqa_width    : natural := A4F_addr_width + A4F_id_width + 25;
+    constant A4F_wrrqa_width    : natural := A4F_addr_width + A4F_id_width + 25;
+    constant A4F_wrrqd_width    : natural := A4F_data_width + A4F_strb_width + 1;
     constant A4F_rdrsp_width    : natural := A4F_data_width + A4F_id_width + 3;
     constant A4F_wrrsp_width    : natural := A4F_id_width + 2;
 
@@ -142,7 +142,7 @@ architecture Behavioral of AXI4_Full_Slave is
 begin
     AXI_rdrqA_data  <= AXI_araddr & AXI_arid & AXI_arlen & AXI_arsize & AXI_arburst & AXI_arlock & AXI_arcache & AXI_arprot & AXI_arqos;
     AXI_wrrqA_data  <= AXI_awaddr & AXI_awid & AXI_awlen & AXI_awsize & AXI_awburst & AXI_awlock & AXI_awcache & AXI_awprot & AXI_awqos;
-    AXI_wrrqD_data  <= AXI_wdata & AXI_wid & AXI_wstrb & AXI_wlast;
+    AXI_wrrqD_data  <= AXI_wdata & AXI_wstrb & AXI_wlast;
 
     AXI_rdata       <= AXI_rdrsp_data(AXI_rdata'range);
     AXI_rid         <= AXI_rdrsp_data(AXI_rid'range);

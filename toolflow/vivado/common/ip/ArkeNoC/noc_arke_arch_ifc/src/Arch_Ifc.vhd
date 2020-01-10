@@ -83,8 +83,7 @@ architecture Behavioral of Arch_Ifc is
     constant DIM_Z_W    : integer := Log2(DIM_Z);
     constant ADDR_W     : integer := DIM_X_W + DIM_Y_W + DIM_Z_W;
 
-    type State is (RdRqA, WrRqA, WrRqD);
-    type StallState is (None, RdRsp, WrRsp);
+    type ChannelsType is (None, RdRsp, WrRsp, RdRqA, WrRqA, WrRqD);
 
     
     -- AXI ADDRESS MAP GENERATION --
@@ -161,9 +160,10 @@ architecture Behavioral of Arch_Ifc is
     signal wrrsp_put_data  : std_logic_vector(A4L_wrrsp_width - 1 downto 0);
 
     signal dataInStalled   : std_logic_vector(dataIn'range);
-    signal put_last_state  : StallState;
+    signal put_last_state  : ChannelsType;
     signal put_stalled     : std_logic;
-    signal state_send      : State;
+    signal state_send      : ChannelsType;
+    signal send_stalled    : std_logic;
 
 
     procedure determineTargetPE(variable axi_address    : in  std_logic_vector;
@@ -229,13 +229,14 @@ architecture Behavioral of Arch_Ifc is
                     
         process(clk)
 
-            variable rdrqA_get_data_tmp : std_logic_vector(A4L_rdrqa_width - 1 downto 0);
-            variable wrrqA_get_data_tmp : std_logic_vector(A4L_wrrqa_width - 1 downto 0);
-            variable wrrqD_get_data_tmp : std_logic_vector(A4L_wrrqd_width - 1 downto 0);
+            variable rdrqA_get_data_tmp : std_logic_vector(A4L_rdrqA_width - 1 downto 0);
+            variable wrrqA_get_data_tmp : std_logic_vector(A4L_wrrqA_width - 1 downto 0);
+            variable wrrqD_get_data_tmp : std_logic_vector(A4L_wrrqD_width - 1 downto 0);
             variable rdrsp_put_data_tmp : std_logic_vector(A4L_rdrsp_width - 1 downto 0);
             variable wrrsp_put_data_tmp : std_logic_vector(A4L_wrrsp_width - 1 downto 0);
             
             variable dest_address       : std_logic_vector(NoC_addr_width - 1 downto 0);
+            variable dataOutNext        : std_logic_vector(DATA_WIDTH - 1 downto 0);
             
         begin if rising_edge(clk) then
             -----------
@@ -244,7 +245,7 @@ architecture Behavioral of Arch_Ifc is
             if (rst = '1') then
                 controlOut          <= "100";
                 dataOut             <= (others => '0');
-                state_send          <= RdRqA;
+                state_send          <= None;
                 put_last_state      <= RdRsp;
                 put_stalled         <= '0';
                 dest_address        := (others => '1');
@@ -259,88 +260,120 @@ architecture Behavioral of Arch_Ifc is
             -- The network destination is chosen by a address map in conjunction with the AXI address.
             -------------------------------------
             
+            -- STATE 0: INIT
+            if (state_send = None) then
+                send_stalled        <= '0';
+                rdrqA_get_en        <= '1';
+                state_send          <= RdRqA;
+
             -- STATE 1: RDRQA
-            if (state_send = RdRqA) then
-                wrrqA_get_en        <= '0';
+            elsif (state_send = RdRqA) then
+                rdrqA_get_en        <= '0';
                 wrrqD_get_en        <= '0';
 
                 if (rdrqA_get_valid = '1') then
-                    if (controlIn(STALL_GO) = '1') then
+                    if(send_stalled = '0') then
                         rdrqA_get_data_tmp  := rdrqA_get_data;
                         determineTargetPE(rdrqA_get_data_tmp(AXI_araddr'left downto AXI_araddr'right),
                                           dest_address);
-                        dataOut             <= '0' & "00" & ZERO(dataOut'left - 3 downto rdrqA_get_data_tmp'length + NoC_addr_width) & rdrqA_get_data_tmp & dest_address;
+                        dataOutNext         := '0' & "00" & ZERO(dataOut'left - 3 downto rdrqA_get_data_tmp'length + NoC_addr_width) & rdrqA_get_data_tmp & dest_address;
+                    end if;
+
+                    if (controlIn(STALL_GO) = '1') then
+                        send_stalled        <= '0';
+                        dataOut             <= dataOutNext;
+                        controlOut(TX)      <= '1';
+                        controlOut(EOP)     <= '1';
+
+                        wrrqA_get_en        <= '1';
+                        state_send          <= WrRqA;
+                    else
+                        send_stalled        <= '0';
+                        wrrqA_get_en        <= '0';
+                    end if;
+                else
+                    send_stalled        <= '0';
+                    
+                    if (controlIn(STALL_GO) = '1') then
+                        controlOut(TX)      <= '0';
+                        controlOut(EOP)     <= '0';
+                    end if;
+
+                    wrrqA_get_en        <= '1';
+                    state_send          <= WrRqA;
+                end if;
+
+            -- STATE 2: WRRQA
+            elsif (state_send = WrRqA) then
+                wrrqA_get_en        <= '0';
+
+                if (wrrqA_get_valid = '1') then
+                    rdrqA_get_en        <= '0';
+
+                    if(send_stalled = '0') then
+                        wrrqA_get_data_tmp  := wrrqA_get_data;
+                        determineTargetPE(wrrqA_get_data_tmp(AXI_awaddr'left downto AXI_awaddr'right),
+                                          dest_address);
+                        dataOutNext         := '0' & "10" & ZERO(dataOut'left - 3 downto wrrqA_get_data_tmp'length + NoC_addr_width) & wrrqA_get_data_tmp & dest_address;
+                    end if;
+
+                    if (controlIn(STALL_GO) = '1') then
+                        send_stalled        <= '0';
+                        dataOut             <= dataOutNext;
+                        controlOut(TX)      <= '1';
+                        controlOut(EOP)     <= '0';
+
+                        wrrqD_get_en        <= '1';
+                        state_send          <= WrRqD;
+                    else
+                        send_stalled        <= '1';
+                        wrrqD_get_en        <= '0';
+                    end if;
+                else
+                    send_stalled        <= '0';
+                    wrrqD_get_en        <= '0';
+
+                    if (controlIn(STALL_GO) = '1') then
+                        controlOut(TX)      <= '0';
+                        controlOut(EOP)     <= '0';
+                    end if;
+
+                    rdrqA_get_en        <= '1';
+                    state_send          <= RdRqA; --if no valid wr address continue with rd -- CHANGED was wrong
+                end if;
+
+            -- STATE 3: WRRQD
+            else
+                wrrqA_get_en        <= '0';
+                wrrqD_get_en        <= '0';
+
+                if (wrrqD_get_valid = '1') then
+                    if(send_stalled = '0') then
+                        wrrqD_get_data_tmp  := wrrqD_get_data;
+                        dataOutNext         := '0' & "11" & ZERO(dataOut'left - 3 downto wrrqD_get_data_tmp'length + NoC_addr_width) & wrrqD_get_data_tmp & dest_address;
+                    end if;
+
+                    if (controlIn(STALL_GO) = '1') then
+                        send_stalled        <= '0';
+                        dataOut             <= dataOutNext;
                         controlOut(TX)      <= '1';
                         controlOut(EOP)     <= '1';
 
                         rdrqA_get_en        <= '1';
-                        state_send          <= WrRqA;
+                        state_send          <= RdRqA;
                     else
+                        send_stalled        <= '1';
                         rdrqA_get_en        <= '0';
                     end if;
                 else
+                    send_stalled        <= '0';
+
                     if (controlIn(STALL_GO) = '1') then
                         controlOut(TX)      <= '0';
                         controlOut(EOP)     <= '0';
                     end if;
 
                     rdrqA_get_en        <= '0';
-                    state_send          <= WrRqA;
-                end if;
-
-            -- STATE 2: WRRQA
-            elsif (state_send = WrRqA) then
-                rdrqA_get_en        <= '0';
-                wrrqD_get_en        <= '0';
-
-                if (wrrqA_get_valid = '1') then
-                    if (controlIn(STALL_GO) = '1') then
-                        wrrqA_get_data_tmp  := wrrqA_get_data;
-                        determineTargetPE(wrrqA_get_data_tmp(AXI_awaddr'left downto AXI_awaddr'right),
-                                          dest_address);
-                        dataOut             <= '0' & "10" & ZERO(dataOut'left - 3 downto wrrqA_get_data_tmp'length + NoC_addr_width) & wrrqA_get_data_tmp & dest_address;
-                        controlOut(TX)      <= '1';
-                        controlOut(EOP)     <= '0';
-
-                        wrrqA_get_en        <= '1';
-                        state_send          <= WrRqD;
-                    else
-                        wrrqA_get_en        <= '0';
-                    end if;
-                else
-                    if (controlIn(STALL_GO) = '1') then
-                        controlOut(TX)      <= '0';
-                        controlOut(EOP)     <= '0';
-                    end if;
-
-                    wrrqA_get_en        <= '0';
-                    state_send          <= RdRqA; --if no valid wr address continue with rd
-                end if;
-
-            -- STATE 3: WRRQD
-            else
-                rdrqA_get_en        <= '0';
-                wrrqA_get_en        <= '0';
-
-                if (wrrqD_get_valid = '1') then
-                    if (controlIn(STALL_GO) = '1') then
-                        wrrqD_get_data_tmp  := wrrqD_get_data;
-                        dataOut             <= '0' & "11" & ZERO(dataOut'left - 3 downto wrrqD_get_data_tmp'length + NoC_addr_width) & wrrqD_get_data_tmp & dest_address;
-                        controlOut(TX)      <= '1';
-                        controlOut(EOP)     <= '1';
-
-                        wrrqD_get_en        <= '1';
-                        state_send          <= RdRqA;
-                    else
-                        wrrqD_get_en        <= '0';
-                    end if;
-                else
-                    if (controlIn(STALL_GO) = '1') then
-                        controlOut(TX)      <= '0';
-                        controlOut(EOP)     <= '0';
-                    end if;
-
-                    wrrqD_get_en        <= '0';
                     --if not valid remain in state until valid to complete the packet
                 end if;
             end if;
