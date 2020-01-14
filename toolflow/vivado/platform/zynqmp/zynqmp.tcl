@@ -47,7 +47,7 @@
     return 0x00B0000000
   }
 
-  proc get_address_map {{pe_base ""}} {
+  proc get_address_map {{pe_base ""} {arch ""}} {
     set max32 [expr "1 << 32"]
     if {$pe_base == ""} { set pe_base [get_pe_base_address] }
     puts "Computing addresses for PEs ..."
@@ -57,7 +57,7 @@
       switch -glob [get_property NAME $m] {
         "M_TAPASCO" { foreach {base stride range comp} [list 0x00B0000000 0       0 "PLATFORM_COMPONENT_STATUS"] {} }
         "M_INTC"    { foreach {base stride range comp} [list 0x00B0010000 0x10000 0 "PLATFORM_COMPONENT_INTC0"] {} }
-        "M_ARCH"    { set base "skip" }
+        "M_ARCH"    { if {$arch == "axi4mm-noc"} {foreach {base stride range comp} [list $pe_base 0 0 ""] {}} {set base "skip"} }
         default     { foreach {base stride range comp} [list 0 0 0 ""] {} }
       }
       if {$base != "skip"} { set peam [addressmap::assign_address $peam $m $base $stride $range $comp] }

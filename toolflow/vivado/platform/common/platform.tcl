@@ -71,6 +71,7 @@ namespace eval platform {
 
     wire_subsystem_wires
     wire_subsystem_intfs
+    save_bd_design
     addressmap::construct_address_map
 
     save_bd_design
@@ -269,7 +270,7 @@ namespace eval platform {
     error "Platform does not implement mandatory proc get_platform_base_address!"
   }
 
-  proc get_address_map {{pe_base ""}} {
+  proc get_address_map {{pe_base ""} {arch ""}} {
     error "Platform does not implement mandatory proc get_address_map!"
   }
 

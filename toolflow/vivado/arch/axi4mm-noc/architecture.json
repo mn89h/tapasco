@@ -1,0 +1,6 @@
+{
+	"Name" : "axi4mm-noc",
+	"Description" : "Architecture based on AXI4 memory-mapped master/slave interfaces.",
+	"TclLibrary" : "axi4mm-noc.tcl",
+	"HLSTclTemplate" : "../../common/hls.tcl.template"
+}

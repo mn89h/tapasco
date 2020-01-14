@@ -1,33 +1,39 @@
 namespace eval BuildRouter {
   namespace export build
+  set arke_dir $::env(TAPASCO_HOME_TCL)/common/ip/ArkeNoC
 
   proc create_proj {} {
-    create_project project_router $::script_path/project_router -part xc7z020clg400-1
-    add_files -scan_for_includes {$::script_path/noc_arke_router/src/InputBuffer.vhd $::script_path/noc_arke_router/src/SwitchControl.vhd $::script_path/noc_arke_router/src/ProgramablePriorityEncoder.vhd $::script_path/noc_arke_router/src/Crossbar.vhd $::script_path/noc_arke_router/src/Router.vhd $::script_path/common/src/Arke_pkg.vhd}
-    set_property library work [get_files  {$::script_path/noc_arke_router/src/InputBuffer.vhd $::script_path/noc_arke_router/src/SwitchControl.vhd $::script_path/noc_arke_router/src/ProgramablePriorityEncoder.vhd $::script_path/noc_arke_router/src/Crossbar.vhd $::script_path/noc_arke_router/src/Router.vhd $::script_path/common/src/Arke_pkg.vhd}]
+    variable arke_dir
+    create_project project_router $arke_dir/project_router -part xc7z020clg400-1 -force
+    set filepaths "$arke_dir/noc_arke_router/src/InputBuffer.vhd $arke_dir/noc_arke_router/src/SwitchControl.vhd $arke_dir/noc_arke_router/src/ProgramablePriorityEncoder.vhd $arke_dir/noc_arke_router/src/Crossbar.vhd $arke_dir/noc_arke_router/src/Router.vhd $arke_dir/common/src/Arke_pkg.vhd"
+    add_files -scan_for_includes $filepaths
+    set_property library work [get_files $filepaths]
   }
 
   proc open_proj {} {
+    variable arke_dir
     if {[catch {current_project} result ]} {
       puts "DEBUG:$result"
-      open_project $::script_path/project_router/project_router.xpr
+      open_project $arke_dir/project_router/project_router.xpr
     } else {
       if { $result == "project_router" } {
         puts "$result is already open"
       } else {
-        open_project $::script_path/project_router/project_router.xpr
+        open_project $arke_dir/project_router/project_router.xpr
       }
     }
   }
 
   proc package_project {} {
-    ipx::package_project -root_dir $::script_path/noc_arke_router -vendor user.org -library user -taxonomy /UserIP -import_files -set_current false
-    ipx::unload_core $::script_path/noc_arke_router/component.xml
-    ipx::edit_ip_in_project -upgrade true -name tmp_edit_project -directory $::script_path/noc_arke_router $::script_path/noc_arke_router/component.xml
+    variable arke_dir
+    ipx::package_project -root_dir $arke_dir/noc_arke_router -vendor user.org -library user -taxonomy /UserIP -import_files -set_current false
+    ipx::unload_core $arke_dir/noc_arke_router/component.xml
+    ipx::edit_ip_in_project -upgrade true -name tmp_edit_project -directory $arke_dir/noc_arke_router $arke_dir/noc_arke_router/component.xml
   }
 
   proc open_ip {} {
-    ipx::open_ipxact_file $::script_path/noc_arke_router/component.xml
+    variable arke_dir
+    ipx::open_ipxact_file $arke_dir/noc_arke_router/component.xml
   }
 
   proc set_infos {} {
@@ -198,11 +204,12 @@ namespace eval BuildRouter {
   }
   
   proc save_and_exit {} {
+    variable arke_dir
     ipx::create_xgui_files [ipx::current_core]
     ipx::update_checksums [ipx::current_core]
     ipx::save_core [ipx::current_core]
     #update_ip_catalog -rebuild -repo_path $::tapascopath/toolflow/vivado/common
-    ipx::unload_core $::script_path/noc_arke_router/component.xml
+    ipx::unload_core $arke_dir/noc_arke_router/component.xml
   }
 
   proc close_proj {} {
@@ -211,15 +218,7 @@ namespace eval BuildRouter {
   }
 
   proc build {} {
-    #open_ip
-    #set_infos
-    #add_synthesis_files
-    #add_simulation_files
-    #set_default_driver_values
-    #set_port_dependencies
-    #build_gui
-    #save_and_exit
-
+    create_proj
     open_proj
     package_project
     open_ip

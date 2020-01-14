@@ -1,6 +1,11 @@
 namespace eval arch {
+  namespace export get_arch_name
   namespace export create
   namespace export get_address_map
+
+  proc get_arch_name {} {
+    return ""
+  }
 
   proc next_valid_address {addr range} {
     return [expr (($addr / $range) + ($addr % $range > 0 ? 1 : 0)) * $range]
@@ -50,6 +55,7 @@ namespace eval arch {
         }
       }
     }
+
     return $ret
   }
 }

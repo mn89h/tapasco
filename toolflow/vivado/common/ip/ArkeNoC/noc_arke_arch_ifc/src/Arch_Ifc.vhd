@@ -97,8 +97,8 @@ architecture Behavioral of Arch_Ifc is
         -- lower border of PE(0)
         result(0) := AXI_base_addr;
         for i in 0 to PE_count - 1 loop
-            -- the 5 bits representing the axi address range of the PE determine the shift amount, minimum shift is 2 representing a 4k range
-            bits_to_shift   := 2 + to_integer(unsigned(AXI_ranges(i * 5 to (i+1) * 5 - 1)));
+            -- the 5 bits representing the axi address range of the PE determine the shift amount, minimum shift is 12 representing a 4k range
+            bits_to_shift   := 12 + to_integer(unsigned(AXI_ranges(i * 5 to (i+1) * 5 - 1)));
             -- write upper border by shifting 1 by the determined shift amount and adding the lower border
             result(i+1)     := std_logic_vector(unsigned(result(i)) + shift_left(one_c, bits_to_shift));
         end loop;

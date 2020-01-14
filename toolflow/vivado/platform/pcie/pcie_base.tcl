@@ -57,7 +57,7 @@
     return 0
   }
 
-  proc get_address_map {{pe_base ""}} {
+  proc get_address_map {{pe_base ""} {arch ""}} {
     set max32 [expr "1 << 32"]
     set max64 [expr "1 << 64"]
     if {$pe_base == ""} { set pe_base [get_pe_base_address] }
@@ -76,7 +76,7 @@
         "M_TAPASCO" { foreach {base stride range comp} [list 0x00000000 0x10000 0      "PLATFORM_COMPONENT_STATUS"] {} }
         "M_HOST"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
         "M_MEM_0"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
-        "M_ARCH"    { set base "skip" }
+        "M_ARCH"    { if {$arch == "axi4mm-noc"} {foreach {base stride range comp} [list $pe_base 0 0 ""] {}} {set base "skip"} }
         default     { if { [dict exists $extra_masters [get_property NAME $m]] } {
                           set l [dict get $extra_masters [get_property NAME $m]]
                           set base [lindex $l 0]
