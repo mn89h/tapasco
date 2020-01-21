@@ -416,9 +416,43 @@ namespace eval arch {
     variable DIM_Z_W
     variable DATA_WIDTH
 
-    # configure and connect all routers
+    set rlist routerlist
+
+    # create adjunct routers for proper routing
     set done 0
     set start 0
+
+    for {set z 0} {$z < $DIM_Z} {incr z} {
+      for {set y 0} {$y < $DIM_Y} {incr y} {
+        for {set x 0} {$x < $DIM_X} {incr x} {
+          if {[lindex $routerlist end 0] == $x && [lindex $routerlist end 1] == $y && [lindex $routerlist end 2] == $z} {
+            set start 1
+            continue
+          }
+          if {!$start} {continue} {
+            set done 1
+
+            set xyz ""
+            append xyz [format {%0*s} $DIM_X_W [dec2bin $x]]
+            append xyz [format {%0*s} $DIM_Y_W [dec2bin $y]]
+            if {$DIM_Z_W != 0} {append xyz [format {%0*s} $DIM_Z_W [dec2bin $z]]}
+
+
+            puts "Creating adjunct Router $x $y $z."
+            set xyz 0b[format {%0*s} $DATA_WIDTH $xyz]
+            set r [tapasco::ip::create_noc_arke_router "arke_noc_router_$x\_$y\_$z" $xyz]
+            lappend rlist [list $x $y $z]
+
+            puts "  removing local ports"
+            set_property -dict [list CONFIG.use_data_in_local {false} CONFIG.use_control_in_local {false} CONFIG.use_data_out_local {false} CONFIG.use_control_out_local {false}] [get_bd_cells $r]
+          }
+        }
+      }
+      if {$done} {break}
+    }
+
+    # configure and connect all routers
+    set done 0
     for {set z 0} {$z < $DIM_Z} {incr z} {
       for {set y 0} {$y < $DIM_Y} {incr y} {
         for {set x 0} {$x < $DIM_X} {incr x} {
@@ -488,7 +522,7 @@ namespace eval arch {
           }
           
           # break after last router
-          if {[lindex $routerlist end 0] == $x && [lindex $routerlist end 1] == $y && [lindex $routerlist end 2] == $z} {
+          if {[lindex $rlist end 0] == $x && [lindex $rlist end 1] == $y && [lindex $rlist end 2] == $z} {
             set done 1
             break
           }

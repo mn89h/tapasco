@@ -136,6 +136,8 @@ namespace eval ::tapasco::ip {
     BuildMemIfc::build $ADDRESS_WIDTH
     BuildRouter::build
 
+    update_ip_catalog
+
     set out [list $DIM_X $DIM_Y $DIM_Z $DIM_X_W $DIM_Y_W $DIM_Z_W $BUFFER_DEPTH $DATA_WIDTH $CONTROL_WIDTH]
     return out
   }
