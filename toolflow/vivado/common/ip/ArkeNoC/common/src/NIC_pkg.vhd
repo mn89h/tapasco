@@ -31,7 +31,7 @@ package NIC_pkg is
     constant C_W    : std_logic_vector(1 downto 0) := "11";
     constant C_B    : std_logic_vector(1 downto 0) := "10";
 
-    constant STD_FIFO_DEFAULT_DEPTH : integer := 8;
+    constant STD_FIFO_FIFO_DEPTH : integer := 8;
 
     -- unused
     type transmission_data is record
