@@ -159,7 +159,7 @@ namespace eval ::tapasco::ip {
   # @return bd_cell of the instance.
   proc create_noc_arke_pe_ifc {name a4l_addr_w a4l_data_w a4f_addr_w a4f_data_w a4f_id_w a4f_strb_w noc_address} {
     variable stdcomps
-    puts "Creating Arke NoC PE Interface $name with ..."
+    puts "Creating Arke NoC PE Interface $name."
     puts "  VLNV: [dict get $stdcomps noc_arke_pe_ifc vlnv]"
 
     set pi [create_bd_cell -type ip -vlnv [dict get $stdcomps noc_arke_pe_ifc vlnv] $name]
@@ -174,14 +174,14 @@ namespace eval ::tapasco::ip {
   # Instantiates an Arke NoC Memory Interface.
   # @param name Name of the instance.
   # @return bd_cell of the instance.
-  proc create_noc_arke_mem_ifc {name} {
+  proc create_noc_arke_mem_ifc {name noc_address} {
     variable stdcomps
-    puts "Creating Arke NoC Memory Interface $name with ..."
+    puts "Creating Arke NoC Memory Interface $name."
     puts "  VLNV: [dict get $stdcomps noc_arke_mem_ifc vlnv]"
 
     set mi [create_bd_cell -type ip -vlnv [dict get $stdcomps noc_arke_mem_ifc vlnv] $name]
-    #set props [list CONFIG.NUM_SI $no_slaves CONFIG.NUM_MI $no_masters]
-    #set_property -dict $props $ic
+    set_property -dict [list CONFIG.NoC_address \"$noc_address\"] \
+                             [get_bd_cells $mi]
     return $mi
   }
 

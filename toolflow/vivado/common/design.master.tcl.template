@@ -102,26 +102,26 @@ tapasco::call_plugins "pre-wrapper"
 
 # Save block design before generating the wrapper. Otherwise it will be difficult to debug if anything goes wrong.
 save_bd_design
-#
-## create wrapper
-#if {[llength [info commands platform::generate_wrapper]] == 0} {
-#  # create default wrapper
-#  make_wrapper -files [get_files [pwd]/@@PROJECT_NAME@@/@@PROJECT_NAME@@.srcs/sources_1/bd/system/system.bd] -top
-#  add_files -norecurse [pwd]/@@PROJECT_NAME@@/@@PROJECT_NAME@@.srcs/sources_1/bd/system/hdl/system_wrapper.v
-#  update_compile_order -fileset sources_1
-#} else {
-#  # create platform specific wrapper
-#  platform::generate_wrapper
-#}
-#
-### Disable OOC synthesis to avoid log file problems
-##set_property synth_checkpoint_mode None [get_files system.bd]
-##
-### Synthesis and P&R effort level
-##set effort_level "@@EFFORT_LEVEL@@"
-##
-### generate according to the mode
-##platform::generate
-#
-## exit successfully
+
+# create wrapper
+if {[llength [info commands platform::generate_wrapper]] == 0} {
+  # create default wrapper
+  make_wrapper -files [get_files [pwd]/@@PROJECT_NAME@@/@@PROJECT_NAME@@.srcs/sources_1/bd/system/system.bd] -top
+  add_files -norecurse [pwd]/@@PROJECT_NAME@@/@@PROJECT_NAME@@.srcs/sources_1/bd/system/hdl/system_wrapper.v
+  update_compile_order -fileset sources_1
+} else {
+  # create platform specific wrapper
+  platform::generate_wrapper
+}
+
+# Disable OOC synthesis to avoid log file problems
+set_property synth_checkpoint_mode None [get_files system.bd]
+
+# Synthesis and P&R effort level
+set effort_level "@@EFFORT_LEVEL@@"
+
+# generate according to the mode
+platform::generate
+
+# exit successfully
 exit

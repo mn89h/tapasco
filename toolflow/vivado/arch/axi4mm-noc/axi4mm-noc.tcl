@@ -51,8 +51,8 @@ namespace eval arch {
 
   variable A4L_ADDR_W 32
   variable A4L_DATA_W 32
-  variable A4F_ADDR_W 64
-  variable A4F_DATA_W 64
+  variable A4F_ADDR_W 32
+  variable A4F_DATA_W 32
   variable A4F_ID_W 0
 
 
@@ -65,6 +65,11 @@ namespace eval arch {
       }
       if {$res == {}} {set res 0}
       return $res
+  }
+  proc splitline {string countChar} {
+    set rc [llength [split $string $countChar]]
+    incr rc -1
+    return $rc
   }
 
   # scan plugin directory
@@ -352,15 +357,16 @@ namespace eval arch {
             lappend ic_ports [create_bd_intf_pin -mode Master -vlnv "xilinx.com:interface:aximm_rtl:1.0" [format "M_MEM_%d" $mii]]
             lappend mdist 1 ;# MemIfc count for every ic_port is initialized to 1
 
-            ##TODO: pass parameters
-            set mi [tapasco::ip::create_noc_arke_mem_ifc [format "arke_noc_mem_ifc_%d" $mii]]
-            lappend mis $mi
-            puts $mi
             
             set xyz ""
             append xyz [format {%0*s} $DIM_X_W [dec2bin $x]]
             append xyz [format {%0*s} $DIM_Y_W [dec2bin $y]]
             if {$DIM_Z_W != 0} {append xyz [format {%0*s} $DIM_Z_W [dec2bin $z]]}
+
+            set mi [tapasco::ip::create_noc_arke_mem_ifc [format "arke_noc_mem_ifc_%d" $mii] $xyz]
+            lappend mis $mi
+            puts $mi
+            
             set xyz 0b[format {%0*s} $DATA_WIDTH $xyz]
             set r [tapasco::ip::create_noc_arke_router "arke_noc_router_$x\_$y\_$z" $xyz]
             lappend mirlist [list $x $y $z]
@@ -444,7 +450,7 @@ namespace eval arch {
             puts "  removing north ports"
             set_property -dict [list CONFIG.use_data_in_north {false} CONFIG.use_control_in_north {false} CONFIG.use_data_out_north {false} CONFIG.use_control_out_north {false}] [get_bd_cells $r]
           } {
-            "  connecting north to south ($x [expr $y+1] $z)"
+            puts "  connecting north to south ($x [expr $y+1] $z)"
             connect_bd_net [get_bd_pins $r/data_out_north]    [get_bd_pins $ryp1/data_in_south]
             connect_bd_net [get_bd_pins $r/control_out_north] [get_bd_pins $ryp1/control_in_south]
             connect_bd_net [get_bd_pins $r/data_in_north]     [get_bd_pins $ryp1/data_out_south]
@@ -456,7 +462,7 @@ namespace eval arch {
             puts "  removing up ports"
             set_property -dict [list CONFIG.use_data_in_up {false} CONFIG.use_control_in_up {false} CONFIG.use_data_out_up {false} CONFIG.use_control_out_up {false}] [get_bd_cells $r]
           } {
-            "  connecting up to down ($x $y [expr $z+1])"
+            puts "  connecting up to down ($x $y [expr $z+1])"
             connect_bd_net [get_bd_pins $r/data_out_up]    [get_bd_pins $rzp1/data_in_down]
             connect_bd_net [get_bd_pins $r/control_out_up] [get_bd_pins $rzp1/control_in_down]
             connect_bd_net [get_bd_pins $r/data_in_up]     [get_bd_pins $rzp1/data_out_down]
@@ -500,12 +506,21 @@ namespace eval arch {
     return $bin
   }
 
-  proc arch_set_noc_parameters {arch_host_routers arch_pe_routers arch_mem_routers} {
+  proc arch_set_noc_parameters {} {
+    
+    variable A4L_ADDR_W
+    variable A4L_DATA_W
+    variable A4F_ADDR_W
+    variable A4F_DATA_W
+    variable A4F_ID_W
+    
+    
     set ais [get_bd_cells -filter {VLNV == "esa.informatik.tu-darmstadt.de:user:arke_noc_arch_ifc:1.0"}]
     set pis [get_bd_cells -filter {VLNV == "esa.informatik.tu-darmstadt.de:user:arke_noc_pe_ifc:1.0"}]
     set mis [get_bd_cells -filter {VLNV == "esa.informatik.tu-darmstadt.de:user:arke_noc_mem_ifc:1.0"}]
     set pes [get_processing_elements]
     set pe_map [get_address_map [::platform::get_pe_base_address]]
+    set rveclength 100
 
     # Setup ArchIfc
     set rangel ""
@@ -517,18 +532,37 @@ namespace eval arch {
       append rangel $r_short
     }
     set base_address [::platform::get_pe_base_address]
-    set rangel 0b[format %-050s $rangel]
+    set rangel 0b[format %-0*s $rveclength $rangel]
     set pe_no [llength $pes]
 
-    foreach {ai $ais} {
-      set_property -dict [list CONFIG.AXI_base_addr $base_address \
+    foreach ai $ais {
+      set_property -dict [list CONFIG.A4L_addr_width $A4L_ADDR_W \
+                               CONFIG.A4L_addr_width $A4L_DATA_W \
+                               CONFIG.AXI_base_addr $base_address \
                                CONFIG.AXI_ranges $rangel \
-                               CONFIG.PE_count $pe_no] \
-                         [get_bd_cells arch/arke_noc_arch_ifc]
+                               CONFIG.PE_count $pe_no] $ai
     }
 
     # Setup PEIfc
-    
+    set i 0
+    foreach pi $pis {
+      set mi [lindex $mis $i]
+      set mia [get_property CONFIG.NoC_address $mi]
+
+      set_property -dict [list CONFIG.NoC_address_mem $mia] $pi
+      incr i
+      if {$i == [llength $mis]} {
+        set i 0
+      }
+    }
+
+    # Setup MemIfc
+    foreach mi $mis {
+      set_property -dict [list CONFIG.A4F_addr_width $A4F_ADDR_W \
+                               CONFIG.A4F_data_width $A4F_DATA_W \
+                               CONFIG.A4F_id_width $A4F_ID_W \
+                               CONFIG.A4F_strb_width [expr {$A4F_DATA_W / 8}]] $mi
+    }
   }
 
 
@@ -837,8 +871,7 @@ namespace eval arch {
 
     arch_connect_routers $arch_mem_routers
 
-    arch_set_noc_parameters {$arch_host_routers $arch_pe_routers $arch_mem_routers}
-
+    arch_set_noc_parameters
     arch_connect_clocks
     arch_connect_resets
 
