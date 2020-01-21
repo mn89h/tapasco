@@ -288,7 +288,7 @@ architecture Behavioral of Arch_Ifc is
                         wrrqA_get_en        <= '1';
                         state_send          <= WrRqA;
                     else
-                        send_stalled        <= '0';
+                        send_stalled        <= '1';
                         wrrqA_get_en        <= '0';
                     end if;
                 else

@@ -592,7 +592,7 @@ architecture Behavioral of PE_Ifc is
                         A4L_rdrqA_put_data_tmp      := dataIn(NoC_addr_width + A4L_rdrqA_width - 1 downto NoC_addr_width);
                         A4L_rdrqA_put_data          <= A4L_rdrqA_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
-                        put_last_state          <= WrRqA;
+                        put_last_state          <= RdRqA;
                         put_stalled             <= '0';
                     end if;
                 end if;
