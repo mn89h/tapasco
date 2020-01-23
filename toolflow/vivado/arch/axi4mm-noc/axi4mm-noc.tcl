@@ -216,6 +216,18 @@ namespace eval arch {
     return $airlist
   }
 
+  proc findmax { items } {
+    set max 0
+    foreach i $items { 
+      foreach j $i {
+        if { $j > $max } {
+          set max $j
+        }
+      }
+    }
+    return $max
+  }
+
   # Instantiates the pe interconnect hierarchy.
   proc arch_create_arke_noc_pe_interfaces {composition insts routerlist} {
     variable DIM_X
@@ -226,13 +238,41 @@ namespace eval arch {
     variable DIM_Y_W 
     variable DIM_Z_W
     variable DATA_WIDTH
+
+    variable A4L_ADDR_W
+    variable A4L_DATA_W
+    variable A4F_ADDR_W
+    variable A4F_DATA_W
+    variable A4F_ID_W
     
     set no_pes [llength $insts]
     set no_kinds [llength [dict keys $composition]]
     set perlist [list]
 
+    ## get all address widths
+
+    foreach pe $insts {
+      set intpe $pe
+      if {[get_bd_cells -filter {Name=~"internal*"} -of_objects $pe] != ""} {
+        ## internal
+        set intpe [get_bd_cells -filter {Name=~"internal*"} -of_objects $pe]
+      }
+      lappend a4l_addr_ws [get_property CONFIG.ADDR_WIDTH [get_bd_intf_pins -filter {MODE == Slave && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $intpe]]
+      lappend a4l_data_ws [get_property CONFIG.DATA_WIDTH [get_bd_intf_pins -filter {MODE == Slave && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $intpe]]
+      lappend a4f_addr_ws [get_property CONFIG.ADDR_WIDTH [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $intpe]]
+      lappend a4f_data_ws [get_property CONFIG.DATA_WIDTH [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $intpe]]
+      lappend a4f_id_ws [get_property CONFIG.ID_WIDTH [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $intpe]]
+    }
+
+    set A4L_ADDR_W [findmax $a4l_addr_ws]
+    set A4L_DATA_W [findmax $a4l_data_ws]
+    set A4F_ADDR_W [findmax $a4f_addr_ws]
+    set A4F_DATA_W [findmax $a4f_data_ws]
+    set A4F_ID_W [findmax $a4f_id_ws]
+    set A4F_STRB_W [expr $A4F_DATA_W / 8]
+          
+    ## create pe ifcs, interconnects and router
     puts "Creating $no_pes PE Interfaces and Routers."
-    set i 0
     set ik 0
     set ii 0
     set done 0
@@ -240,8 +280,9 @@ namespace eval arch {
     for {set z 0} {$z < $DIM_Z} {incr z} {
       for {set y 0} {$y < $DIM_Y} {incr y} {
         for {set x 0} {$x < $DIM_X} {incr x} {
-          puts "ARCH ROUTERLIST:"
-          puts [lindex $routerlist end]
+
+          save_bd_design
+
           if {[lindex $routerlist end 0] == $x && [lindex $routerlist end 1] == $y && [lindex $routerlist end 2] == $z} {
             set start 1
             continue
@@ -255,20 +296,44 @@ namespace eval arch {
             append xyz [format {%0*s} $DIM_Y_W [dec2bin $y]]
             if {$DIM_Z_W != 0} {append xyz [format {%0*s} $DIM_Z_W [dec2bin $z]]}
 
-            set a4l_addr_w [get_property CONFIG.ADDR_WIDTH [get_bd_intf_pins -filter {MODE == Slave && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $pe]]
-            set a4l_data_w [get_property CONFIG.DATA_WIDTH [get_bd_intf_pins -filter {MODE == Slave && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $pe]]
-            set a4f_addr_w [get_property CONFIG.ADDR_WIDTH [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $pe]]
-            set a4f_data_w [get_property CONFIG.DATA_WIDTH [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $pe]]
-            set a4f_id_w [get_property CONFIG.ID_WIDTH [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $pe]]
-            set a4f_strb_w [expr $a4f_data_w / 8]
-            set pi [tapasco::ip::create_noc_arke_pe_ifc [format "arke_noc_pe_ifc_%02d_%03d" $ik $ii] $a4l_addr_w $a4l_data_w $a4f_addr_w $a4f_data_w $a4f_id_w $a4f_strb_w $xyz]
-            ##TODO: parameter
+            ## create pe ifc
+            set pi [tapasco::ip::create_noc_arke_pe_ifc [format "arke_noc_pe_ifc_%02d_%03d" $ik $ii] $A4L_ADDR_W $A4L_DATA_W $A4F_ADDR_W $A4F_DATA_W $A4F_ID_W $A4F_STRB_W $xyz]
 
-            connect_bd_intf_net [get_bd_intf_pins -filter {MODE == Slave && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $pe] \
+            ## create and configure pe slaves interconnect
+            set pepins [get_bd_intf_pins -filter {MODE == Slave && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $pe]
+            set name [format "interconnect_%02d_%03d_slaves" $ik $ii]
+            set ic [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 $name]
+            set_property -dict [list CONFIG.NUM_SI {1} CONFIG.NUM_MI [llength $pepins]] $ic
+            # connect pe to ic
+            set icpins [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $ic]
+            set i 0
+            foreach icpin $icpins {
+              connect_bd_intf_net $icpin [lindex $pepins $i]
+              incr i
+            }
+            # connect ic to pe ifc
+            connect_bd_intf_net [get_bd_intf_pins -filter {MODE == Slave && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $ic] \
                                 [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $pi]
-            connect_bd_intf_net [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $pe] \
+
+
+            ## create and configure pe masters interconnect
+            set pepins [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $pe]
+            set name [format "interconnect_%02d_%03d_master" $ik $ii]
+            set ic [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 $name]
+            set_property -dict [list CONFIG.NUM_SI [llength $pepins] CONFIG.NUM_MI {1}] $ic
+            # connect pe to ic
+            set icpins [get_bd_intf_pins -filter {MODE == Slave && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $ic]
+            set i 0
+            foreach icpin $icpins {
+              connect_bd_intf_net $icpin [lindex $pepins $i]
+              incr i
+            }
+            # connect ic to pe ifc
+            connect_bd_intf_net [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $ic] \
                                 [get_bd_intf_pins -filter {MODE == Slave && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $pi]
             
+
+            ## connect pe ifc to router
             set xyz 0b[format {%0*s} $DATA_WIDTH $xyz]
             set r [tapasco::ip::create_noc_arke_router "arke_noc_router_$x\_$y\_$z" $xyz]
             lappend perlist [list $x $y $z]
@@ -282,7 +347,7 @@ namespace eval arch {
             connect_bd_net [get_bd_pins -filter {NAME == "controlOut"} -of_objects $pi] \
                            [get_bd_pins -filter {NAME == "control_in_local"} -of_objects $r]
 
-            incr i
+
             incr ii
             if {$ii == $no_inst} {
               incr ik
@@ -540,7 +605,7 @@ namespace eval arch {
     return $bin
   }
 
-  proc arch_set_noc_parameters {} {
+  proc arch_set_noc_parameters {perlist} {
     
     variable A4L_ADDR_W
     variable A4L_DATA_W
@@ -554,27 +619,59 @@ namespace eval arch {
     set mis [get_bd_cells -filter {VLNV == "esa.informatik.tu-darmstadt.de:user:arke_noc_mem_ifc:1.0"}]
     set pes [get_processing_elements]
     set pe_map [get_address_map [::platform::get_pe_base_address]]
-    set rveclength 100
+    set rveclength 500
 
     # Setup ArchIfc
-    set rangel ""
     dict for {pe data} $pe_map {
-      set r_hex [dict get $data "range"]
-      set r_k [dec2bin [expr {$r_hex >> 12}]]
-      set r_short [dec2bin [splitline $r_k 0]] ;#count zeros and convert to bin
-      set r_short [format {%0*s} 5 $r_short]
-      append rangel $r_short
+      lappend interfaces_t [get_bd_cells -of_objects [get_bd_intf_pins [dict get $data "interface"]]]
+      lappend offsets_t [dict get $data "offset"]
+      lappend ranges_t [dict get $data "range"]
     }
+    set range_no [llength $ranges_t]
+
+    set targetlist ""
+    set rangelist ""
+    set ri 0
+    for {set i 0} {$i < $range_no} {incr i} {
+      # append interfaces corresponding range to rangelist
+      if {$i == $range_no - 1} {
+        set range_t [lindex $ranges_t $i]
+      } {
+        set range_t [expr {[lindex $offsets_t [expr $i + 1]] - [lindex $offsets_t $i]}]
+      }
+      #rshift 12, convert to bin, count 0s, convert to bin, fill with 0s to a length of 5
+      set range_t [format {%0*s} 5 [dec2bin [splitline [dec2bin [expr {$range_t >> 12}]] 0]]]
+      append rangelist $range_t
+
+
+      # append interfaces corresponding pe address to targetlist
+      set x [lindex $perlist $ri 0] 
+      set y [lindex $perlist $ri 1]
+      set z [lindex $perlist $ri 2]
+
+      set xyz ""
+      append xyz [format {%0*s} $DIM_X_W [dec2bin $x]]
+      append xyz [format {%0*s} $DIM_Y_W [dec2bin $y]]
+      if {$DIM_Z_W != 0} {append xyz [format {%0*s} $DIM_Z_W [dec2bin $z]]}
+
+      append targetlist $xyz
+
+      if {[lindex $interfaces_t $i] != [lindex $interfaces_t [expr $i + 1]]} {
+        incr ri
+      }
+    }
+
     set base_address [::platform::get_pe_base_address]
-    set rangel 0b[format %-0*s $rveclength $rangel]
-    set pe_no [llength $pes]
+    set rangelist 0b[format %-0*s $rveclength $rangelist]
+    set targetlist 0b[format %-0*s $rveclength $targetlist]
 
     foreach ai $ais {
       set_property -dict [list CONFIG.A4L_addr_width $A4L_ADDR_W \
                                CONFIG.A4L_addr_width $A4L_DATA_W \
                                CONFIG.AXI_base_addr $base_address \
-                               CONFIG.AXI_ranges $rangel \
-                               CONFIG.PE_count $pe_no] $ai
+                               CONFIG.AXI_ranges $rangelist \
+                               CONFIG.AXI_ranges_cnt $range_no \
+                               CONFIG.NoC_targets] $ai
     }
 
     # Setup PEIfc
@@ -905,7 +1002,7 @@ namespace eval arch {
 
     arch_connect_routers $arch_mem_routers
 
-    arch_set_noc_parameters
+    arch_set_noc_parameters $arch_pe_routers
     arch_connect_clocks
     arch_connect_resets
 

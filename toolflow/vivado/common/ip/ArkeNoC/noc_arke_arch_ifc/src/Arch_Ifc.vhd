@@ -36,7 +36,8 @@ entity Arch_Ifc is
 
         AXI_base_addr   : std_logic_vector;
         AXI_ranges      : std_logic_vector;
-        PE_count        : integer := 18
+        AXI_ranges_cnt  : integer := 18;
+        NoC_targets     : std_logic_vector
     );
     port (
         signal clk              : in  std_logic := '1';
@@ -87,7 +88,7 @@ architecture Behavioral of Arch_Ifc is
 
     
     -- AXI ADDRESS MAP GENERATION --
-    type AXI_ADDR_MAP_TYPE is array (0 to PE_count) of std_logic_vector(AXI_base_addr'range);
+    type AXI_ADDR_MAP_TYPE is array (0 to AXI_ranges_cnt) of std_logic_vector(AXI_base_addr'range);
 
     function generate_AXI_ADDR_MAP return AXI_ADDR_MAP_TYPE is
         constant one_c          : unsigned(AXI_base_addr'range) := unsigned(ZERO(AXI_base_addr'reverse_range)) + unsigned'(B"1");
@@ -96,7 +97,7 @@ architecture Behavioral of Arch_Ifc is
     begin
         -- lower border of PE(0)
         result(0) := AXI_base_addr;
-        for i in 0 to PE_count - 1 loop
+        for i in 0 to AXI_ranges_cnt - 1 loop
             -- the 5 bits representing the axi address range of the PE determine the shift amount, minimum shift is 12 representing a 4k range
             bits_to_shift   := 12 + to_integer(unsigned(AXI_ranges(i * 5 to (i+1) * 5 - 1)));
             -- write upper border by shifting 1 by the determined shift amount and adding the lower border
@@ -107,8 +108,9 @@ architecture Behavioral of Arch_Ifc is
 
 
     -- NOC ADDRESS MAP GENERATION --
-    type NOC_ADDR_MAP_TYPE is array (0 to PE_count - 1) of std_logic_vector(ADDR_W - 1 downto 0);
+    type NOC_ADDR_MAP_TYPE is array (0 to AXI_ranges_cnt - 1) of std_logic_vector(ADDR_W - 1 downto 0);
 
+    -- unused, address map given by parameter to handle multiple ranges to one target
     function generate_NOC_ADDR_MAP return NOC_ADDR_MAP_TYPE is
         variable result : NOC_ADDR_MAP_TYPE := (others => (others => '0'));
         variable i      : integer := 0;
@@ -121,7 +123,7 @@ architecture Behavioral of Arch_Ifc is
             for y in 0 to DIM_Y - 1 loop
                 for x in 0 to DIM_X - 1 loop
                     -- array boundary check
-                    if (i < PE_count) then 
+                    if (i < AXI_ranges_cnt) then 
                         -- leaving 0,0,0 out for arch_ifc
                         if ((x = 0) and (y = 0) and (z = 0)) then
                             null;   
@@ -139,9 +141,19 @@ architecture Behavioral of Arch_Ifc is
         return result;
     end function;
 
+    function read_NOC_TARGETS return NOC_ADDR_MAP_TYPE is
+        variable result : NOC_ADDR_MAP_TYPE := (others => (others => '0'));
+    begin
+        for i in 0 to AXI_ranges_cnt - 1 loop
+            -- every ADDR_W bits from NoC_targets parameter is read into result array 
+            result(i)     := std_logic_vector(unsigned(NoC_targets(i * ADDR_W to (i+1) * ADDR_W - 1)));
+        end loop;
+        return result;
+    end function;
+
     -- GENERATE THE CONSTANTS --
     constant axi_addr_map_c : AXI_ADDR_MAP_TYPE := generate_AXI_ADDR_MAP;
-    constant noc_addr_map_c : NOC_ADDR_MAP_TYPE := generate_NOC_ADDR_MAP;
+    constant noc_addr_map_c : NOC_ADDR_MAP_TYPE := read_NOC_TARGETS;
 
     signal rdrqA_get_valid : std_logic;
     signal rdrqA_get_en    : std_logic;
@@ -171,7 +183,7 @@ architecture Behavioral of Arch_Ifc is
         variable targetPE : integer := 0;
     begin
         -- compare every axi range to the given axi_address and determine the targetPE
-        for i in 0 to PE_count - 1 loop
+        for i in 0 to AXI_ranges_cnt - 1 loop
             if (unsigned(axi_addr_map_c(i)) <= unsigned(axi_address) and
                 unsigned(axi_address) < unsigned(axi_addr_map_c(i+1))) then
                 targetPE := i;
