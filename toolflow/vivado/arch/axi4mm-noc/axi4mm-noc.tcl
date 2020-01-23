@@ -619,7 +619,7 @@ namespace eval arch {
     set mis [get_bd_cells -filter {VLNV == "esa.informatik.tu-darmstadt.de:user:arke_noc_mem_ifc:1.0"}]
     set pes [get_processing_elements]
     set pe_map [get_address_map [::platform::get_pe_base_address]]
-    set rveclength 500
+    set rveclength 400
 
     # Setup ArchIfc
     dict for {pe data} $pe_map {
@@ -666,12 +666,12 @@ namespace eval arch {
     set targetlist 0b[format %-0*s $rveclength $targetlist]
 
     foreach ai $ais {
-      set_property -dict [list CONFIG.A4L_addr_width $A4L_ADDR_W \
+      set_property -dict [list CONFIG.A4L_addr_width 32 \
                                CONFIG.A4L_addr_width $A4L_DATA_W \
                                CONFIG.AXI_base_addr $base_address \
                                CONFIG.AXI_ranges $rangelist \
                                CONFIG.AXI_ranges_cnt $range_no \
-                               CONFIG.NoC_targets] $ai
+                               CONFIG.NoC_targets $targetlist] $ai
     }
 
     # Setup PEIfc

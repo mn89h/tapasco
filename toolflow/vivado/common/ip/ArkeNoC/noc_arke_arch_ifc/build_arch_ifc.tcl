@@ -99,19 +99,27 @@ namespace eval BuildArchIfc {
     ipgui::add_param -name {NoC_address} -component [ipx::current_core] -display_name {NoC_address}
     ipgui::add_param -name {AXI_base_addr} -component [ipx::current_core] -display_name {AXI_base_addr}
     ipgui::add_param -name {AXI_ranges} -component [ipx::current_core] -display_name {AXI_ranges}
-    ipgui::add_param -name {PE_count} -component [ipx::current_core] -display_name {PE_count}
+    ipgui::add_param -name {AXI_ranges_cnt} -component [ipx::current_core] -display_name {AXI_ranges_cnt}
+    ipgui::add_param -name {NoC_targets} -component [ipx::current_core] -display_name {NoC_targets}
     
   }
 
   proc set_user_parameters {address_width} {
     set default_address [format {%0*s} $address_width 0]
     set_property widget {hexEdit} [ipgui::get_guiparamspec -name "AXI_ranges" -component [ipx::current_core] ]
-    set_property value {"0010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100"} [ipx::get_user_parameters AXI_ranges -of_objects [ipx::current_core]]
-    set_property value {"0010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100"} [ipx::get_hdl_parameters AXI_ranges -of_objects [ipx::current_core]]
-    set_property value_bit_string_length 100 [ipx::get_user_parameters AXI_ranges -of_objects [ipx::current_core]]
-    set_property value_bit_string_length 100 [ipx::get_hdl_parameters AXI_ranges -of_objects [ipx::current_core]]
+    set_property value {"0010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100"} [ipx::get_user_parameters AXI_ranges -of_objects [ipx::current_core]]
+    set_property value {"0010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100"} [ipx::get_hdl_parameters AXI_ranges -of_objects [ipx::current_core]]
+    set_property value_bit_string_length 400 [ipx::get_user_parameters AXI_ranges -of_objects [ipx::current_core]]
+    set_property value_bit_string_length 400 [ipx::get_hdl_parameters AXI_ranges -of_objects [ipx::current_core]]
     set_property value_format bitString [ipx::get_user_parameters AXI_ranges -of_objects [ipx::current_core]]
     set_property value_format bitString [ipx::get_hdl_parameters AXI_ranges -of_objects [ipx::current_core]]
+    set_property widget {hexEdit} [ipgui::get_guiparamspec -name "NoC_targets" -component [ipx::current_core] ]
+    set_property value {"0010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100"} [ipx::get_user_parameters NoC_targets -of_objects [ipx::current_core]]
+    set_property value {"0010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100"} [ipx::get_hdl_parameters NoC_targets -of_objects [ipx::current_core]]
+    set_property value_bit_string_length 400 [ipx::get_user_parameters NoC_targets -of_objects [ipx::current_core]]
+    set_property value_bit_string_length 400 [ipx::get_hdl_parameters NoC_targets -of_objects [ipx::current_core]]
+    set_property value_format bitString [ipx::get_user_parameters NoC_targets -of_objects [ipx::current_core]]
+    set_property value_format bitString [ipx::get_hdl_parameters NoC_targets -of_objects [ipx::current_core]]
     set_property widget {hexEdit} [ipgui::get_guiparamspec -name "AXI_base_addr" -component [ipx::current_core]]
     set_property value {"01000000000000000000000000000000"} [ipx::get_user_parameters AXI_base_addr -of_objects [ipx::current_core]]
     set_property value {"01000000000000000000000000000000"} [ipx::get_hdl_parameters AXI_base_addr -of_objects [ipx::current_core]]
