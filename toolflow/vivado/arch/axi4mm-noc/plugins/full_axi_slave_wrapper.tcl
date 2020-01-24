@@ -89,7 +89,7 @@ namespace eval full_axi_wrapper {
   }
 
   proc fix_address_map {args} {
-    assign_bd_address
+    #assign_bd_address
     return $args
   }
 }

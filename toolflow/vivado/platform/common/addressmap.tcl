@@ -201,7 +201,7 @@ namespace eval addressmap {
             puts "    address map info: $me]"
             set range  [expr "max([dict get $me range], 4096)"]
             if {[expr {[get_property Name $intf] == "A4L_AXI"}]} { ;# axi4mm-noc pe offset
-              set offset 0
+              set offset [expr "max([dict get $me "offset"], [get_property OFFSET $intf])"] ;# 0
             } {
               set offset [expr "max([dict get $me "offset"], [get_property OFFSET $intf])"]
             }

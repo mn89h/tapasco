@@ -297,7 +297,7 @@ namespace eval arch {
             if {$DIM_Z_W != 0} {append xyz [format {%0*s} $DIM_Z_W [dec2bin $z]]}
 
             ## create pe ifc
-            set pi [tapasco::ip::create_noc_arke_pe_ifc [format "arke_noc_pe_ifc_%02d_%03d" $ik $ii] $A4L_ADDR_W $A4L_DATA_W $A4F_ADDR_W $A4F_DATA_W $A4F_ID_W $A4F_STRB_W $xyz]
+            set pi [tapasco::ip::create_noc_arke_pe_ifc [format "arke_noc_pe_ifc_%02d_%03d" $ik $ii] 32 $A4L_DATA_W $A4F_ADDR_W $A4F_DATA_W $A4F_ID_W $A4F_STRB_W $xyz]
 
             ## create and configure pe slaves interconnect
             set pepins [get_bd_intf_pins -filter {MODE == Slave && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $pe]
@@ -606,6 +606,9 @@ namespace eval arch {
   }
 
   proc arch_set_noc_parameters {perlist} {
+    variable DIM_X_W 
+    variable DIM_Y_W 
+    variable DIM_Z_W
     
     variable A4L_ADDR_W
     variable A4L_DATA_W
@@ -956,13 +959,18 @@ namespace eval arch {
   # Connect internal reset lines.
   proc arch_connect_resets {} {
     connect_bd_net -quiet [tapasco::subsystem::get_port "design" "rst" "interconnect"] \
-      [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == rst && NAME =~ *interconnect_aresetn && DIR == I"]
+      [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == rst && NAME =~ *interconnect_aresetn && DIR == I"] \
+      [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == rst && NAME =~ ARESETN && DIR == I"]
+    save_bd_design
     connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
       [get_bd_pins -of_objects [get_bd_cells -of_objects [current_bd_instance .]] -filter "TYPE == rst && NAME =~ *peripheral_aresetn && DIR == I"] \
+      [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == rst && NAME =~ *_ARESETN && DIR == I"] \
       [get_bd_pins -filter { TYPE == rst && DIR == I && CONFIG.POLARITY != ACTIVE_HIGH } -of_objects [get_bd_cells -filter {NAME =~ "target_ip*"}]]
+    save_bd_design
     connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "reset"] \
       [get_bd_pins -of_objects [get_bd_cells -of_objects [current_bd_instance .]] -filter "TYPE == rst && NAME =~ rst && DIR == I"]
     set active_high_resets [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == rst && DIR == I && CONFIG.POLARITY == ACTIVE_HIGH"]
+    save_bd_design
     if {[llength $active_high_resets] > 0} {
       connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "reset"] $active_high_resets
     }
