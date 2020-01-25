@@ -366,7 +366,7 @@ namespace eval platform {
         }
 
         proc set_pblocks_router {args} {
-            set routercs [get_cells -hierarchical "*router*"]
+            set routercs [get_cells -hierarchical "arke_noc_router*"]
             set rno [llength $routercs]
             if {$rno > 0} {
               #pattern variant 0: |x---x| --not quite functioning
@@ -425,8 +425,10 @@ namespace eval platform {
                             incr x1 3
                           }
 
-                          
+                          #for zyx:
                           resize_pblock $pb -add [get_sites -range "SLICE_X$x0\Y$y0 SLICE_X$x1\Y$y1"]
+                          #for "correct" xyz:
+                          #add_cells_to_pblock plock_$i [get_cells [list system_i/arch/arke_noc_router_$x\_$y\_$z]] -clear_locs
                           add_cells_to_pblock plock_$i [lindex $routercs $i] -clear_locs
                           incr i
                       }
