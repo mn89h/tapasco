@@ -48,7 +48,9 @@ void *exec_as(void *id) {
   int *c;
   c = (int*)id;
   if(c)
-    printf("Thread number: %d\n", *c);
+    printf("Starting thread number: %d\n", *c);
+
+  int errs = 0;
           
   // init whole array to subsequent numbers
   int *arr = (int *)malloc(SZ * RUNS * sizeof(int));
@@ -93,6 +95,8 @@ void *exec_as(void *id) {
   else
     fprintf(stderr, "FAILURE\n");
 
+  free(arr);
+
   /* the function must return something - NULL will do */
   return NULL;
 
@@ -128,9 +132,10 @@ int main(int argc, char **argv) {
       return 1;
     }
   }
+  for(i = 0; i < num; i++)
+    pthread_join(ptr[i], NULL);
 
   tapasco_destroy_device(ctx, dev);
   tapasco_deinit(ctx);
-  free(arr);
   return errs;
 }
