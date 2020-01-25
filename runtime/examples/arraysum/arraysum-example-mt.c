@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
       return 1;
     }
   }
-  for(i = 0; i < num; i++)
+  for(i = 0; i < pecount; i++)
     pthread_join(ptr[i], NULL);
 
   tapasco_destroy_device(ctx, dev);
