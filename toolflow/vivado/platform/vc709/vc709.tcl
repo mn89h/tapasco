@@ -344,6 +344,7 @@ namespace eval platform {
   # End of write_mig_file_design_1_mig_7series_0_0()
     namespace eval vc709 {
         namespace export set_pblocks
+        namespace export set_pblocks_router
 
         proc set_pblocks {args} {
             startgroup
@@ -363,8 +364,80 @@ namespace eval platform {
             endgroup
             return $args
         }
+
+        proc set_pblocks_router {args} {
+            set routercs [get_cells -hierarchical "*router*"]
+            set rno [llength $routercs]
+            if {$rno > 0} {
+              #pattern variant 0: |x---x| --not quite functioning
+              #pattern variant 1: |-x--x-|
+              #pattern variant 2: |-x-x-|
+              set variant 1
+              set xsl_no [expr {[lindex [regexp -all -inline {(X)(\d+)} [lindex [get_sites -filter { NAME =~  "*Y0*" && SITE_TYPE == "SLICEL" }] end]] 2] + 1}]
+              set ysl_no [expr {[lindex [regexp -all -inline {(Y)(\d+)} [lindex [get_sites -filter { NAME =~  "*X0*" && SITE_TYPE == "SLICEL" }] 0]] 2] + 1}]
+
+              set xyz [regexp -all -inline {\d+} [lindex $routercs end]]
+              set x_no [expr [lindex $xyz 0] + 1]
+              set y_no [expr [lindex $xyz 1] + 1]
+              set z_no [expr [lindex $xyz 2] + 1]
+
+              if {$variant == 0} {
+                set xw [expr {$xsl_no / (4 * $x_no)}] 
+                set yw [expr {$ysl_no / (4 * $y_no)}]
+              } elseif {$variant == 1} {
+                set xw [expr {$xsl_no / (3 * $x_no)}] 
+                set yw [expr {$ysl_no / (3 * $y_no)}]
+              } elseif {$variant == 2} {
+                set xw [expr {$xsl_no / (3 * $x_no + 2)}] 
+                set yw [expr {$ysl_no / (3 * $y_no + 2)}]
+              }
+
+              set i 0
+              for {set z 0} {$z < $z_no} {incr z} {
+                  for {set y 0} {$y < $y_no} {incr y} {
+                      for {set x 0} {$x < $x_no} {incr x} {
+                          set pb [create_pblock "plock_$i"]
+                          
+                          if {$variant == 0} {
+                            # no space to border version
+                            set x0 [expr {(5*$x) * $xw}]
+                            set y0 [expr {(5*$y) * $yw}]
+                            set x1 [expr {(5*$x+1) * $xw - 1}]
+                            set y1 [expr {(5*$y+1) * $yw - 1}]
+                          } elseif {$variant == 1} {
+                            ## small space to border version
+                            set x0 [expr {(3*$x+1) * $xw}]
+                            set y0 [expr {(3*$y+1) * $yw}]
+                            set x1 [expr {(3*$x+2) * $xw - 1}]
+                            set y1 [expr {(3*$y+2) * $yw - 1}]
+                          } elseif {$variant == 2} {
+                            ## equidistant space to border version
+                            set x0 [expr {(3*$x+2) * $xw}]
+                            set y0 [expr {(3*$y+2) * $yw}]
+                            set x1 [expr {(3*$x+3) * $xw - 1}]
+                            set y1 [expr {(3*$y+3) * $yw - 1}]
+                          }
+
+                          while {[get_sites "SLICE_X$x0\Y$y0"] == ""} {
+                            incr x0 3
+                          }
+                          while {[get_sites "SLICE_X$x1\Y$y1"] == ""} {
+                            incr x1 3
+                          }
+
+                          
+                          resize_pblock $pb -add [get_sites -range "SLICE_X$x0\Y$y0 SLICE_X$x1\Y$y1"]
+                          add_cells_to_pblock plock_$i [lindex $routercs $i] -clear_locs
+                          incr i
+                      }
+                  }
+              }
+            }
+            return $args
+        }
     }
 
 
     tapasco::register_plugin "platform::vc709::set_pblocks" "post-synth"
+    tapasco::register_plugin "platform::vc709::set_pblocks_router" "post-synth"
 }
