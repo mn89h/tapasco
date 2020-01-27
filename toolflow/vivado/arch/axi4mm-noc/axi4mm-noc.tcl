@@ -270,6 +270,8 @@ namespace eval arch {
     set A4F_DATA_W [findmax $a4f_data_ws]
     set A4F_ID_W [findmax $a4f_id_ws]
     set A4F_STRB_W [expr $A4F_DATA_W / 8]
+
+    set A4F_ID_W 4
           
     ## create pe ifcs, interconnects and router
     puts "Creating $no_pes PE Interfaces and Routers."
