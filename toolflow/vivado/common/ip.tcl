@@ -134,7 +134,7 @@ namespace eval ::tapasco::ip {
     BuildArchIfc::build $ADDRESS_WIDTH
     BuildPEIfc::build $ADDRESS_WIDTH
     BuildMemIfc::build $ADDRESS_WIDTH
-    BuildRouter::build $ADDRESS_WIDTH
+    BuildRouter::build $DATA_WIDTH
 
     update_ip_catalog
 
