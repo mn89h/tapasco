@@ -75,7 +75,7 @@ entity AXI4_Full_Master is
     ------------------------
     AXI_wready  : in  std_logic;
     AXI_wvalid  : out std_logic;
-    AXI_wdata   : out std_logic_vector( A4F_addr_width - 1 + A4F_strb_width + 1 downto A4F_strb_width + 1 );
+    AXI_wdata   : out std_logic_vector( A4F_data_width - 1 + A4F_strb_width + 1 downto A4F_strb_width + 1 );
     AXI_wstrb   : out std_logic_vector( A4F_strb_width - 1 + 1 downto 1 );
     AXI_wlast   : out std_logic_vector(  0 downto 0 );
 
@@ -84,7 +84,7 @@ entity AXI4_Full_Master is
     ------------------------
     AXI_rready  : out std_logic;
     AXI_rvalid  : in  std_logic;
-    AXI_rdata   : in  std_logic_vector( A4F_addr_width - 1 + A4F_id_width + 3 downto A4F_id_width + 3 );
+    AXI_rdata   : in  std_logic_vector( A4F_data_width - 1 + A4F_id_width + 3 downto A4F_id_width + 3 );
     AXI_rid     : in  std_logic_vector( A4F_id_width - 1 + 3 downto 3 );
     AXI_rresp   : in  std_logic_vector(  2 downto 1 );
     AXI_rlast   : in  std_logic_vector(  0 downto 0 );
