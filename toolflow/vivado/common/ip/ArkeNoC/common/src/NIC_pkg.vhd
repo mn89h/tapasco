@@ -98,7 +98,7 @@ package NIC_pkg is
 
             AXI_wready      : in  std_logic;
             AXI_wvalid      : out std_logic;
-            AXI_wdata       : out std_logic_vector( A4F_addr_width - 1 + A4F_strb_width + 1 downto A4F_strb_width + 1 );
+            AXI_wdata       : out std_logic_vector( A4F_data_width - 1 + A4F_strb_width + 1 downto A4F_strb_width + 1 );
             AXI_wstrb       : out std_logic_vector( A4F_strb_width - 1 + 1 downto 1 );
             AXI_wlast       : out std_logic_vector(  0 downto 0 );
 
@@ -173,7 +173,7 @@ package NIC_pkg is
 
             AXI_wready      : out std_logic;
             AXI_wvalid      : in  std_logic;
-            AXI_wdata       : in  std_logic_vector( A4F_addr_width - 1 + A4F_strb_width + 1 downto A4F_strb_width + 1 );
+            AXI_wdata       : in  std_logic_vector( A4F_data_width - 1 + A4F_strb_width + 1 downto A4F_strb_width + 1 );
             AXI_wstrb       : in  std_logic_vector( A4F_strb_width - 1 + 1 downto 1 );
             AXI_wlast       : in  std_logic_vector(  0 downto 0 );
 
