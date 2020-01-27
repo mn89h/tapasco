@@ -62,7 +62,7 @@ entity Mem_Ifc is
         signal AXI_awqos        : out std_logic_vector(  3 downto 0 );
         signal AXI_wvalid       : out std_logic;
         signal AXI_wready       : in  std_logic;
-        signal AXI_wdata        : out std_logic_vector( A4F_addr_width - 1 + A4F_strb_width + 1 downto A4F_strb_width + 1 );
+        signal AXI_wdata        : out std_logic_vector( A4F_data_width - 1 + A4F_strb_width + 1 downto A4F_strb_width + 1 );
         signal AXI_wstrb        : out std_logic_vector( A4F_strb_width - 1 + 1 downto 1 );
         signal AXI_wlast        : out std_logic_vector(  0 downto 0 );
         signal AXI_rready       : out std_logic;
