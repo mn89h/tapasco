@@ -95,12 +95,13 @@ namespace eval BuildRouter {
     set_property library_name work [ipx::get_files src/Router.vhd -of_objects [ipx::get_file_groups xilinx_anylanguagebehavioralsimulation -of_objects [ipx::current_core]]]
   }
 
-  proc set_default_driver_values {} {
+  proc set_default_driver_values {address_width} {
+    set default_address [format {%0*s} $address_width 0]
     set_property widget {hexEdit} [ipgui::get_guiparamspec -name "address" -component [ipx::current_core] ]
-    set_property value {"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"} [ipx::get_user_parameters address -of_objects [ipx::current_core]]
-    set_property value {"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"} [ipx::get_hdl_parameters address -of_objects [ipx::current_core]]
-    set_property value_bit_string_length 128 [ipx::get_user_parameters address -of_objects [ipx::current_core]]
-    set_property value_bit_string_length 128 [ipx::get_hdl_parameters address -of_objects [ipx::current_core]]
+    set_property value \"$default_address\" [ipx::get_user_parameters address -of_objects [ipx::current_core]]
+    set_property value \"$default_address\" [ipx::get_hdl_parameters address -of_objects [ipx::current_core]]
+    set_property value_bit_string_length $address_width [ipx::get_user_parameters address -of_objects [ipx::current_core]]
+    set_property value_bit_string_length $address_width [ipx::get_hdl_parameters address -of_objects [ipx::current_core]]
     set_property value_format bitString [ipx::get_user_parameters address -of_objects [ipx::current_core]]
     set_property value_format bitString [ipx::get_hdl_parameters address -of_objects [ipx::current_core]]
 
@@ -217,7 +218,7 @@ namespace eval BuildRouter {
     close_project
   }
 
-  proc build {} {
+  proc build {address_width} {
     create_proj
     open_proj
     package_project
@@ -226,7 +227,7 @@ namespace eval BuildRouter {
     set_infos
     add_synthesis_files
     add_simulation_files
-    set_default_driver_values
+    set_default_driver_values $address_width
     set_port_dependencies
     build_gui
     save_and_exit
