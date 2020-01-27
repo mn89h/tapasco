@@ -42,11 +42,6 @@ int main(int argc, char **argv) {
   printf("instance count: %zd\n", tapasco_device_kernel_pe_count(dev, KID));
   assert(tapasco_device_kernel_pe_count(dev, KID));
 
-  // init whole array to subsequent numbers
-  int *arr = (int *)malloc(SZ * RUNS * sizeof(int));
-  check(arr != NULL);
-  init_array(arr, SZ * RUNS);
-
   for (int run = 0; run < RUNS; ++run) {
     printf("RUN %d ", run);
     
