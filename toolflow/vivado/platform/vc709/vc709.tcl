@@ -372,7 +372,9 @@ namespace eval platform {
               #pattern variant 0: |x---x| --not quite functioning
               #pattern variant 1: |-x--x-|
               #pattern variant 2: |-x-x-|
-              set variant 1
+              #pattern variant 3: |-x-x-|
+              #pattern variant 4: |x--x|
+              set variant 4
               set xsl_no [expr {[lindex [regexp -all -inline {(X)(\d+)} [lindex [get_sites -filter { NAME =~  "*Y0*" && SITE_TYPE == "SLICEL" }] end]] 2] + 1}]
               set ysl_no [expr {[lindex [regexp -all -inline {(Y)(\d+)} [lindex [get_sites -filter { NAME =~  "*X0*" && SITE_TYPE == "SLICEL" }] 0]] 2] + 1}]
 
@@ -390,6 +392,12 @@ namespace eval platform {
               } elseif {$variant == 2} {
                 set xw [expr {$xsl_no / (3 * $x_no + 2)}] 
                 set yw [expr {$ysl_no / (3 * $y_no + 2)}]
+              } elseif {$variant == 3} {
+                set xw [expr {$xsl_no / (2 * $x_no + 1)}] 
+                set yw [expr {$ysl_no / (2 * $y_no + 1)}]
+              } elseif {$variant == 4} {
+                set xw [expr {$xsl_no / (2 * $x_no - 1)}] 
+                set yw [expr {$ysl_no / (2 * $y_no - 1)}]
               }
 
               set i 0
@@ -416,6 +424,18 @@ namespace eval platform {
                             set y0 [expr {(3*$y+2) * $yw}]
                             set x1 [expr {(3*$x+3) * $xw - 1}]
                             set y1 [expr {(3*$y+3) * $yw - 1}]
+                          } elseif {$variant == 3} {
+                            ## equidistant space to border version
+                            set x0 [expr {(2*$x+1) * $xw}]
+                            set y0 [expr {(2*$y+1) * $yw}]
+                            set x1 [expr {(2*$x+2) * $xw - 1}]
+                            set y1 [expr {(2*$y+2) * $yw - 1}]
+                          } elseif {$variant == 4} {
+                            ## equidistant space to border version
+                            set x0 [expr {(2*$x) * $xw}]
+                            set y0 [expr {(2*$y) * $yw}]
+                            set x1 [expr {(2*$x+1) * $xw - 1}]
+                            set y1 [expr {(2*$y+1) * $yw - 1}]
                           }
 
                           while {[get_sites "SLICE_X$x0\Y$y0"] == ""} {

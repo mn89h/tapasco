@@ -1005,6 +1005,8 @@ namespace eval arch {
     arch_check_instance_count $kernels
 
     tapasco::ip::build_arke_noc_ips
+    update_ip_catalog 
+    update_ip_catalog
 
     set arch_host_routers [arch_create_arke_noc_arch_interface $kernels 1]
     set arch_pe_routers [arch_create_arke_noc_pe_interfaces $kernels $insts $arch_host_routers]
@@ -1013,6 +1015,10 @@ namespace eval arch {
     arch_connect_routers $arch_mem_routers
 
     arch_set_noc_parameters $arch_pe_routers
+
+    report_ip_status
+    upgrade_ip [get_ips *]
+    
     arch_connect_clocks
     arch_connect_resets
 
