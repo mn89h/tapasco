@@ -9,11 +9,6 @@
 #define RUNS 25
 #define KID 1000
 
-typedef struct config {
-    unsigned nybble:4;
-} config;
-
-
 static tapasco_ctx_t *ctx;
 static tapasco_devctx_t *dev;
 
@@ -53,23 +48,22 @@ int main(int argc, char **argv) {
   init_array(arr, SZ * RUNS);
 
   for (int run = 0; run < RUNS; ++run) {
-    int const golden = arraysum(&arr[run * SZ]);
-    printf("Golden output for run %d: %d\n", run, golden);
-    // allocate mem on device and copy array part
-    tapasco_handle_t h;
-    check_tapasco(tapasco_device_alloc(dev, &h, SZ * sizeof(int),
-                                       TAPASCO_DEVICE_ALLOC_FLAGS_NONE));
-    printf("h = 0x%08lx\n", (unsigned long)h);
-    check_tapasco(tapasco_device_copy_to(dev, &arr[SZ * run], h,
-                                         SZ * sizeof(int),
-                                         TAPASCO_DEVICE_COPY_BLOCKING));
+    printf("RUN %d ", run);
+    
+    
+    tapasco_handle_t cmd = 2;
+    tapasco_handle_t len = 10000;
+    tapasco_handle_t intf_cnt = 4;
 
     // get a job id and set argument to handle
     tapasco_job_id_t j_id;
     tapasco_device_acquire_job_id(dev, &j_id, KID,
                                   TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
     check(j_id > 0);
-    check_tapasco(tapasco_device_job_set_arg(dev, j_id, 0, sizeof(h), &h));
+
+    check_tapasco(tapasco_device_job_set_arg(dev, j_id, 0, sizeof(cmd), &cmd));
+    check_tapasco(tapasco_device_job_set_arg(dev, j_id, 1, sizeof(len), &len));
+    check_tapasco(tapasco_device_job_set_arg(dev, j_id, 2, sizeof(intf_cnt), &intf_cnt));
 
     // shoot me to the moon!
     check_tapasco(tapasco_device_job_launch(
@@ -79,9 +73,6 @@ int main(int argc, char **argv) {
     int32_t r = 0;
     check_tapasco(tapasco_device_job_get_return(dev, j_id, sizeof(r), &r));
     printf("FPGA output for run %d: %d\n", run, r);
-    printf("\nRUN %d %s\n", run, r == golden ? "OK" : "NOT OK");
-    tapasco_device_free(dev, h, SZ * sizeof(int),
-                        TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
     tapasco_device_release_job_id(dev, j_id);
   }
 
@@ -92,6 +83,5 @@ int main(int argc, char **argv) {
 
   tapasco_destroy_device(ctx, dev);
   tapasco_deinit(ctx);
-  free(arr);
   return errs;
 }
