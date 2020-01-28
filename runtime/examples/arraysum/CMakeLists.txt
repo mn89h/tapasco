@@ -15,11 +15,15 @@ add_executable(arraysum arraysum-example.c)
 set_tapasco_defaults(arraysum)
 target_link_libraries(arraysum tapasco ${CMAKE_THREAD_LIBS_INIT} platform tlkm)
 
+add_executable(arraysum-mt arraysum-example-mt.c)
+set_tapasco_defaults(arraysum-mt)
+target_link_libraries(arraysum-mt tapasco ${CMAKE_THREAD_LIBS_INIT} platform tlkm)
+
 add_executable(arraysum-cpp arraysum-example.cpp)
 set_tapasco_defaults(arraysum-cpp)
 target_link_libraries(arraysum-cpp tapasco ${CMAKE_THREAD_LIBS_INIT} platform tlkm)
 
-install(TARGETS arraysum arraysum-cpp
+install(TARGETS arraysum arraysum-mt arraysum-cpp
         ARCHIVE  DESTINATION share/Tapasco/bin/
         LIBRARY  DESTINATION share/Tapasco/bin/
         RUNTIME  DESTINATION share/Tapasco/bin/)
