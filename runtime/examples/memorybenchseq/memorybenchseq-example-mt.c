@@ -29,18 +29,14 @@ static void check_tapasco(tapasco_res_t const result) {
   }
 }
 
+void *exec_mbs(void *id) {
+  int *c;
+  c = (int*)id;
+  if(c)
+    printf("Starting thread number: %d\n", *c);
 
-int main(int argc, char **argv) {
   int errs = 0;
-
-  // initialize threadpool
-  check_tapasco(tapasco_init(&ctx));
-  check_tapasco(tapasco_create_device(ctx, 0, &dev, 0));
   
-  // check arraysum instance count
-  printf("instance count: %zd\n", tapasco_device_kernel_pe_count(dev, KID));
-  assert(tapasco_device_kernel_pe_count(dev, KID));
-
   for (int run = 0; run < RUNS; ++run) {
     printf("RUN %d ", run);
     
@@ -74,6 +70,44 @@ int main(int argc, char **argv) {
     printf("SUCCESS\n");
   else
     fprintf(stderr, "FAILURE\n");
+
+  /* the function must return something - NULL will do */
+  return NULL;
+
+}
+
+int main(int argc, char **argv) {
+  int errs = 0;
+  int i = 0;
+  int *index = NULL;
+
+  // initialize threadpool
+  check_tapasco(tapasco_init(&ctx));
+  check_tapasco(tapasco_create_device(ctx, 0, &dev, 0));
+
+  // check arraysum instance count
+  size_t pecount = tapasco_device_kernel_pe_count(dev, KID);
+  printf("instance count: %zd\n", pecount);
+  assert(pecount);
+
+  // allocate threads
+  index = calloc (pecount, sizeof (int));
+  for(i = 0; i < pecount; i++) {
+    index[i] = i;
+  }
+  pthread_t *ptr;
+
+  ptr = malloc(sizeof(pthread_t)*pecount);
+
+  // initialize threads
+  for(i = 0; i < pecount; i++) {
+    if(pthread_create(&ptr[i], NULL, exec_as, (void*)&index[i])) {
+      fprintf(stderr, "Error creating thread\n");
+      return 1;
+    }
+  }
+  for(i = 0; i < pecount; i++)
+    pthread_join(ptr[i], NULL);
 
   tapasco_destroy_device(ctx, dev);
   tapasco_deinit(ctx);

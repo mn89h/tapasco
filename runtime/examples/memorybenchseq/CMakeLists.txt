@@ -15,7 +15,11 @@ add_executable(memorybenchseq memorybenchseq-example.c)
 set_tapasco_defaults(memorybenchseq)
 target_link_libraries(memorybenchseq tapasco ${CMAKE_THREAD_LIBS_INIT} platform tlkm)
 
-install(TARGETS memorybenchseq
+add_executable(memorybenchseq-mt memorybenchseq-example-mt.c)
+set_tapasco_defaults(memorybenchseq-mt)
+target_link_libraries(memorybenchseq-mt tapasco ${CMAKE_THREAD_LIBS_INIT} platform tlkm)
+
+install(TARGETS memorybenchseq memorybenchseq-mt
         ARCHIVE  DESTINATION share/Tapasco/bin/
         LIBRARY  DESTINATION share/Tapasco/bin/
         RUNTIME  DESTINATION share/Tapasco/bin/)
