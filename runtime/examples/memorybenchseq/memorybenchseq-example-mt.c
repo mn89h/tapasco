@@ -4,6 +4,7 @@
 #include <string.h>
 #include <tapasco.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #define RUNS 10
 #define KID 1000
@@ -62,7 +63,7 @@ void *exec_mbs(void *id) {
     // get the result
     int32_t r = 0;
     check_tapasco(tapasco_device_job_get_return(dev, j_id, sizeof(r), &r));
-    printf("FPGA output for run %d: %d\n", run, r);
+    printf("T%d: FPGA output for run %d: %d\n", *c, run, r);
     tapasco_device_release_job_id(dev, j_id);
   }
 
@@ -101,7 +102,7 @@ int main(int argc, char **argv) {
 
   // initialize threads
   for(i = 0; i < pecount; i++) {
-    if(pthread_create(&ptr[i], NULL, exec_as, (void*)&index[i])) {
+    if(pthread_create(&ptr[i], NULL, exec_mbs, (void*)&index[i])) {
       fprintf(stderr, "Error creating thread\n");
       return 1;
     }
