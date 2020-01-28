@@ -229,7 +229,7 @@ architecture Behavioral of Mem_Ifc is
             -- STATE 1: RDRSP w/ Burst Mode
             elsif (state_send = RdRsp) then
 
-                if (rdrsp_get_valid = '1') then
+                if (rdrsp_get_valid = '1' or send_stalled = '1') then
                     if(send_stalled = '0') then
                         dest_address    := rdrsp_get_data(AXI_rid'left downto AXI_rid'right + A4F_id_width);
                         dataOutNext     := '1' & "00" & ZERO(dataOut'left - 3 downto rdrsp_get_data'length + NoC_addr_width) & rdrsp_get_data & dest_address;
@@ -274,7 +274,7 @@ architecture Behavioral of Mem_Ifc is
             elsif (state_send = WrRsp) then
                 wrrsp_get_en    <= '0';
 
-                if (wrrsp_get_valid = '1') then
+                if (wrrsp_get_valid = '1' or send_stalled = '1') then
                     if(send_stalled = '0') then
                         dest_address    := wrrsp_get_data(AXI_bid'left downto AXI_bid'right + A4F_id_width);
                         dataOutNext     := '1' & "10" & ZERO(dataOut'left - 3 downto wrrsp_get_data'length + NoC_addr_width) & wrrsp_get_data & dest_address;

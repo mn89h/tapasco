@@ -335,7 +335,7 @@ architecture Behavioral of PE_Ifc is
                 A4F_wrrqA_get_en    <= '0';
                 A4F_wrrqD_get_en    <= '0';
 
-                if (A4L_rdrsp_get_valid = '1') then
+                if (A4L_rdrsp_get_valid = '1' or send_stalled = '1') then
                     if(send_stalled = '0') then
                         dest_address        := NoC_address_arch;
                         dataOutNext         := '0' & "00" & ZERO(dataOut'left - 3 downto A4L_rdrsp_get_data'length + NoC_addr_width) & A4L_rdrsp_get_data & dest_address;
@@ -372,7 +372,7 @@ architecture Behavioral of PE_Ifc is
                 A4F_wrrqA_get_en    <= '0';
                 A4F_wrrqD_get_en    <= '0';
 
-                if (A4L_wrrsp_get_valid = '1') then
+                if (A4L_wrrsp_get_valid = '1' or send_stalled = '1') then
                     if(send_stalled = '0') then
                         dest_address        := NoC_address_arch;
                         dataOutNext         := '0' & "10" & ZERO(dataOut'left - 3 downto A4L_wrrsp_get_data'length + NoC_addr_width) & A4L_wrrsp_get_data & dest_address;
@@ -409,7 +409,7 @@ architecture Behavioral of PE_Ifc is
                 A4F_rdrqA_get_en        <= '0';
                 A4F_wrrqD_get_en        <= '0';
 
-                if (A4F_rdrqA_get_valid = '1') then
+                if (A4F_rdrqA_get_valid = '1' or send_stalled = '1') then
                     if(send_stalled = '0') then
                         dest_address        := NoC_address_mem;
                         dataOutNext         := '1' & "00" & ZERO(dataOut'left - 3 downto A4F_rdrqA_get_data'length + NoC_addr_width) & A4F_rdrqA_get_data & dest_address;
@@ -445,7 +445,7 @@ architecture Behavioral of PE_Ifc is
                 A4F_rdrqA_get_en        <= '0';
                 A4F_wrrqA_get_en        <= '0';
                 
-                if (A4F_wrrqA_get_valid = '1') then
+                if (A4F_wrrqA_get_valid = '1' or send_stalled = '1') then
                     A4L_rdrsp_get_en        <= '0';
 
                     if(send_stalled = '0') then
@@ -484,7 +484,7 @@ architecture Behavioral of PE_Ifc is
                 A4F_rdrqA_get_en        <= '0';
                 A4F_wrrqA_get_en        <= '0';
 
-                if (A4F_wrrqD_get_valid = '1') then
+                if (A4F_wrrqD_get_valid = '1' or send_stalled = '1') then
                     if(send_stalled = '0') then
                         dest_address        := NoC_address_mem;
                         dataOutNext         := '1' & "11" & ZERO(dataOut'left - 3 downto A4F_wrrqD_get_data'length + NoC_addr_width) & A4F_wrrqD_get_data & dest_address;

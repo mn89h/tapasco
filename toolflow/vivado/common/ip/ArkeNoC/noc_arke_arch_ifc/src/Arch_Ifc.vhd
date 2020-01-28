@@ -283,7 +283,7 @@ architecture Behavioral of Arch_Ifc is
                 rdrqA_get_en        <= '0';
                 wrrqD_get_en        <= '0';
 
-                if (rdrqA_get_valid = '1') then
+                if (rdrqA_get_valid = '1' or send_stalled = '1') then
                     if(send_stalled = '0') then
                         rdrqA_get_data_tmp  := rdrqA_get_data;
                         determineTargetPE(rdrqA_get_data_tmp(AXI_araddr'left downto AXI_araddr'right),
@@ -319,7 +319,7 @@ architecture Behavioral of Arch_Ifc is
             elsif (state_send = WrRqA) then
                 wrrqA_get_en        <= '0';
 
-                if (wrrqA_get_valid = '1') then
+                if (wrrqA_get_valid = '1' or send_stalled = '1') then
                     rdrqA_get_en        <= '0';
 
                     if(send_stalled = '0') then
@@ -359,7 +359,7 @@ architecture Behavioral of Arch_Ifc is
                 wrrqA_get_en        <= '0';
                 wrrqD_get_en        <= '0';
 
-                if (wrrqD_get_valid = '1') then
+                if (wrrqD_get_valid = '1' or send_stalled = '1') then
                     if(send_stalled = '0') then
                         wrrqD_get_data_tmp  := wrrqD_get_data;
                         dataOutNext         := '0' & "11" & ZERO(dataOut'left - 3 downto wrrqD_get_data_tmp'length + NoC_addr_width) & wrrqD_get_data_tmp & dest_address;
