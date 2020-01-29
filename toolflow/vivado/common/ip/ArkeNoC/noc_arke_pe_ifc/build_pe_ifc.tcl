@@ -102,6 +102,7 @@ namespace eval BuildPEIfc {
     ipx::infer_user_parameters [ipx::current_core]
     ipgui::add_param -name {A4L_addr_width} -component [ipx::current_core] -display_name {A4L_addr_width}
     ipgui::add_param -name {A4L_data_width} -component [ipx::current_core] -display_name {A4L_data_width}
+    ipgui::add_param -name {A4L_strb_width} -component [ipx::current_core] -display_name {A4L_strb_width}
     ipgui::add_param -name {A4F_addr_width} -component [ipx::current_core] -display_name {A4F_addr_width}
     ipgui::add_param -name {A4F_data_width} -component [ipx::current_core] -display_name {A4F_data_width}
     ipgui::add_param -name {A4F_id_width} -component [ipx::current_core] -display_name {A4F_id_width}

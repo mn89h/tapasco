@@ -241,6 +241,7 @@ namespace eval arch {
 
     variable A4L_ADDR_W
     variable A4L_DATA_W
+    variable A4L_STRB_W
     variable A4F_ADDR_W
     variable A4F_DATA_W
     variable A4F_ID_W
@@ -266,12 +267,13 @@ namespace eval arch {
 
     set A4L_ADDR_W [findmax $a4l_addr_ws]
     set A4L_DATA_W [findmax $a4l_data_ws]
+    set A4L_STRB_W [expr $A4L_DATA_W / 8]
     set A4F_ADDR_W [findmax $a4f_addr_ws]
     set A4F_DATA_W [findmax $a4f_data_ws]
     set A4F_ID_W [findmax $a4f_id_ws]
     set A4F_STRB_W [expr $A4F_DATA_W / 8]
 
-    set A4F_ID_W 4
+    #set A4F_ID_W 4
           
     ## create pe ifcs, interconnects and router
     puts "Creating $no_pes PE Interfaces and Routers."
@@ -299,7 +301,7 @@ namespace eval arch {
             if {$DIM_Z_W != 0} {append xyz [format {%0*s} $DIM_Z_W [dec2bin $z]]}
 
             ## create pe ifc
-            set pi [tapasco::ip::create_noc_arke_pe_ifc [format "arke_noc_pe_ifc_%02d_%03d" $ik $ii] 32 $A4L_DATA_W $A4F_ADDR_W $A4F_DATA_W $A4F_ID_W $A4F_STRB_W $xyz]
+            set pi [tapasco::ip::create_noc_arke_pe_ifc [format "arke_noc_pe_ifc_%02d_%03d" $ik $ii] 32 $A4L_DATA_W $A4L_STRB_W $A4F_ADDR_W $A4F_DATA_W $A4F_ID_W $A4F_STRB_W $xyz]
 
             ## create and configure pe slaves interconnect
             set pepins [get_bd_intf_pins -filter {MODE == Slave && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $pe]
@@ -614,6 +616,7 @@ namespace eval arch {
     
     variable A4L_ADDR_W
     variable A4L_DATA_W
+    variable A4L_STRB_W
     variable A4F_ADDR_W
     variable A4F_DATA_W
     variable A4F_ID_W
@@ -624,7 +627,7 @@ namespace eval arch {
     set mis [get_bd_cells -filter {VLNV == "esa.informatik.tu-darmstadt.de:user:arke_noc_mem_ifc:1.0"}]
     set pes [get_processing_elements]
     set pe_map [get_address_map [::platform::get_pe_base_address]]
-    set rveclength 400
+    set rveclength 800
 
     # Setup ArchIfc
     dict for {pe data} $pe_map {
@@ -672,7 +675,8 @@ namespace eval arch {
 
     foreach ai $ais {
       set_property -dict [list CONFIG.A4L_addr_width 32 \
-                               CONFIG.A4L_addr_width $A4L_DATA_W \
+                               CONFIG.A4L_data_width $A4L_DATA_W \
+                               CONFIG.A4L_strb_width $A4L_STRB_W \
                                CONFIG.AXI_base_addr $base_address \
                                CONFIG.AXI_ranges $rangelist \
                                CONFIG.AXI_ranges_cnt $range_no \
@@ -1018,7 +1022,7 @@ namespace eval arch {
 
     report_ip_status
     upgrade_ip [get_ips *]
-    
+
     arch_connect_clocks
     arch_connect_resets
 

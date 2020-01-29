@@ -159,13 +159,13 @@ namespace eval ::tapasco::ip {
   # Instantiates an Arke NoC PE Interface.
   # @param name Name of the instance.
   # @return bd_cell of the instance.
-  proc create_noc_arke_pe_ifc {name a4l_addr_w a4l_data_w a4f_addr_w a4f_data_w a4f_id_w a4f_strb_w noc_address} {
+  proc create_noc_arke_pe_ifc {name a4l_addr_w a4l_data_w a4l_strb_w a4f_addr_w a4f_data_w a4f_id_w a4f_strb_w noc_address} {
     variable stdcomps
     puts "Creating Arke NoC PE Interface $name."
     puts "  VLNV: [dict get $stdcomps noc_arke_pe_ifc vlnv]"
 
     set pi [create_bd_cell -type ip -vlnv [dict get $stdcomps noc_arke_pe_ifc vlnv] $name]
-    set_property -dict [list CONFIG.A4L_addr_width $a4l_addr_w CONFIG.A4L_data_width $a4l_data_w \
+    set_property -dict [list CONFIG.A4L_addr_width $a4l_addr_w CONFIG.A4L_data_width $a4l_data_w CONFIG.A4L_strb_width $a4l_strb_w \
                              CONFIG.A4F_addr_width $a4f_addr_w CONFIG.A4F_data_width $a4f_data_w \
                              CONFIG.A4F_id_width $a4f_id_w CONFIG.A4F_strb_width $a4f_strb_w \
                              CONFIG.NoC_address \"$noc_address\"] \

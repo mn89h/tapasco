@@ -214,7 +214,8 @@ package NIC_pkg is
     component AXI4_Lite_Master is
         generic (
             A4L_addr_width  : integer;
-            A4L_data_width  : integer
+            A4L_data_width  : integer;
+            A4F_strb_width  : integer
         );
         Port (
             clk             : in  std_logic;
@@ -232,8 +233,8 @@ package NIC_pkg is
 
             AXI_wvalid      : out std_logic;
             AXI_wready      : in  std_logic;
-            AXI_wdata       : out std_logic_vector( A4L_data_width - 1 + 4 downto 4 );
-            AXI_wstrb       : out std_logic_vector( 3 downto 0 );
+            AXI_wdata       : out std_logic_vector( A4L_data_width - 1 + A4L_strb_width downto A4L_strb_width );
+            AXI_wstrb       : out std_logic_vector( A4L_strb_width - 1 downto 0 );
 
             AXI_rready      : out std_logic;
             AXI_rvalid      : in  std_logic;
@@ -269,7 +270,8 @@ package NIC_pkg is
     component AXI4_Lite_Slave is
         generic (
             A4L_addr_width  : integer;
-            A4L_data_width  : integer
+            A4L_data_width  : integer;
+            A4F_strb_width  : integer
         );
         Port (
             clk             : in  std_logic;
@@ -287,8 +289,8 @@ package NIC_pkg is
 
             AXI_wvalid      : in  std_logic;
             AXI_wready      : out std_logic;
-            AXI_wdata       : in  std_logic_vector( A4L_data_width - 1 + 4 downto 4 );
-            AXI_wstrb       : in  std_logic_vector( 3 downto 0 );
+            AXI_wdata       : in  std_logic_vector( A4L_data_width - 1 + A4L_strb_width downto A4L_strb_width );
+            AXI_wstrb       : in  std_logic_vector( A4L_strb_width - 1 downto 0 );
 
             AXI_rready      : in  std_logic;
             AXI_rvalid      : out std_logic;

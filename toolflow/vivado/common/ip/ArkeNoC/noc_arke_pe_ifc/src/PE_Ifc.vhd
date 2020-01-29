@@ -31,6 +31,7 @@ entity PE_Ifc is
     generic (
         A4L_addr_width  : integer;
         A4L_data_width  : integer;
+        A4L_strb_width  : integer;
         A4F_addr_width  : integer;
         A4F_data_width  : integer;
         A4F_id_width    : integer;
@@ -52,8 +53,8 @@ entity PE_Ifc is
         signal A4L_AXI_awprot       : out std_logic_vector( 2 downto 0 );
         signal A4L_AXI_wvalid       : out std_logic;
         signal A4L_AXI_wready       : in  std_logic;
-        signal A4L_AXI_wdata        : out std_logic_vector( A4L_data_width - 1 + 4 downto 4 );
-        signal A4L_AXI_wstrb        : out std_logic_vector( 3 downto 0 );
+        signal AXI_wdata            : out std_logic_vector( A4L_data_width - 1 + A4L_strb_width downto A4L_strb_width );
+        signal AXI_wstrb            : out std_logic_vector( A4L_strb_width - 1 downto 0 );
         signal A4L_AXI_rready       : out std_logic;
         signal A4L_AXI_rvalid       : in  std_logic;
         signal A4L_AXI_rdata        : in  std_logic_vector( A4L_data_width - 1 + 2 downto 2 );
@@ -113,7 +114,7 @@ architecture Behavioral of PE_Ifc is
 
     constant A4L_rdrqa_width    : natural := A4L_addr_width + 3;
     constant A4L_wrrqa_width    : natural := A4L_addr_width + 3;
-    constant A4L_wrrqd_width    : natural := A4L_data_width + 4;
+    constant A4L_wrrqd_width    : natural := A4L_data_width + A4L_strb_width;
     constant A4L_rdrsp_width    : natural := A4L_data_width + 2;
     constant A4L_wrrsp_width    : natural := 2;
 
@@ -183,7 +184,8 @@ architecture Behavioral of PE_Ifc is
         AXI_Master : AXI4_Lite_Master
         generic map (
             A4L_addr_width  => A4L_addr_width,
-            A4L_data_width  => A4L_data_width
+            A4L_data_width  => A4L_data_width,
+            A4L_strb_width  => A4L_strb_width
         )
         port map (
             clk             => clk,

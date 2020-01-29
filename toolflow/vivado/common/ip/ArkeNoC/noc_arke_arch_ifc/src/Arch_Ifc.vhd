@@ -32,6 +32,7 @@ entity Arch_Ifc is
     generic (
         A4L_addr_width  : integer := 32;
         A4L_data_width  : integer := 32;
+        A4L_strb_width  : integer := 4;
         NoC_address     : std_logic_vector;
 
         AXI_base_addr   : std_logic_vector;
@@ -52,8 +53,8 @@ entity Arch_Ifc is
         signal AXI_awprot       : in  std_logic_vector( 2 downto 0 );
         signal AXI_wvalid       : in  std_logic;
         signal AXI_wready       : out std_logic;
-        signal AXI_wdata        : in  std_logic_vector( A4L_data_width - 1 + 4 downto 4 );
-        signal AXI_wstrb        : in  std_logic_vector( 3 downto 0 );
+        signal AXI_wdata        : in  std_logic_vector( A4L_data_width - 1 + A4L_strb_width downto A4L_strb_width );
+        signal AXI_wstrb        : in  std_logic_vector( A4L_strb_width - 1 downto 0 );
         signal AXI_rready       : in  std_logic;
         signal AXI_rvalid       : out std_logic;
         signal AXI_rdata        : out std_logic_vector( A4L_data_width - 1 + 2 downto 2 );
@@ -75,13 +76,13 @@ architecture Behavioral of Arch_Ifc is
 
     constant A4L_rdrqa_width    : natural := A4L_addr_width + 3;
     constant A4L_wrrqa_width    : natural := A4L_addr_width + 3;
-    constant A4L_wrrqd_width    : natural := A4L_data_width + 4;
+    constant A4L_wrrqd_width    : natural := A4L_data_width + A4L_strb_width;
     constant A4L_rdrsp_width    : natural := A4L_data_width + 2;
     constant A4L_wrrsp_width    : natural := 2;
 
     constant DIM_X_W    : integer := Log2(DIM_X);
     constant DIM_Y_W    : integer := Log2(DIM_Y);
-    constant DIM_Z_W    : integer := Log2(DIM_Z);
+    constant DIM_Z_W    : integer := Log2orZero(DIM_Z);
     constant ADDR_W     : integer := DIM_X_W + DIM_Y_W + DIM_Z_W;
 
     type ChannelsType is (None, RdRsp, WrRsp, RdRqA, WrRqA, WrRqD);
@@ -198,7 +199,8 @@ architecture Behavioral of Arch_Ifc is
         AXI_Slave : AXI4_Lite_Slave
         generic map (
             A4L_addr_width  => A4L_addr_width,
-            A4L_data_width  => A4L_data_width
+            A4L_data_width  => A4L_data_width,
+            A4L_strb_width  => A4L_strb_width
         )
         port map (
             clk             => clk,

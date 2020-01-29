@@ -23,16 +23,16 @@ package Arke_pkg is
     
     -- Dimension X and Y need to be greater than 1, for 2D NoCs use Z = 1
     -- X grows from left to right, Y grows from front to back, Z grows from bottom to top
-    constant DIM_X    : integer := 3;
-    constant DIM_Y    : integer := 3;
-    constant DIM_Z    : integer := 3;
+    constant DIM_X    : integer := 4;
+    constant DIM_Y    : integer := 4;
+    constant DIM_Z    : integer := 2;
     constant NoC_addr_width : natural := 6; --Log2(DIM_X) + Log2(DIM_Y) + Log2(DIM_Z);
     
     -- Input buffers depth 
-    constant BUFFER_DEPTH : integer := 8; -- Buffer depth must be greater than 1 and a power of 2
+    constant BUFFER_DEPTH : integer := 4; -- Buffer depth must be greater than 1 and a power of 2
     
     -- Data and control buses 
-    constant DATA_WIDTH     : integer := 128;                                                            
+    constant DATA_WIDTH     : integer := 600;                                                            
     constant CONTROL_WIDTH  : integer := 3;  
 
                                       -------------------------
@@ -90,6 +90,7 @@ package Arke_pkg is
     type DataBuff is array(0 to BUFFER_DEPTH-1) of std_logic_vector(DATA_WIDTH-1 downto 0);
     
     function Log2(temp : natural) return natural;
+    function Log2orZero(temp : natural) return natural;
     function Address(x,y,z : natural) return std_logic_vector;
     function XYZ(target,current: std_logic_vector(DATA_WIDTH-1 downto 0)) return integer;
     function XY(target,current: std_logic_vector(DATA_WIDTH-1 downto 0)) return integer;
@@ -204,6 +205,20 @@ package body Arke_pkg is
         end loop;
         return 0;
     end function Log2;
+
+    -- Function returns the logarithm of 2 from the argument.
+    function Log2orZero(temp : natural) return natural is
+    begin
+        if (temp = 1) then
+            return 0;
+        end if;
+        for i in 0 to integer'high loop
+            if (2**i >= temp) then
+                return i;
+            end if;
+        end loop;
+        return 0;
+    end function Log2orZero;
     
 
     -- Function returns the address of a router in flit header format.

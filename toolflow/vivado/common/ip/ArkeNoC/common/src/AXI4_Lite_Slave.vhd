@@ -25,7 +25,8 @@ use work.NIC_pkg.all;
 entity AXI4_Lite_Slave is
   generic (
     A4L_addr_width  : integer;
-    A4L_data_width  : integer
+    A4L_data_width  : integer;
+    A4L_strb_width  : integer
   );
   port (
     ------------------------
@@ -59,8 +60,8 @@ entity AXI4_Lite_Slave is
     ------------------------
     AXI_wready  : out std_logic;
     AXI_wvalid  : in  std_logic;
-    AXI_wdata   : in  std_logic_vector( A4L_data_width - 1 + 4 downto 4 );
-    AXI_wstrb   : in  std_logic_vector( 3 downto 0 );
+    AXI_wdata   : in  std_logic_vector( A4L_data_width - 1 + A4L_strb_width downto A4L_strb_width );
+    AXI_wstrb   : in  std_logic_vector( A4L_strb_width - 1 downto 0 );
 
     ------------------------
     -- Read data channel
@@ -110,7 +111,7 @@ architecture Behavioral of AXI4_Lite_Slave is
     
     constant A4L_rdrqa_width    : natural := A4L_addr_width + 3;
     constant A4L_wrrqa_width    : natural := A4L_addr_width + 3;
-    constant A4L_wrrqd_width    : natural := A4L_data_width + 4;
+    constant A4L_wrrqd_width    : natural := A4L_data_width + A4L_strb_width;
     constant A4L_rdrsp_width    : natural := A4L_data_width + 2;
     constant A4L_wrrsp_width    : natural := 2;
 
