@@ -285,8 +285,6 @@ namespace eval arch {
       for {set y 0} {$y < $DIM_Y} {incr y} {
         for {set x 0} {$x < $DIM_X} {incr x} {
 
-          save_bd_design
-
           if {[lindex $routerlist end 0] == $x && [lindex $routerlist end 1] == $y && [lindex $routerlist end 2] == $z} {
             set start 1
             continue
@@ -311,14 +309,16 @@ namespace eval arch {
             # connect pe to ic
             set icpins [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $ic]
             set i 0
+            save_bd_design
             foreach icpin $icpins {
               connect_bd_intf_net $icpin [lindex $pepins $i]
               incr i
             }
+            save_bd_design
             # connect ic to pe ifc
             connect_bd_intf_net [get_bd_intf_pins -filter {MODE == Slave && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $ic] \
                                 [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $pi]
-
+            save_bd_design
 
             ## create and configure pe masters interconnect
             set pepins [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $pe]
@@ -1011,6 +1011,8 @@ namespace eval arch {
     tapasco::ip::build_arke_noc_ips
     update_ip_catalog 
     update_ip_catalog
+    report_ip_status
+    upgrade_ip [get_ips *]
 
     set arch_host_routers [arch_create_arke_noc_arch_interface $kernels 1]
     set arch_pe_routers [arch_create_arke_noc_pe_interfaces $kernels $insts $arch_host_routers]

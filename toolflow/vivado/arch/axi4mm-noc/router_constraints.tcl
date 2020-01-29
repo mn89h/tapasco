@@ -12,9 +12,9 @@ set xw [expr {$xsl_no / (2 * $x_no + 1)}]
 set yw [expr {$ysl_no / (2 * $y_no + 1)}] 
 
 set i 0
-for {set z 0} {$z < $z_no} {inr z} {
-    for {set y 0} {$y < $y_no} {inr y} {
-        for {set x 0} {$x < $x_no} {inr x} {
+for {set z 0} {$z < $z_no} {incr z} {
+    for {set y 0} {$y < $y_no} {incr y} {
+        for {set x 0} {$x < $x_no} {incr x} {
             set pb [create_pblock "plock_$i"]
             
             set x0 [expr {(2*$x+1) * $xw}]
@@ -22,11 +22,9 @@ for {set z 0} {$z < $z_no} {inr z} {
             set x1 [expr {(2*$x+2) * $xw - 1}]
             set y1 [expr {(2*$y+2) * $yw - 1}]
             
-            resize_pblock $pb -add [get_sites SLICE_X$x0\Y$y0] : [get_sites SLICE_X$x1\Y$y1]
+            resize_pblock $pb -add [get_sites -range "SLICE_X$x0\Y$y0 SLICE_X$x1\Y$y1"]
+            add_cells_to_pblock plock_$i [get_cells [list system_i/arch/arke_noc_router_$x\_$y\_$z]] -clear_locs
+            incr i
         }
     }
-}
-
-foreach routerc $routercs {
-
 }
