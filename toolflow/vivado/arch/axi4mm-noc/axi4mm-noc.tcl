@@ -305,7 +305,7 @@ namespace eval arch {
 
             ## create and configure pe slaves interconnect
             set pepins [get_bd_intf_pins -filter {MODE == Slave && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $pe]
-            set name [format "interconnect_%02d_%03d_slaves" $ik $ii]
+            set name [format "ic_%02d_%03d_slaves" $ik $ii]
             set ic [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 $name]
             set_property -dict [list CONFIG.NUM_SI {1} CONFIG.NUM_MI [llength $pepins]] $ic
             # connect pe to ic
@@ -322,7 +322,7 @@ namespace eval arch {
 
             ## create and configure pe masters interconnect
             set pepins [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $pe]
-            set name [format "interconnect_%02d_%03d_master" $ik $ii]
+            set name [format "ic_%02d_%03d_masters" $ik $ii]
             set ic [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 $name]
             set_property -dict [list CONFIG.NUM_SI [llength $pepins] CONFIG.NUM_MI {1}] $ic
             # connect pe to ic
