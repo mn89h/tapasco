@@ -215,7 +215,7 @@ package NIC_pkg is
         generic (
             A4L_addr_width  : integer;
             A4L_data_width  : integer;
-            A4F_strb_width  : integer
+            A4L_strb_width  : integer
         );
         Port (
             clk             : in  std_logic;
@@ -271,7 +271,7 @@ package NIC_pkg is
         generic (
             A4L_addr_width  : integer;
             A4L_data_width  : integer;
-            A4F_strb_width  : integer
+            A4L_strb_width  : integer
         );
         Port (
             clk             : in  std_logic;
