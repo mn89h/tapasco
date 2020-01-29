@@ -53,8 +53,8 @@ entity PE_Ifc is
         signal A4L_AXI_awprot       : out std_logic_vector( 2 downto 0 );
         signal A4L_AXI_wvalid       : out std_logic;
         signal A4L_AXI_wready       : in  std_logic;
-        signal AXI_wdata            : out std_logic_vector( A4L_data_width - 1 + A4L_strb_width downto A4L_strb_width );
-        signal AXI_wstrb            : out std_logic_vector( A4L_strb_width - 1 downto 0 );
+        signal A4L_AXI_wdata        : out std_logic_vector( A4L_data_width - 1 + A4L_strb_width downto A4L_strb_width );
+        signal A4L_AXI_wstrb        : out std_logic_vector( A4L_strb_width - 1 downto 0 );
         signal A4L_AXI_rready       : out std_logic;
         signal A4L_AXI_rvalid       : in  std_logic;
         signal A4L_AXI_rdata        : in  std_logic_vector( A4L_data_width - 1 + 2 downto 2 );
