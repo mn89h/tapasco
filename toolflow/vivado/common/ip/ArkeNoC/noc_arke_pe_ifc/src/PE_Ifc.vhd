@@ -497,7 +497,7 @@ architecture Behavioral of PE_Ifc is
                         dataOut             <= dataOutNext;
                         controlOut(TX)      <= '1';
                         
-                        if (A4F_wrrqD_get_data(A4F_AXI_wlast'right) = '1') then
+                        if (dataOutNext(A4F_AXI_wlast'right + dest_address) = '1') then
                             A4F_wrrqD_get_en    <= '0';
 
                             controlOut(EOP)     <= '1';
