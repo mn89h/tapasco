@@ -374,7 +374,8 @@ namespace eval platform {
               #pattern variant 2: |-x-x-|
               #pattern variant 3: |-x-x-|
               #pattern variant 4: |x--x|
-              set variant 4
+              #pattern variant 5: |xx|
+              set variant 5
               set xsl_no [expr {[lindex [regexp -all -inline {(X)(\d+)} [lindex [get_sites -filter { NAME =~  "*Y0*" && SITE_TYPE == "SLICEL" }] end]] 2] + 1}]
               set ysl_no [expr {[lindex [regexp -all -inline {(Y)(\d+)} [lindex [get_sites -filter { NAME =~  "*X0*" && SITE_TYPE == "SLICEL" }] 0]] 2] + 1}]
 
@@ -398,6 +399,9 @@ namespace eval platform {
               } elseif {$variant == 4} {
                 set xw [expr {$xsl_no / (2 * $x_no - 1)}] 
                 set yw [expr {$ysl_no / (2 * $y_no - 1)}]
+              } elseif {$variant == 5} {
+                set xw [expr {$xsl_no / ($x_no)}] 
+                set yw [expr {$ysl_no / ($y_no)}]
               }
 
               set i 0
@@ -436,6 +440,12 @@ namespace eval platform {
                             set y0 [expr {(2*$y) * $yw}]
                             set x1 [expr {(2*$x+1) * $xw - 1}]
                             set y1 [expr {(2*$y+1) * $yw - 1}]
+                          } elseif {$variant == 5} {
+                            ## no distance
+                            set x0 [expr {($x) * $xw}]
+                            set y0 [expr {($y) * $yw}]
+                            set x1 [expr {($x+1) * $xw - 1}]
+                            set y1 [expr {($y+1) * $yw - 1}]
                           }
 
                           while {[get_sites "SLICE_X$x0\Y$y0"] == ""} {
@@ -448,8 +458,8 @@ namespace eval platform {
                           #for zyx:
                           resize_pblock $pb -add [get_sites -range "SLICE_X$x0\Y$y0 SLICE_X$x1\Y$y1"]
                           #for "correct" xyz:
-                          #add_cells_to_pblock plock_$i [get_cells [list system_i/arch/arke_noc_router_$x\_$y\_$z]] -clear_locs
-                          add_cells_to_pblock plock_$i [lindex $routercs $i] -clear_locs
+                          add_cells_to_pblock plock_$i [get_cells [list system_i/arch/arke_noc_router_$x\_$y\_$z]] -clear_locs
+                          #add_cells_to_pblock plock_$i [lindex $routercs $i] -clear_locs
                           incr i
                       }
                   }

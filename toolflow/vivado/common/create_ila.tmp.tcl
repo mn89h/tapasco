@@ -80,6 +80,23 @@ startgroup
 set_property -dict [list CONFIG.C_BRAM_CNT {24} CONFIG.C_PROBE15_TYPE {1} CONFIG.C_PROBE13_TYPE {1} CONFIG.C_PROBE11_TYPE {1} CONFIG.C_PROBE9_TYPE {1} CONFIG.C_PROBE7_TYPE {1} CONFIG.C_PROBE5_TYPE {1} CONFIG.C_PROBE3_TYPE {1} CONFIG.C_PROBE1_TYPE {1}] [get_bd_cells arch/system_ila_0]
 endgroup
 
+
+#for mbsX1 - returns that crossbar has always a*ready=0
+create_bd_cell -type ip -vlnv xilinx.com:ip:system_ila:1.1 arch/system_ila_0
+set_property -dict [list CONFIG.C_NUM_OF_PROBES {4} CONFIG.C_NUM_MONITOR_SLOTS {5} CONFIG.C_MON_TYPE {MIX}] [get_bd_cells arch/system_ila_0]
+connect_bd_intf_net [get_bd_intf_pins arch/system_ila_0/SLOT_0_AXI] [get_bd_intf_pins arch/arke_noc_arch_ifc/AXI]
+connect_bd_intf_net [get_bd_intf_pins arch/system_ila_0/SLOT_1_AXI] [get_bd_intf_pins arch/arke_noc_pe_ifc_00_000/A4L_AXI]
+connect_bd_intf_net [get_bd_intf_pins arch/system_ila_0/SLOT_2_AXI] [get_bd_intf_pins arch/target_ip_00_000/S_AXI]
+connect_bd_intf_net [get_bd_intf_pins arch/system_ila_0/SLOT_3_AXI] [get_bd_intf_pins arch/target_ip_00_000/M_AXI_HBM_1]
+connect_bd_intf_net [get_bd_intf_pins arch/system_ila_0/SLOT_4_AXI] [get_bd_intf_pins arch/arke_noc_pe_ifc_00_000/A4F_AXI]
+connect_bd_net [get_bd_pins arch/system_ila_0/probe0] [get_bd_pins arch/arke_noc_arch_ifc/controlOut]
+connect_bd_net [get_bd_pins arch/system_ila_0/probe1] [get_bd_pins arch/arke_noc_arch_ifc/dataOut]
+connect_bd_net [get_bd_pins arch/system_ila_0/probe2] [get_bd_pins arch/arke_noc_pe_ifc_00_000/controlOut]
+connect_bd_net [get_bd_pins arch/system_ila_0/probe3] [get_bd_pins arch/arke_noc_pe_ifc_00_000/dataOut]
+connect_bd_net [get_bd_pins arch/design_clk] [get_bd_pins arch/system_ila_0/clk]
+connect_bd_net [get_bd_pins arch/design_peripheral_aresetn] [get_bd_pins arch/system_ila_0/resetn]
+
+
 #for mbsX3 in order to remove multiple master interfaces
 delete_bd_objs [get_bd_intf_nets -of_objects [get_bd_intf_pins /arch/target_ip_00_000/M_AXI_HBM_1]]
 delete_bd_objs [get_bd_intf_nets -of_objects [get_bd_intf_pins /arch/target_ip_00_000/M_AXI_HBM_2]]
