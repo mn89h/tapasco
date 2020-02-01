@@ -240,7 +240,7 @@ architecture Behavioral of Mem_Ifc is
                         dataOut         <= dataOutNext;
                         controlOut(TX)  <= '1';
 
-                        if (rdrsp_get_data(AXI_rlast'right) = '1') then
+                        if (dataOutNext(A4F_AXI_rlast'right + dest_address) = '1') then
                             rdrsp_get_en    <= '0';
 
                             controlOut(EOP) <= '1';
