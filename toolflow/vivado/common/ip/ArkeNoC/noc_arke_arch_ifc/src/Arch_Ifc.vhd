@@ -249,7 +249,7 @@ architecture Behavioral of Arch_Ifc is
             variable rdrsp_put_data_tmp : std_logic_vector(A4L_rdrsp_width - 1 downto 0);
             variable wrrsp_put_data_tmp : std_logic_vector(A4L_wrrsp_width - 1 downto 0);
             
-            variable dest_address       : std_logic_vector(NoC_addr_width - 1 downto 0);
+            variable dest_address       : std_logic_vector(ADDR_W - 1 downto 0);
             variable dataOutNext        : std_logic_vector(DATA_WIDTH - 1 downto 0);
             
         begin if rising_edge(clk) then
@@ -290,7 +290,7 @@ architecture Behavioral of Arch_Ifc is
                         rdrqA_get_data_tmp  := rdrqA_get_data;
                         determineTargetPE(rdrqA_get_data_tmp(AXI_araddr'left downto AXI_araddr'right),
                                           dest_address);
-                        dataOutNext         := '0' & "00" & ZERO(dataOut'left - 3 downto rdrqA_get_data_tmp'length + NoC_addr_width) & rdrqA_get_data_tmp & dest_address;
+                        dataOutNext         := '0' & "00" & ZERO(dataOut'left - 3 downto rdrqA_get_data_tmp'length + ADDR_W) & rdrqA_get_data_tmp & dest_address;
                     end if;
 
                     if (controlIn(STALL_GO) = '1') then
@@ -328,7 +328,7 @@ architecture Behavioral of Arch_Ifc is
                         wrrqA_get_data_tmp  := wrrqA_get_data;
                         determineTargetPE(wrrqA_get_data_tmp(AXI_awaddr'left downto AXI_awaddr'right),
                                           dest_address);
-                        dataOutNext         := '0' & "10" & ZERO(dataOut'left - 3 downto wrrqA_get_data_tmp'length + NoC_addr_width) & wrrqA_get_data_tmp & dest_address;
+                        dataOutNext         := '0' & "10" & ZERO(dataOut'left - 3 downto wrrqA_get_data_tmp'length + ADDR_W) & wrrqA_get_data_tmp & dest_address;
                     end if;
 
                     if (controlIn(STALL_GO) = '1') then
@@ -364,7 +364,7 @@ architecture Behavioral of Arch_Ifc is
                 if (wrrqD_get_valid = '1' or send_stalled = '1') then
                     if(send_stalled = '0') then
                         wrrqD_get_data_tmp  := wrrqD_get_data;
-                        dataOutNext         := '0' & "11" & ZERO(dataOut'left - 3 downto wrrqD_get_data_tmp'length + NoC_addr_width) & wrrqD_get_data_tmp & dest_address;
+                        dataOutNext         := '0' & "11" & ZERO(dataOut'left - 3 downto wrrqD_get_data_tmp'length + ADDR_W) & wrrqD_get_data_tmp & dest_address;
                     end if;
 
                     if (controlIn(STALL_GO) = '1') then
@@ -406,7 +406,7 @@ architecture Behavioral of Arch_Ifc is
                     if (dataInStalled(dataIn'left - 1) = '1') then
                         rdrsp_put_en            <= '0';
                         wrrsp_put_en            <= '1';
-                        wrrsp_put_data_tmp      := dataInStalled(NoC_addr_width + A4L_wrrsp_width - 1 downto NoC_addr_width);
+                        wrrsp_put_data_tmp      := dataInStalled(ADDR_W + A4L_wrrsp_width - 1 downto ADDR_W);
                         wrrsp_put_data          <= wrrsp_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                         put_last_state          <= WrRsp;
@@ -414,7 +414,7 @@ architecture Behavioral of Arch_Ifc is
                     elsif (dataIn(dataIn'left - 1) = '0') then
                         wrrsp_put_en            <= '0';
                         rdrsp_put_en            <= '1';
-                        rdrsp_put_data_tmp      := dataInStalled(NoC_addr_width + A4L_rdrsp_width - 1 downto NoC_addr_width);
+                        rdrsp_put_data_tmp      := dataInStalled(ADDR_W + A4L_rdrsp_width - 1 downto ADDR_W);
                         rdrsp_put_data          <= rdrsp_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                         put_last_state          <= RdRsp;
@@ -427,7 +427,7 @@ architecture Behavioral of Arch_Ifc is
                         (put_last_state = RdRsp and rdrsp_put_ready = '1')) then
                         rdrsp_put_en            <= '0';
                         wrrsp_put_en            <= '1';
-                        wrrsp_put_data_tmp      := dataIn(NoC_addr_width + A4L_wrrsp_width - 1 downto NoC_addr_width);
+                        wrrsp_put_data_tmp      := dataIn(ADDR_W + A4L_wrrsp_width - 1 downto ADDR_W);
                         wrrsp_put_data          <= wrrsp_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                     else
@@ -441,7 +441,7 @@ architecture Behavioral of Arch_Ifc is
                         (put_last_state = RdRsp and rdrsp_put_ready = '1')) then
                         wrrsp_put_en            <= '0';
                         rdrsp_put_en            <= '1';
-                        rdrsp_put_data_tmp      := dataIn(NoC_addr_width + A4L_rdrsp_width - 1 downto NoC_addr_width);
+                        rdrsp_put_data_tmp      := dataIn(ADDR_W + A4L_rdrsp_width - 1 downto ADDR_W);
                         rdrsp_put_data          <= rdrsp_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                     else

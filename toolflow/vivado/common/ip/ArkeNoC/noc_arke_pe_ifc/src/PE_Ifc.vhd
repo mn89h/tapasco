@@ -112,22 +112,22 @@ end PE_Ifc;
 
 architecture Behavioral of PE_Ifc is
 
+    constant DIM_X_W    : integer := Log2(DIM_X);
+    constant DIM_Y_W    : integer := Log2(DIM_Y);
+    constant DIM_Z_W    : integer := Log2(DIM_Z);
+    constant ADDR_W     : integer := DIM_X_W + DIM_Y_W + DIM_Z_W;
+
     constant A4L_rdrqa_width    : natural := A4L_addr_width + 3;
     constant A4L_wrrqa_width    : natural := A4L_addr_width + 3;
     constant A4L_wrrqd_width    : natural := A4L_data_width + A4L_strb_width;
     constant A4L_rdrsp_width    : natural := A4L_data_width + 2;
     constant A4L_wrrsp_width    : natural := 2;
 
-    constant A4F_rdrqa_width    : natural := A4F_addr_width + A4F_id_width + NoC_addr_width + 25;
-    constant A4F_wrrqa_width    : natural := A4F_addr_width + A4F_id_width + NoC_addr_width + 25;
+    constant A4F_rdrqa_width    : natural := A4F_addr_width + A4F_id_width + ADDR_W + 25;
+    constant A4F_wrrqa_width    : natural := A4F_addr_width + A4F_id_width + ADDR_W + 25;
     constant A4F_wrrqd_width    : natural := A4F_data_width + A4F_strb_width + 1;
-    constant A4F_rdrsp_width    : natural := A4F_data_width + A4F_id_width + NoC_addr_width + 3;
-    constant A4F_wrrsp_width    : natural := A4F_id_width + NoC_addr_width + 2;
-
-    constant DIM_X_W    : integer := Log2(DIM_X);
-    constant DIM_Y_W    : integer := Log2(DIM_Y);
-    constant DIM_Z_W    : integer := Log2(DIM_Z);
-    constant ADDR_W     : integer := DIM_X_W + DIM_Y_W + DIM_Z_W;
+    constant A4F_rdrsp_width    : natural := A4F_data_width + A4F_id_width + ADDR_W + 3;
+    constant A4F_wrrsp_width    : natural := A4F_id_width + ADDR_W + 2;
 
     type ChannelsType is (None, RdRsp, WrRsp, RdRqA, WrRqA, WrRqD);
 
@@ -163,10 +163,10 @@ architecture Behavioral of PE_Ifc is
     signal A4F_wrrsp_put_en    : std_logic;
     signal A4F_wrrsp_put_data  : std_logic_vector(A4F_wrrsp_width - 1 downto 0);
 
-    signal A4F_AXI_custom_arid : std_logic_vector(A4F_id_width + NoC_addr_width - 1 downto 0);
-    signal A4F_AXI_custom_awid : std_logic_vector(A4F_id_width + NoC_addr_width - 1 downto 0);
-    signal A4F_AXI_custom_rid  : std_logic_vector(A4F_id_width + NoC_addr_width - 1 downto 0);
-    signal A4F_AXI_custom_bid  : std_logic_vector(A4F_id_width + NoC_addr_width - 1 downto 0);
+    signal A4F_AXI_custom_arid : std_logic_vector(A4F_id_width + ADDR_W - 1 downto 0);
+    signal A4F_AXI_custom_awid : std_logic_vector(A4F_id_width + ADDR_W - 1 downto 0);
+    signal A4F_AXI_custom_rid  : std_logic_vector(A4F_id_width + ADDR_W - 1 downto 0);
+    signal A4F_AXI_custom_bid  : std_logic_vector(A4F_id_width + ADDR_W - 1 downto 0);
 
     signal dataInStalled   : std_logic_vector(dataIn'range);
     signal put_last_state  : ChannelsType;
@@ -230,7 +230,7 @@ architecture Behavioral of PE_Ifc is
         generic map (
             A4F_addr_width  => A4F_addr_width,
             A4F_data_width  => A4F_data_width,
-            A4F_id_width    => A4F_id_width + NoC_addr_width,
+            A4F_id_width    => A4F_id_width + ADDR_W,
             A4F_strb_width  => A4F_strb_width
         )
         port map (
@@ -299,7 +299,7 @@ architecture Behavioral of PE_Ifc is
             variable A4F_rdrsp_put_data_tmp : std_logic_vector(A4F_rdrsp_width - 1 downto 0);
             variable A4F_wrrsp_put_data_tmp : std_logic_vector(A4F_wrrsp_width - 1 downto 0);
             
-            variable dest_address       : std_logic_vector(NoC_addr_width - 1 downto 0);
+            variable dest_address       : std_logic_vector(ADDR_W - 1 downto 0);
             variable dataOutNext        : std_logic_vector(DATA_WIDTH - 1 downto 0);
 
         begin if rising_edge(clk) then
@@ -340,7 +340,7 @@ architecture Behavioral of PE_Ifc is
                 if (A4L_rdrsp_get_valid = '1' or send_stalled = '1') then
                     if(send_stalled = '0') then
                         dest_address        := NoC_address_arch;
-                        dataOutNext         := '0' & "00" & ZERO(dataOut'left - 3 downto A4L_rdrsp_get_data'length + NoC_addr_width) & A4L_rdrsp_get_data & dest_address;
+                        dataOutNext         := '0' & "00" & ZERO(dataOut'left - 3 downto A4L_rdrsp_get_data'length + ADDR_W) & A4L_rdrsp_get_data & dest_address;
                     end if;
 
                     if (controlIn(STALL_GO) = '1') then
@@ -377,7 +377,7 @@ architecture Behavioral of PE_Ifc is
                 if (A4L_wrrsp_get_valid = '1' or send_stalled = '1') then
                     if(send_stalled = '0') then
                         dest_address        := NoC_address_arch;
-                        dataOutNext         := '0' & "10" & ZERO(dataOut'left - 3 downto A4L_wrrsp_get_data'length + NoC_addr_width) & A4L_wrrsp_get_data & dest_address;
+                        dataOutNext         := '0' & "10" & ZERO(dataOut'left - 3 downto A4L_wrrsp_get_data'length + ADDR_W) & A4L_wrrsp_get_data & dest_address;
                     end if;
 
                     if (controlIn(STALL_GO) = '1') then
@@ -414,7 +414,7 @@ architecture Behavioral of PE_Ifc is
                 if (A4F_rdrqA_get_valid = '1' or send_stalled = '1') then
                     if(send_stalled = '0') then
                         dest_address        := NoC_address_mem;
-                        dataOutNext         := '1' & "00" & ZERO(dataOut'left - 3 downto A4F_rdrqA_get_data'length + NoC_addr_width) & A4F_rdrqA_get_data & dest_address;
+                        dataOutNext         := '1' & "00" & ZERO(dataOut'left - 3 downto A4F_rdrqA_get_data'length + ADDR_W) & A4F_rdrqA_get_data & dest_address;
                     end if;
 
                     if (controlIn(STALL_GO) = '1') then
@@ -452,7 +452,7 @@ architecture Behavioral of PE_Ifc is
 
                     if(send_stalled = '0') then
                         dest_address        := NoC_address_mem;
-                        dataOutNext         := '1' & "10" & ZERO(dataOut'left - 3 downto A4F_wrrqA_get_data'length + NoC_addr_width) & A4F_wrrqA_get_data & dest_address;
+                        dataOutNext         := '1' & "10" & ZERO(dataOut'left - 3 downto A4F_wrrqA_get_data'length + ADDR_W) & A4F_wrrqA_get_data & dest_address;
                     end if;
 
                     if (controlIn(STALL_GO) = '1') then
@@ -489,7 +489,7 @@ architecture Behavioral of PE_Ifc is
                 if (A4F_wrrqD_get_valid = '1' or send_stalled = '1') then
                     if(send_stalled = '0') then
                         dest_address        := NoC_address_mem;
-                        dataOutNext         := '1' & "11" & ZERO(dataOut'left - 3 downto A4F_wrrqD_get_data'length + NoC_addr_width) & A4F_wrrqD_get_data & dest_address;
+                        dataOutNext         := '1' & "11" & ZERO(dataOut'left - 3 downto A4F_wrrqD_get_data'length + ADDR_W) & A4F_wrrqD_get_data & dest_address;
                     end if;
 
                     if (controlIn(STALL_GO) = '1') then
@@ -497,7 +497,7 @@ architecture Behavioral of PE_Ifc is
                         dataOut             <= dataOutNext;
                         controlOut(TX)      <= '1';
                         
-                        if (dataOutNext(A4F_AXI_wlast'right + dest_address) = '1') then
+                        if (dataOutNext(A4F_AXI_wlast'right + ADDR_W) = '1') then
                             A4F_wrrqD_get_en    <= '0';
 
                             controlOut(EOP)     <= '1';
@@ -547,7 +547,7 @@ architecture Behavioral of PE_Ifc is
                         A4L_rdrqA_put_en            <= '0';
                         A4L_wrrqA_put_en            <= '0';
                         A4L_wrrqD_put_en            <= '0';
-                        A4F_wrrsp_put_data_tmp      := dataInStalled(NoC_addr_width + A4F_wrrsp_width - 1 downto NoC_addr_width);
+                        A4F_wrrsp_put_data_tmp      := dataInStalled(ADDR_W + A4F_wrrsp_width - 1 downto ADDR_W);
                         A4F_wrrsp_put_data          <= A4F_wrrsp_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                         put_last_state          <= WrRsp;
@@ -558,7 +558,7 @@ architecture Behavioral of PE_Ifc is
                         A4L_rdrqA_put_en            <= '0';
                         A4L_wrrqA_put_en            <= '0';
                         A4L_wrrqD_put_en            <= '0';
-                        A4F_rdrsp_put_data_tmp      := dataInStalled(NoC_addr_width + A4F_rdrsp_width - 1 downto NoC_addr_width);
+                        A4F_rdrsp_put_data_tmp      := dataInStalled(ADDR_W + A4F_rdrsp_width - 1 downto ADDR_W);
                         A4F_rdrsp_put_data          <= A4F_rdrsp_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                         put_last_state          <= RdRsp;
@@ -569,7 +569,7 @@ architecture Behavioral of PE_Ifc is
                         A4L_rdrqA_put_en            <= '0';
                         A4L_wrrqA_put_en            <= '1';
                         A4L_wrrqD_put_en            <= '0';
-                        A4L_wrrqA_put_data_tmp      := dataIn(NoC_addr_width + A4L_wrrqA_width - 1 downto NoC_addr_width);
+                        A4L_wrrqA_put_data_tmp      := dataIn(ADDR_W + A4L_wrrqA_width - 1 downto ADDR_W);
                         A4L_wrrqA_put_data          <= A4L_wrrqA_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                         put_last_state          <= WrRqA;
@@ -580,7 +580,7 @@ architecture Behavioral of PE_Ifc is
                         A4L_rdrqA_put_en            <= '0';
                         A4L_wrrqA_put_en            <= '0';
                         A4L_wrrqD_put_en            <= '1';
-                        A4L_wrrqD_put_data_tmp      := dataIn(NoC_addr_width + A4L_wrrqD_width - 1 downto NoC_addr_width);
+                        A4L_wrrqD_put_data_tmp      := dataIn(ADDR_W + A4L_wrrqD_width - 1 downto ADDR_W);
                         A4L_wrrqD_put_data          <= A4L_wrrqD_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                         put_last_state          <= WrRqD;
@@ -591,7 +591,7 @@ architecture Behavioral of PE_Ifc is
                         A4L_rdrqA_put_en            <= '1';
                         A4L_wrrqA_put_en            <= '0';
                         A4L_wrrqD_put_en            <= '0';
-                        A4L_rdrqA_put_data_tmp      := dataIn(NoC_addr_width + A4L_rdrqA_width - 1 downto NoC_addr_width);
+                        A4L_rdrqA_put_data_tmp      := dataIn(ADDR_W + A4L_rdrqA_width - 1 downto ADDR_W);
                         A4L_rdrqA_put_data          <= A4L_rdrqA_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                         put_last_state          <= RdRqA;
@@ -610,7 +610,7 @@ architecture Behavioral of PE_Ifc is
                         A4L_rdrqA_put_en            <= '0';
                         A4L_wrrqA_put_en            <= '0';
                         A4L_wrrqD_put_en            <= '0';
-                        A4F_wrrsp_put_data_tmp      := dataIn(NoC_addr_width + A4F_wrrsp_width - 1 downto NoC_addr_width);
+                        A4F_wrrsp_put_data_tmp      := dataIn(ADDR_W + A4F_wrrsp_width - 1 downto ADDR_W);
                         A4F_wrrsp_put_data          <= A4F_wrrsp_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                     else
@@ -630,7 +630,7 @@ architecture Behavioral of PE_Ifc is
                         A4L_rdrqA_put_en            <= '0';
                         A4L_wrrqA_put_en            <= '0';
                         A4L_wrrqD_put_en            <= '0';
-                        A4F_rdrsp_put_data_tmp      := dataIn(NoC_addr_width + A4F_rdrsp_width - 1 downto NoC_addr_width);
+                        A4F_rdrsp_put_data_tmp      := dataIn(ADDR_W + A4F_rdrsp_width - 1 downto ADDR_W);
                         A4F_rdrsp_put_data          <= A4F_rdrsp_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                     else
@@ -650,7 +650,7 @@ architecture Behavioral of PE_Ifc is
                         A4L_rdrqA_put_en            <= '0';
                         A4L_wrrqA_put_en            <= '1';
                         A4L_wrrqD_put_en            <= '0';
-                        A4L_wrrqA_put_data_tmp      := dataIn(NoC_addr_width + A4L_wrrqA_width - 1 downto NoC_addr_width);
+                        A4L_wrrqA_put_data_tmp      := dataIn(ADDR_W + A4L_wrrqA_width - 1 downto ADDR_W);
                         A4L_wrrqA_put_data          <= A4L_wrrqA_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                     else
@@ -670,7 +670,7 @@ architecture Behavioral of PE_Ifc is
                         A4L_rdrqA_put_en            <= '0';
                         A4L_wrrqA_put_en            <= '0';
                         A4L_wrrqD_put_en            <= '1';
-                        A4L_wrrqD_put_data_tmp      := dataIn(NoC_addr_width + A4L_wrrqD_width - 1 downto NoC_addr_width);
+                        A4L_wrrqD_put_data_tmp      := dataIn(ADDR_W + A4L_wrrqD_width - 1 downto ADDR_W);
                         A4L_wrrqD_put_data          <= A4L_wrrqD_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                     else
@@ -690,7 +690,7 @@ architecture Behavioral of PE_Ifc is
                         A4L_rdrqA_put_en            <= '1';
                         A4L_wrrqA_put_en            <= '0';
                         A4L_wrrqD_put_en            <= '0';
-                        A4L_rdrqA_put_data_tmp      := dataIn(NoC_addr_width + A4L_rdrqA_width - 1 downto NoC_addr_width);
+                        A4L_rdrqA_put_data_tmp      := dataIn(ADDR_W + A4L_rdrqA_width - 1 downto ADDR_W);
                         A4L_rdrqA_put_data          <= A4L_rdrqA_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                     else

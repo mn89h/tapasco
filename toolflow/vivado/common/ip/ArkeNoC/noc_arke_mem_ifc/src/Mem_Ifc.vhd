@@ -40,8 +40,8 @@ entity Mem_Ifc is
         signal rst              : in  std_logic := '1';
         signal AXI_arvalid      : out std_logic;
         signal AXI_arready      : in  std_logic;
-        signal AXI_araddr       : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + NoC_addr_width + 25 downto A4F_id_width + NoC_addr_width + 25 );
-        signal AXI_arid         : out std_logic_vector( A4F_id_width + NoC_addr_width - 1 + 25 downto 25 );
+        signal AXI_araddr       : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + NoC_address'length + 25 downto A4F_id_width + NoC_address'length + 25 );
+        signal AXI_arid         : out std_logic_vector( A4F_id_width + NoC_address'length - 1 + 25 downto 25 );
         signal AXI_arlen        : out std_logic_vector( 24 downto 17 );
         signal AXI_arsize       : out std_logic_vector( 16 downto 14 );
         signal AXI_arburst      : out std_logic_vector( 13 downto 12 );
@@ -51,8 +51,8 @@ entity Mem_Ifc is
         signal AXI_arqos        : out std_logic_vector(  3 downto 0 );
         signal AXI_awvalid      : out std_logic;
         signal AXI_awready      : in  std_logic;
-        signal AXI_awaddr       : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + NoC_addr_width + 25 downto A4F_id_width + NoC_addr_width + 25 );
-        signal AXI_awid         : out std_logic_vector( A4F_id_width + NoC_addr_width - 1 + 25 downto 25 );
+        signal AXI_awaddr       : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + NoC_address'length + 25 downto A4F_id_width + NoC_address'length + 25 );
+        signal AXI_awid         : out std_logic_vector( A4F_id_width + NoC_address'length - 1 + 25 downto 25 );
         signal AXI_awlen        : out std_logic_vector( 24 downto 17 );
         signal AXI_awsize       : out std_logic_vector( 16 downto 14 );
         signal AXI_awburst      : out std_logic_vector( 13 downto 12 );
@@ -67,13 +67,13 @@ entity Mem_Ifc is
         signal AXI_wlast        : out std_logic_vector(  0 downto 0 );
         signal AXI_rready       : out std_logic;
         signal AXI_rvalid       : in  std_logic;
-        signal AXI_rdata        : in  std_logic_vector( A4F_data_width - 1 + A4F_id_width + NoC_addr_width + 3 downto A4F_id_width + NoC_addr_width + 3 );
-        signal AXI_rid          : in  std_logic_vector( A4F_id_width + NoC_addr_width - 1 + 3 downto 3 );
+        signal AXI_rdata        : in  std_logic_vector( A4F_data_width - 1 + A4F_id_width + NoC_address'length + 3 downto A4F_id_width + NoC_address'length + 3 );
+        signal AXI_rid          : in  std_logic_vector( A4F_id_width + NoC_address'length - 1 + 3 downto 3 );
         signal AXI_rresp        : in  std_logic_vector(  2 downto 1 );
         signal AXI_rlast        : in  std_logic_vector(  0 downto 0 );
         signal AXI_bready       : out std_logic;
         signal AXI_bvalid       : in  std_logic;
-        signal AXI_bid          : in  std_logic_vector( A4F_id_width + NoC_addr_width - 1 + 2 downto 2 );
+        signal AXI_bid          : in  std_logic_vector( A4F_id_width + NoC_address'length - 1 + 2 downto 2 );
         signal AXI_bresp        : in  std_logic_vector(  1 downto 0 );
 
         signal dataOut          : out std_logic_vector(    DATA_WIDTH - 1 downto 0 );
@@ -87,16 +87,16 @@ end Mem_Ifc;
 
 architecture Behavioral of Mem_Ifc is
 
-    constant A4F_rdrqa_width    : natural := A4F_addr_width + A4F_id_width + NoC_addr_width + 25;
-    constant A4F_wrrqa_width    : natural := A4F_addr_width + A4F_id_width + NoC_addr_width + 25;
-    constant A4F_wrrqd_width    : natural := A4F_data_width + A4F_strb_width + 1;
-    constant A4F_rdrsp_width    : natural := A4F_data_width + A4F_id_width + NoC_addr_width + 3;
-    constant A4F_wrrsp_width    : natural := A4F_id_width + NoC_addr_width + 2;
-
     constant DIM_X_W    : integer := Log2(DIM_X);
     constant DIM_Y_W    : integer := Log2(DIM_Y);
     constant DIM_Z_W    : integer := Log2(DIM_Z);
     constant ADDR_W     : integer := DIM_X_W + DIM_Y_W + DIM_Z_W;
+
+    constant A4F_rdrqa_width    : natural := A4F_addr_width + A4F_id_width + ADDR_W + 25;
+    constant A4F_wrrqa_width    : natural := A4F_addr_width + A4F_id_width + ADDR_W + 25;
+    constant A4F_wrrqd_width    : natural := A4F_data_width + A4F_strb_width + 1;
+    constant A4F_rdrsp_width    : natural := A4F_data_width + A4F_id_width + ADDR_W + 3;
+    constant A4F_wrrsp_width    : natural := A4F_id_width + ADDR_W + 2;
 
     type ChannelsType is (None, RdRsp, WrRsp, RdRqA, WrRqA, WrRqD);
 
@@ -128,7 +128,7 @@ architecture Behavioral of Mem_Ifc is
         generic map (
             A4F_addr_width  => A4F_addr_width,
             A4F_data_width  => A4F_data_width,
-            A4F_id_width    => A4F_id_width + NoC_addr_width,
+            A4F_id_width    => A4F_id_width + ADDR_W,
             A4F_strb_width  => A4F_strb_width
         )
         port map (
@@ -196,7 +196,7 @@ architecture Behavioral of Mem_Ifc is
             variable rdrsp_get_data_tmp : std_logic_vector(A4F_rdrsp_width - 1 downto 0);
             variable wrrsp_get_data_tmp : std_logic_vector(A4F_wrrsp_width - 1 downto 0);
             
-            variable dest_address       : std_logic_vector(NoC_addr_width - 1 downto 0);
+            variable dest_address       : std_logic_vector(ADDR_W - 1 downto 0);
             variable dataOutNext        : std_logic_vector(DATA_WIDTH - 1 downto 0);
             
         begin if rising_edge(clk) then
@@ -232,7 +232,7 @@ architecture Behavioral of Mem_Ifc is
                 if (rdrsp_get_valid = '1' or send_stalled = '1') then
                     if(send_stalled = '0') then
                         dest_address    := rdrsp_get_data(AXI_rid'left downto AXI_rid'right + A4F_id_width);
-                        dataOutNext     := '1' & "00" & ZERO(dataOut'left - 3 downto rdrsp_get_data'length + NoC_addr_width) & rdrsp_get_data & dest_address;
+                        dataOutNext     := '1' & "00" & ZERO(dataOut'left - 3 downto rdrsp_get_data'length + ADDR_W) & rdrsp_get_data & dest_address;
                     end if;
 
                     if (controlIn(STALL_GO) = '1') then
@@ -240,7 +240,7 @@ architecture Behavioral of Mem_Ifc is
                         dataOut         <= dataOutNext;
                         controlOut(TX)  <= '1';
 
-                        if (dataOutNext(A4F_AXI_rlast'right + dest_address) = '1') then
+                        if (dataOutNext(AXI_rlast'right + ADDR_W) = '1') then
                             rdrsp_get_en    <= '0';
 
                             controlOut(EOP) <= '1';
@@ -277,7 +277,7 @@ architecture Behavioral of Mem_Ifc is
                 if (wrrsp_get_valid = '1' or send_stalled = '1') then
                     if(send_stalled = '0') then
                         dest_address    := wrrsp_get_data(AXI_bid'left downto AXI_bid'right + A4F_id_width);
-                        dataOutNext     := '1' & "10" & ZERO(dataOut'left - 3 downto wrrsp_get_data'length + NoC_addr_width) & wrrsp_get_data & dest_address;
+                        dataOutNext     := '1' & "10" & ZERO(dataOut'left - 3 downto wrrsp_get_data'length + ADDR_W) & wrrsp_get_data & dest_address;
                     end if;
 
                     if (controlIn(STALL_GO) = '1') then
@@ -321,7 +321,7 @@ architecture Behavioral of Mem_Ifc is
                         rdrqA_put_en            <= '0';
                         wrrqD_put_en            <= '0';
                         wrrqA_put_en            <= '1';
-                        wrrqA_put_data_tmp      := dataInStalled(A4F_wrrqA_width - 1 + NoC_addr_width downto NoC_addr_width);
+                        wrrqA_put_data_tmp      := dataInStalled(A4F_wrrqA_width - 1 + ADDR_W downto ADDR_W);
                         wrrqA_put_data          <= wrrqA_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                         put_last_state          <= WrRqA;
@@ -330,7 +330,7 @@ architecture Behavioral of Mem_Ifc is
                         rdrqA_put_en            <= '0';
                         wrrqA_put_en            <= '0';
                         wrrqD_put_en            <= '1';
-                        wrrqD_put_data_tmp      := dataInStalled(A4F_wrrqD_width - 1 + NoC_addr_width downto NoC_addr_width);
+                        wrrqD_put_data_tmp      := dataInStalled(A4F_wrrqD_width - 1 + ADDR_W downto ADDR_W);
                         wrrqD_put_data          <= wrrqD_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                         put_last_state          <= WrRqD;
@@ -339,7 +339,7 @@ architecture Behavioral of Mem_Ifc is
                         wrrqA_put_en            <= '0';
                         wrrqD_put_en            <= '0';
                         rdrqA_put_en            <= '1';
-                        rdrqA_put_data_tmp      := dataInStalled(A4F_rdrqA_width - 1 + NoC_addr_width downto NoC_addr_width);
+                        rdrqA_put_data_tmp      := dataInStalled(A4F_rdrqA_width - 1 + ADDR_W downto ADDR_W);
                         rdrqA_put_data          <= rdrqA_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                         put_last_state          <= RdRqA;
@@ -354,7 +354,7 @@ architecture Behavioral of Mem_Ifc is
                         rdrqA_put_en            <= '0';
                         wrrqD_put_en            <= '0';
                         wrrqA_put_en            <= '1';
-                        wrrqA_put_data_tmp      := dataIn(A4F_wrrqA_width - 1 + NoC_addr_width downto NoC_addr_width);
+                        wrrqA_put_data_tmp      := dataIn(A4F_wrrqA_width - 1 + ADDR_W downto ADDR_W);
                         wrrqA_put_data          <= wrrqA_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                     else
@@ -370,7 +370,7 @@ architecture Behavioral of Mem_Ifc is
                         rdrqA_put_en            <= '0';
                         wrrqA_put_en            <= '0';
                         wrrqD_put_en            <= '1';
-                        wrrqD_put_data_tmp      := dataIn(A4F_wrrqD_width - 1 + NoC_addr_width downto NoC_addr_width);
+                        wrrqD_put_data_tmp      := dataIn(A4F_wrrqD_width - 1 + ADDR_W downto ADDR_W);
                         wrrqD_put_data          <= wrrqD_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                     else
@@ -386,7 +386,7 @@ architecture Behavioral of Mem_Ifc is
                         wrrqA_put_en            <= '0';
                         wrrqD_put_en            <= '0';
                         rdrqA_put_en            <= '1';
-                        rdrqA_put_data_tmp      := dataIn(A4F_rdrqA_width - 1 + NoC_addr_width downto NoC_addr_width);
+                        rdrqA_put_data_tmp      := dataIn(A4F_rdrqA_width - 1 + ADDR_W downto ADDR_W);
                         rdrqA_put_data          <= rdrqA_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                     else

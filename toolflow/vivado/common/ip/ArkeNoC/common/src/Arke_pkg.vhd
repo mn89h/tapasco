@@ -25,14 +25,13 @@ package Arke_pkg is
     -- X grows from left to right, Y grows from front to back, Z grows from bottom to top
     constant DIM_X    : integer := 4;
     constant DIM_Y    : integer := 4;
-    constant DIM_Z    : integer := 2;
-    constant NoC_addr_width : natural := 6; --Log2(DIM_X) + Log2(DIM_Y) + Log2(DIM_Z);
+    constant DIM_Z    : integer := 3;
     
     -- Input buffers depth 
     constant BUFFER_DEPTH : integer := 4; -- Buffer depth must be greater than 1 and a power of 2
     
     -- Data and control buses 
-    constant DATA_WIDTH     : integer := 600;                                                            
+    constant DATA_WIDTH     : integer := 100;                                                            
     constant CONTROL_WIDTH  : integer := 3;  
 
                                       -------------------------
