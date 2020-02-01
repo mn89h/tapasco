@@ -33,6 +33,7 @@ entity Mem_Ifc is
         A4F_data_width  : integer;
         A4F_id_width    : integer;
         A4F_strb_width  : integer;
+        NoC_address_width : integer;
         NoC_address     : std_logic_vector
     );
     port (
@@ -40,8 +41,8 @@ entity Mem_Ifc is
         signal rst              : in  std_logic := '1';
         signal AXI_arvalid      : out std_logic;
         signal AXI_arready      : in  std_logic;
-        signal AXI_araddr       : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + NoC_address'length + 25 downto A4F_id_width + NoC_address'length + 25 );
-        signal AXI_arid         : out std_logic_vector( A4F_id_width + NoC_address'length - 1 + 25 downto 25 );
+        signal AXI_araddr       : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + NoC_address_width + 25 downto A4F_id_width + NoC_address_width + 25 );
+        signal AXI_arid         : out std_logic_vector( A4F_id_width + NoC_address_width - 1 + 25 downto 25 );
         signal AXI_arlen        : out std_logic_vector( 24 downto 17 );
         signal AXI_arsize       : out std_logic_vector( 16 downto 14 );
         signal AXI_arburst      : out std_logic_vector( 13 downto 12 );
@@ -51,8 +52,8 @@ entity Mem_Ifc is
         signal AXI_arqos        : out std_logic_vector(  3 downto 0 );
         signal AXI_awvalid      : out std_logic;
         signal AXI_awready      : in  std_logic;
-        signal AXI_awaddr       : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + NoC_address'length + 25 downto A4F_id_width + NoC_address'length + 25 );
-        signal AXI_awid         : out std_logic_vector( A4F_id_width + NoC_address'length - 1 + 25 downto 25 );
+        signal AXI_awaddr       : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + NoC_address_width + 25 downto A4F_id_width + NoC_address_width + 25 );
+        signal AXI_awid         : out std_logic_vector( A4F_id_width + NoC_address_width - 1 + 25 downto 25 );
         signal AXI_awlen        : out std_logic_vector( 24 downto 17 );
         signal AXI_awsize       : out std_logic_vector( 16 downto 14 );
         signal AXI_awburst      : out std_logic_vector( 13 downto 12 );
@@ -67,13 +68,13 @@ entity Mem_Ifc is
         signal AXI_wlast        : out std_logic_vector(  0 downto 0 );
         signal AXI_rready       : out std_logic;
         signal AXI_rvalid       : in  std_logic;
-        signal AXI_rdata        : in  std_logic_vector( A4F_data_width - 1 + A4F_id_width + NoC_address'length + 3 downto A4F_id_width + NoC_address'length + 3 );
-        signal AXI_rid          : in  std_logic_vector( A4F_id_width + NoC_address'length - 1 + 3 downto 3 );
+        signal AXI_rdata        : in  std_logic_vector( A4F_data_width - 1 + A4F_id_width + NoC_address_width + 3 downto A4F_id_width + NoC_address_width + 3 );
+        signal AXI_rid          : in  std_logic_vector( A4F_id_width + NoC_address_width - 1 + 3 downto 3 );
         signal AXI_rresp        : in  std_logic_vector(  2 downto 1 );
         signal AXI_rlast        : in  std_logic_vector(  0 downto 0 );
         signal AXI_bready       : out std_logic;
         signal AXI_bvalid       : in  std_logic;
-        signal AXI_bid          : in  std_logic_vector( A4F_id_width + NoC_address'length - 1 + 2 downto 2 );
+        signal AXI_bid          : in  std_logic_vector( A4F_id_width + NoC_address_width - 1 + 2 downto 2 );
         signal AXI_bresp        : in  std_logic_vector(  1 downto 0 );
 
         signal dataOut          : out std_logic_vector(    DATA_WIDTH - 1 downto 0 );

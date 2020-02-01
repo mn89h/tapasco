@@ -701,7 +701,8 @@ namespace eval arch {
       set_property -dict [list CONFIG.A4F_addr_width $A4F_ADDR_W \
                                CONFIG.A4F_data_width $A4F_DATA_W \
                                CONFIG.A4F_id_width $A4F_ID_W \
-                               CONFIG.A4F_strb_width [expr {$A4F_DATA_W / 8}]] $mi
+                               CONFIG.A4F_strb_width [expr {$A4F_DATA_W / 8}] \
+                               CONFIG.NoC_address_width [expr {$DIM_X_W + $DIM_Y_W + $DIM_Z_W}]] $mi
     }
   }
 
