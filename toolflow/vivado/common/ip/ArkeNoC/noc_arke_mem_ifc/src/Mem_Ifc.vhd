@@ -284,7 +284,7 @@ architecture Behavioral of Mem_Ifc is
                         send_stalled    <= '0';
                         dataOut         <= dataOutNext;
                         controlOut(TX)  <= '1';
-                        controlOut(EOP) <= '0';
+                        controlOut(EOP) <= '1';
 
                         rdrsp_get_en    <= '1';
                         state_send      <= RdRsp;
