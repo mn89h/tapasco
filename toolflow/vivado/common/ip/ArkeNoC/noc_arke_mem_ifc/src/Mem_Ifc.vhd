@@ -349,6 +349,8 @@ architecture Behavioral of Mem_Ifc is
                 end if;
             elsif (controlIn(RX) = '1') then
                 if (dataIn(dataIn'left - 1 downto dataIn'left - 2) = "10") then
+                    put_last_state          <= WrRqA;
+                    
                     if ((put_last_state = WrRqA and wrrqA_put_ready = '1') or
                         (put_last_state = WrRqD and wrrqD_put_ready = '1') or
                         (put_last_state = RdRqA and rdrqA_put_ready = '1')) then
@@ -361,10 +363,11 @@ architecture Behavioral of Mem_Ifc is
                     else
                         dataInStalled           <= dataIn;
                         controlOut(STALL_GO)    <= '0';
-                        put_last_state          <= WrRqA;
                         put_stalled             <= '1';
                     end if;
                 elsif (dataIn(dataIn'left - 1 downto dataIn'left - 2) = "11") then
+                    put_last_state          <= WrRqD;
+
                     if ((put_last_state = WrRqA and wrrqA_put_ready = '1') or
                         (put_last_state = WrRqD and wrrqD_put_ready = '1') or
                         (put_last_state = RdRqA and rdrqA_put_ready = '1')) then
@@ -377,10 +380,11 @@ architecture Behavioral of Mem_Ifc is
                     else
                         dataInStalled           <= dataIn;
                         controlOut(STALL_GO)    <= '0';
-                        put_last_state          <= WrRqD;
                         put_stalled             <= '1';
                     end if;
                 elsif (dataIn(dataIn'left - 1 downto dataIn'left - 2) = "00") then
+                    put_last_state          <= RdRqA;
+
                     if ((put_last_state = WrRqA and wrrqA_put_ready = '1') or
                         (put_last_state = WrRqD and wrrqD_put_ready = '1') or
                         (put_last_state = RdRqA and rdrqA_put_ready = '1')) then
@@ -393,7 +397,6 @@ architecture Behavioral of Mem_Ifc is
                     else
                         dataInStalled           <= dataIn;
                         controlOut(STALL_GO)    <= '0';
-                        put_last_state          <= RdRqA;
                         put_stalled             <= '1';
                     end if;
                 end if;

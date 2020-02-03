@@ -600,6 +600,7 @@ architecture Behavioral of PE_Ifc is
                 end if;
             elsif (controlIn(RX) = '1') then
                 if (dataIn(dataIn'left downto dataIn'left - 2) = "110") then
+                    put_last_state          <= WrRsp;
                     if ((put_last_state = WrRsp and A4F_wrrsp_put_ready = '1') or
                         (put_last_state = RdRsp and A4F_rdrsp_put_ready = '1') or
                         (put_last_state = WrRqA and A4L_wrrqA_put_ready = '1') or
@@ -616,10 +617,10 @@ architecture Behavioral of PE_Ifc is
                     else
                         dataInStalled           <= dataIn;
                         controlOut(STALL_GO)    <= '0';
-                        put_last_state          <= WrRsp;
                         put_stalled             <= '1';
                     end if;
                 elsif (dataIn(dataIn'left downto dataIn'left - 2) = "100") then
+                    put_last_state          <= RdRsp;
                     if ((put_last_state = WrRsp and A4F_wrrsp_put_ready = '1') or
                         (put_last_state = RdRsp and A4F_rdrsp_put_ready = '1') or
                         (put_last_state = WrRqA and A4L_wrrqA_put_ready = '1') or
@@ -636,10 +637,10 @@ architecture Behavioral of PE_Ifc is
                     else
                         dataInStalled           <= dataIn;
                         controlOut(STALL_GO)    <= '0';
-                        put_last_state          <= RdRsp;
                         put_stalled             <= '1';
                     end if;
                 elsif (dataIn(dataIn'left downto dataIn'left - 2) = "010") then
+                    put_last_state          <= WrRqA;
                     if ((put_last_state = WrRsp and A4F_wrrsp_put_ready = '1') or
                         (put_last_state = RdRsp and A4F_rdrsp_put_ready = '1') or
                         (put_last_state = WrRqA and A4L_wrrqA_put_ready = '1') or
@@ -656,10 +657,10 @@ architecture Behavioral of PE_Ifc is
                     else
                         dataInStalled           <= dataIn;
                         controlOut(STALL_GO)    <= '0';
-                        put_last_state          <= WrRqA;
                         put_stalled             <= '1';
                     end if;
                 elsif (dataIn(dataIn'left downto dataIn'left - 2) = "011") then
+                    put_last_state          <= WrRqD;
                     if ((put_last_state = WrRsp and A4F_wrrsp_put_ready = '1') or
                         (put_last_state = RdRsp and A4F_rdrsp_put_ready = '1') or
                         (put_last_state = WrRqA and A4L_wrrqA_put_ready = '1') or
@@ -676,10 +677,10 @@ architecture Behavioral of PE_Ifc is
                     else
                         dataInStalled           <= dataIn;
                         controlOut(STALL_GO)    <= '0';
-                        put_last_state          <= WrRqD;
                         put_stalled             <= '1';
                     end if;
                 elsif (dataIn(dataIn'left downto dataIn'left - 2) = "000") then
+                    put_last_state          <= RdRqA;
                     if ((put_last_state = WrRsp and A4F_wrrsp_put_ready = '1') or
                         (put_last_state = RdRsp and A4F_rdrsp_put_ready = '1') or
                         (put_last_state = WrRqA and A4L_wrrqA_put_ready = '1') or
@@ -696,7 +697,6 @@ architecture Behavioral of PE_Ifc is
                     else
                         dataInStalled           <= dataIn;
                         controlOut(STALL_GO)    <= '0';
-                        put_last_state          <= RdRqA;
                         put_stalled             <= '1';
                     end if;
                 end if;

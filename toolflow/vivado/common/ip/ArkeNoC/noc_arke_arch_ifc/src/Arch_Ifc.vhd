@@ -423,6 +423,7 @@ architecture Behavioral of Arch_Ifc is
                 end if;
             elsif (controlIn(RX) = '1') then
                 if (dataIn(dataIn'left - 1) = '1') then
+                    put_last_state          <= WrRsp;
                     if ((put_last_state = WrRsp and wrrsp_put_ready = '1') or
                         (put_last_state = RdRsp and rdrsp_put_ready = '1')) then
                         rdrsp_put_en            <= '0';
@@ -433,10 +434,10 @@ architecture Behavioral of Arch_Ifc is
                     else
                         dataInStalled           <= dataIn;
                         controlOut(STALL_GO)    <= '0';
-                        put_last_state          <= WrRsp;
                         put_stalled             <= '1';
                     end if;
                 elsif (dataIn(dataIn'left - 1) = '0') then
+                    put_last_state          <= RdRsp;
                     if ((put_last_state = WrRsp and wrrsp_put_ready = '1') or
                         (put_last_state = RdRsp and rdrsp_put_ready = '1')) then
                         wrrsp_put_en            <= '0';
@@ -447,7 +448,6 @@ architecture Behavioral of Arch_Ifc is
                     else
                         dataInStalled           <= dataIn;
                         controlOut(STALL_GO)    <= '0';
-                        put_last_state          <= RdRsp;
                         put_stalled             <= '1';
                     end if;
                 end if;
