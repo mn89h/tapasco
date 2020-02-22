@@ -4,16 +4,16 @@
 -------------------------------------------------------------------------------
 -- File       : Arch_Ifc.vhd
 -- Author     : Malte Nilges
--- Company    : 
+-- Company    :
 -- Created    : 2019-11-24
 -- Last update: 2019-12-09
--- Platform   : 
+-- Platform   :
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
--- Description: Network interface for TaPaSCo's architecture sending data to 
+-- Description: Network interface for TaPaSCo's architecture sending data to
 --              and receiving data from PEs (processing elements).
 --              Data received from AXI4 Lite Master is being received by a
---              Slave and converted to appropriate network data format and the 
+--              Slave and converted to appropriate network data format and the
 --              other way round.
 -------------------------------------------------------------------------------
 -- Copyright (c) 2019
@@ -22,7 +22,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-library work;
 use work.NIC_pkg.all;
 use work.Arke_pkg.all;
 
@@ -30,15 +29,22 @@ use work.Arke_pkg.all;
 
 entity Arch_Ifc is
     generic (
+        address         : std_logic_vector := "000000000000";
+        DIM_X           : integer := 4;
+        DIM_Y           : integer := 4;
+        DIM_Z           : integer := 1;
+        ADDR_WIDTH      : integer := 12;
+        DATA_WIDTH      : integer := 128;
+        CONTROL_WIDTH   : integer := 3;
+
         A4L_addr_width  : integer := 32;
         A4L_data_width  : integer := 32;
         A4L_strb_width  : integer := 4;
-        NoC_address     : std_logic_vector;
 
-        AXI_base_addr   : std_logic_vector;
-        AXI_ranges      : std_logic_vector;
+        AXI_base_addr   : std_logic_vector := "00000000000000000000000000000000";
+        AXI_ranges      : std_logic_vector := "0010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100";
         AXI_ranges_cnt  : integer := 18;
-        NoC_targets     : std_logic_vector
+        NoC_targets     : std_logic_vector := "0010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100"
     );
     port (
         signal clk              : in  std_logic := '1';
@@ -74,20 +80,18 @@ end Arch_Ifc;
 
 architecture Behavioral of Arch_Ifc is
 
+    constant ZERO       : std_logic_vector(DATA_WIDTH - 1 downto 0) := (others => '0');
+
+    constant DIM_X_W    : integer := Log2(DIM_X);
+    constant DIM_Y_W    : integer := Log2(DIM_Y);
+    constant DIM_Z_W    : integer := Log2(DIM_Z);
+
     constant A4L_rdrqa_width    : natural := A4L_addr_width + 3;
     constant A4L_wrrqa_width    : natural := A4L_addr_width + 3;
     constant A4L_wrrqd_width    : natural := A4L_data_width + A4L_strb_width;
     constant A4L_rdrsp_width    : natural := A4L_data_width + 2;
     constant A4L_wrrsp_width    : natural := 2;
 
-    constant DIM_X_W    : integer := Log2(DIM_X);
-    constant DIM_Y_W    : integer := Log2(DIM_Y);
-    constant DIM_Z_W    : integer := Log2orZero(DIM_Z);
-    constant ADDR_W     : integer := DIM_X_W + DIM_Y_W + DIM_Z_W;
-
-    type ChannelsType is (None, RdRsp, WrRsp, RdRqA, WrRqA, WrRqD);
-
-    
     -- AXI ADDRESS MAP GENERATION --
     type AXI_ADDR_MAP_TYPE is array (0 to AXI_ranges_cnt) of std_logic_vector(AXI_base_addr'range);
 
@@ -109,52 +113,21 @@ architecture Behavioral of Arch_Ifc is
 
 
     -- NOC ADDRESS MAP GENERATION --
-    type NOC_ADDR_MAP_TYPE is array (0 to AXI_ranges_cnt - 1) of std_logic_vector(ADDR_W - 1 downto 0);
+    type NOC_ADDR_MAP_TYPE is array (0 to AXI_ranges_cnt - 1) of std_logic_vector(ADDR_WIDTH - 1 downto 0);
 
-    -- unused, address map given by parameter to handle multiple ranges to one target
     function generate_NOC_ADDR_MAP return NOC_ADDR_MAP_TYPE is
-        variable result : NOC_ADDR_MAP_TYPE := (others => (others => '0'));
-        variable i      : integer := 0;
-        variable x_addr : std_logic_vector(DIM_X_W - 1 downto 0) := (others => '0');
-        variable y_addr : std_logic_vector(DIM_Y_W - 1 downto 0) := (others => '0');
-        variable z_addr : std_logic_vector(DIM_Z_W - 1 downto 0) := (others => '0');
-    begin
-        -- iterate through the axes
-        for z in 0 to DIM_Z - 1 loop
-            for y in 0 to DIM_Y - 1 loop
-                for x in 0 to DIM_X - 1 loop
-                    -- array boundary check
-                    if (i < AXI_ranges_cnt) then 
-                        -- leaving 0,0,0 out for arch_ifc
-                        if ((x = 0) and (y = 0) and (z = 0)) then
-                            null;   
-                        else
-                            x_addr := std_logic_vector(to_unsigned(x, x_addr'length));
-                            y_addr := std_logic_vector(to_unsigned(y, y_addr'length));
-                            z_addr := std_logic_vector(to_unsigned(z, z_addr'length));
-                            result(i) := x_addr & y_addr & z_addr;
-                            i := i + 1;
-                        end if;
-                    end if;
-                end loop;
-            end loop;
-        end loop;
-        return result;
-    end function;
-
-    function read_NOC_TARGETS return NOC_ADDR_MAP_TYPE is
         variable result : NOC_ADDR_MAP_TYPE := (others => (others => '0'));
     begin
         for i in 0 to AXI_ranges_cnt - 1 loop
-            -- every ADDR_W bits from NoC_targets parameter is read into result array 
-            result(i)     := std_logic_vector(unsigned(NoC_targets(i * ADDR_W to (i+1) * ADDR_W - 1)));
+            -- every ADDR_WIDTH bits from NoC_targets parameter is read into result array
+            result(i)     := std_logic_vector(unsigned(NoC_targets(i * ADDR_WIDTH to (i+1) * ADDR_WIDTH - 1)));
         end loop;
         return result;
     end function;
 
     -- GENERATE THE CONSTANTS --
     constant axi_addr_map_c : AXI_ADDR_MAP_TYPE := generate_AXI_ADDR_MAP;
-    constant noc_addr_map_c : NOC_ADDR_MAP_TYPE := read_NOC_TARGETS;
+    constant noc_addr_map_c : NOC_ADDR_MAP_TYPE := generate_NOC_ADDR_MAP;
 
     signal rdrqA_get_valid : std_logic;
     signal rdrqA_get_en    : std_logic;
@@ -240,7 +213,7 @@ architecture Behavioral of Arch_Ifc is
             wrrsp_put_en    => wrrsp_put_en,
             wrrsp_put_data  => wrrsp_put_data
         );
-                    
+
         process(clk)
 
             variable rdrqA_get_data_tmp : std_logic_vector(A4L_rdrqA_width - 1 downto 0);
@@ -248,10 +221,10 @@ architecture Behavioral of Arch_Ifc is
             variable wrrqD_get_data_tmp : std_logic_vector(A4L_wrrqD_width - 1 downto 0);
             variable rdrsp_put_data_tmp : std_logic_vector(A4L_rdrsp_width - 1 downto 0);
             variable wrrsp_put_data_tmp : std_logic_vector(A4L_wrrsp_width - 1 downto 0);
-            
-            variable dest_address       : std_logic_vector(ADDR_W - 1 downto 0);
+
+            variable dest_address       : std_logic_vector(ADDR_WIDTH - 1 downto 0);
             variable dataOutNext        : std_logic_vector(DATA_WIDTH - 1 downto 0);
-            
+
         begin if rising_edge(clk) then
             -----------
             -- RESET --
@@ -273,7 +246,7 @@ architecture Behavioral of Arch_Ifc is
             -- otherwise it changes to the next state to look for valid data.
             -- The network destination is chosen by a address map in conjunction with the AXI address.
             -------------------------------------
-            
+
             -- STATE 0: INIT
             if (state_send = None) then
                 send_stalled        <= '0';
@@ -285,14 +258,16 @@ architecture Behavioral of Arch_Ifc is
                 rdrqA_get_en        <= '0';
                 wrrqD_get_en        <= '0';
 
+                -- buffer AXI packet from PE in case of a stall
                 if (rdrqA_get_valid = '1' or send_stalled = '1') then
                     if(send_stalled = '0') then
                         rdrqA_get_data_tmp  := rdrqA_get_data;
                         determineTargetPE(rdrqA_get_data_tmp(AXI_araddr'left downto AXI_araddr'right),
                                           dest_address);
-                        dataOutNext         := '0' & "00" & ZERO(dataOut'left - 3 downto rdrqA_get_data_tmp'length + ADDR_W) & rdrqA_get_data_tmp & dest_address;
+                        dataOutNext         := P_A4L & C_AR & ZERO(dataOut'left - 3 downto rdrqA_get_data_tmp'length + ADDR_WIDTH) & rdrqA_get_data_tmp & dest_address;
                     end if;
 
+                    -- send buffered packet if receiver gives a go signal
                     if (controlIn(STALL_GO) = '1') then
                         send_stalled        <= '0';
                         dataOut             <= dataOutNext;
@@ -301,18 +276,21 @@ architecture Behavioral of Arch_Ifc is
 
                         wrrqA_get_en        <= '1';
                         state_send          <= WrRqA;
+                    -- else stall and wait before accepting new AXI packets
                     else
                         send_stalled        <= '1';
                         wrrqA_get_en        <= '0';
                     end if;
                 else
                     send_stalled        <= '0';
-                    
+
+                    -- unset TX if last packet was received but no new packet is transmitted
                     if (controlIn(STALL_GO) = '1') then
                         controlOut(TX)      <= '0';
                         controlOut(EOP)     <= '0';
                     end if;
 
+                    -- proceed to the next state
                     wrrqA_get_en        <= '1';
                     state_send          <= WrRqA;
                 end if;
@@ -328,7 +306,7 @@ architecture Behavioral of Arch_Ifc is
                         wrrqA_get_data_tmp  := wrrqA_get_data;
                         determineTargetPE(wrrqA_get_data_tmp(AXI_awaddr'left downto AXI_awaddr'right),
                                           dest_address);
-                        dataOutNext         := '0' & "10" & ZERO(dataOut'left - 3 downto wrrqA_get_data_tmp'length + ADDR_W) & wrrqA_get_data_tmp & dest_address;
+                        dataOutNext         := P_A4L & C_AW & ZERO(dataOut'left - 3 downto wrrqA_get_data_tmp'length + ADDR_WIDTH) & wrrqA_get_data_tmp & dest_address;
                     end if;
 
                     if (controlIn(STALL_GO) = '1') then
@@ -353,18 +331,18 @@ architecture Behavioral of Arch_Ifc is
                     end if;
 
                     rdrqA_get_en        <= '1';
-                    state_send          <= RdRqA; --if no valid wr address continue with rd -- CHANGED was wrong
+                    state_send          <= RdRqA;
                 end if;
 
             -- STATE 3: WRRQD
             else
                 wrrqA_get_en        <= '0';
-                wrrqD_get_en        <= '0';
 
                 if (wrrqD_get_valid = '1' or send_stalled = '1') then
+                    wrrqD_get_en        <= '0';
                     if(send_stalled = '0') then
                         wrrqD_get_data_tmp  := wrrqD_get_data;
-                        dataOutNext         := '0' & "11" & ZERO(dataOut'left - 3 downto wrrqD_get_data_tmp'length + ADDR_W) & wrrqD_get_data_tmp & dest_address;
+                        dataOutNext         := P_A4L & C_W & ZERO(dataOut'left - 3 downto wrrqD_get_data_tmp'length + ADDR_WIDTH) & wrrqD_get_data_tmp & dest_address;
                     end if;
 
                     if (controlIn(STALL_GO) = '1') then
@@ -387,11 +365,12 @@ architecture Behavioral of Arch_Ifc is
                         controlOut(EOP)     <= '0';
                     end if;
 
-                    rdrqA_get_en        <= '0';
                     --if not valid remain in state until valid to complete the packet
+                    rdrqA_get_en        <= '0';
+                    wrrqD_get_en        <= '1';
                 end if;
             end if;
-            
+
 
             --------------------------------------
             -- NETWORK DATA TO A4L R/W RESPONSE --
@@ -400,67 +379,66 @@ architecture Behavioral of Arch_Ifc is
             -- attempts are made to hand the data to the receiver until it is ready
             --------------------------------------
 
+            -- stalled data handling
             if (put_stalled = '1') then
-                if ((put_last_state = WrRsp and wrrsp_put_ready = '1') or
-                    (put_last_state = RdRsp and rdrsp_put_ready = '1')) then
-                    if (dataInStalled(dataIn'left - 1) = '1') then
-                        rdrsp_put_en            <= '0';
-                        wrrsp_put_en            <= '1';
-                        wrrsp_put_data_tmp      := dataInStalled(ADDR_W + A4L_wrrsp_width - 1 downto ADDR_W);
-                        wrrsp_put_data          <= wrrsp_put_data_tmp;
-                        controlOut(STALL_GO)    <= '1';
-                        put_last_state          <= WrRsp;
-                        put_stalled             <= '0';
-                    elsif (dataIn(dataIn'left - 1) = '0') then
-                        wrrsp_put_en            <= '0';
+                -- proceed with stalled data only if previous AXI packet could be stored in fifo
+                if ((put_last_state = RdRsp and rdrsp_put_ready = '1') or
+                    (put_last_state = WrRsp and wrrsp_put_ready = '1')) then
+                    if (dataInStalled(dataIn'left - 1) = C_R(1)) then
                         rdrsp_put_en            <= '1';
-                        rdrsp_put_data_tmp      := dataInStalled(ADDR_W + A4L_rdrsp_width - 1 downto ADDR_W);
+                        wrrsp_put_en            <= '0';
+                        rdrsp_put_data_tmp      := dataInStalled(ADDR_WIDTH + A4L_rdrsp_width - 1 downto ADDR_WIDTH);
                         rdrsp_put_data          <= rdrsp_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                         put_last_state          <= RdRsp;
                         put_stalled             <= '0';
-                    end if;
-                end if;
-            elsif (controlIn(RX) = '1') then
-                if (dataIn(dataIn'left - 1) = '1') then
-                    put_last_state          <= WrRsp;
-                    if ((put_last_state = WrRsp and wrrsp_put_ready = '1') or
-                        (put_last_state = RdRsp and rdrsp_put_ready = '1')) then
+                    elsif (dataInStalled(dataIn'left - 1) = C_B(1)) then
                         rdrsp_put_en            <= '0';
                         wrrsp_put_en            <= '1';
-                        wrrsp_put_data_tmp      := dataIn(ADDR_W + A4L_wrrsp_width - 1 downto ADDR_W);
+                        wrrsp_put_data_tmp      := dataInStalled(ADDR_WIDTH + A4L_wrrsp_width - 1 downto ADDR_WIDTH);
                         wrrsp_put_data          <= wrrsp_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
-                    else
-                        dataInStalled           <= dataIn;
-                        controlOut(STALL_GO)    <= '0';
-                        put_stalled             <= '1';
+                        put_last_state          <= WrRsp;
+                        put_stalled             <= '0';
                     end if;
-                elsif (dataIn(dataIn'left - 1) = '0') then
-                    put_last_state          <= RdRsp;
-                    if ((put_last_state = WrRsp and wrrsp_put_ready = '1') or
-                        (put_last_state = RdRsp and rdrsp_put_ready = '1')) then
-                        wrrsp_put_en            <= '0';
+                end if;
+            -- normal data handling
+            elsif (controlIn(RX) = '1') then
+                -- set go signal only if previous AXI packet could be stored in fifo
+                if ((put_last_state = RdRsp and rdrsp_put_ready = '1') or
+                    (put_last_state = WrRsp and wrrsp_put_ready = '1')) then
+                    if (dataIn(dataIn'left - 1) = C_R(1)) then
                         rdrsp_put_en            <= '1';
-                        rdrsp_put_data_tmp      := dataIn(ADDR_W + A4L_rdrsp_width - 1 downto ADDR_W);
+                        wrrsp_put_en            <= '0';
+                        rdrsp_put_data_tmp      := dataIn(ADDR_WIDTH + A4L_rdrsp_width - 1 downto ADDR_WIDTH);
                         rdrsp_put_data          <= rdrsp_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
-                    else
-                        dataInStalled           <= dataIn;
-                        controlOut(STALL_GO)    <= '0';
-                        put_stalled             <= '1';
+                        put_last_state          <= RdRsp;
+                    elsif (dataIn(dataIn'left - 1) = C_B(1)) then
+                        rdrsp_put_en            <= '0';
+                        wrrsp_put_en            <= '1';
+                        wrrsp_put_data_tmp      := dataIn(ADDR_WIDTH + A4L_wrrsp_width - 1 downto ADDR_WIDTH);
+                        wrrsp_put_data          <= wrrsp_put_data_tmp;
+                        controlOut(STALL_GO)    <= '1';
+                        put_last_state          <= WrRsp;
                     end if;
+                -- otherwise stall for the next cycle and store the current incoming data
+                else
+                    dataInStalled           <= dataIn;
+                    controlOut(STALL_GO)    <= '0';
+                    put_stalled             <= '1';
                 end if;
+            -- no data: unset put signals if successfully stored in fifo
             elsif (controlIn(RX) = '0') then
-                if(wrrsp_put_ready = '1') then
-                    wrrsp_put_en    <= '0';
-                end if;
                 if(rdrsp_put_ready = '1') then
                     rdrsp_put_en    <= '0';
                 end if;
+                if(wrrsp_put_ready = '1') then
+                    wrrsp_put_en    <= '0';
+                end if;
             end if;
 
-            end if;
+        end if;
         end if;
     end process;
 end architecture;

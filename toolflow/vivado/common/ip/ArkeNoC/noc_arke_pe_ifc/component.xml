@@ -312,6 +312,168 @@
       </spirit:portMaps>
     </spirit:busInterface>
     <spirit:busInterface>
+      <spirit:name>A4L_AXI</spirit:name>
+      <spirit:busType spirit:vendor="xilinx.com" spirit:library="interface" spirit:name="aximm" spirit:version="1.0"/>
+      <spirit:abstractionType spirit:vendor="xilinx.com" spirit:library="interface" spirit:name="aximm_rtl" spirit:version="1.0"/>
+      <spirit:master>
+        <spirit:addressSpaceRef spirit:addressSpaceRef="A4L_AXI"/>
+      </spirit:master>
+      <spirit:portMaps>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>AWADDR</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>A4L_AXI_awaddr</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>AWPROT</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>A4L_AXI_awprot</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>AWVALID</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>A4L_AXI_awvalid</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>AWREADY</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>A4L_AXI_awready</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>WDATA</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>A4L_AXI_wdata</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>WSTRB</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>A4L_AXI_wstrb</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>WVALID</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>A4L_AXI_wvalid</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>WREADY</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>A4L_AXI_wready</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>BRESP</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>A4L_AXI_bresp</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>BVALID</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>A4L_AXI_bvalid</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>BREADY</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>A4L_AXI_bready</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>ARADDR</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>A4L_AXI_araddr</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>ARPROT</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>A4L_AXI_arprot</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>ARVALID</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>A4L_AXI_arvalid</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>ARREADY</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>A4L_AXI_arready</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>RDATA</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>A4L_AXI_rdata</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>RRESP</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>A4L_AXI_rresp</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>RVALID</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>A4L_AXI_rvalid</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>RREADY</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>A4L_AXI_rready</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+      </spirit:portMaps>
+    </spirit:busInterface>
+    <spirit:busInterface>
       <spirit:name>rst</spirit:name>
       <spirit:busType spirit:vendor="xilinx.com" spirit:library="signal" spirit:name="reset" spirit:version="1.0"/>
       <spirit:abstractionType spirit:vendor="xilinx.com" spirit:library="signal" spirit:name="reset_rtl" spirit:version="1.0"/>
@@ -345,7 +507,7 @@
       <spirit:parameters>
         <spirit:parameter>
           <spirit:name>ASSOCIATED_BUSIF</spirit:name>
-          <spirit:value spirit:id="BUSIFPARAM_VALUE.CLK.ASSOCIATED_BUSIF">A4F_AXI</spirit:value>
+          <spirit:value spirit:id="BUSIFPARAM_VALUE.CLK.ASSOCIATED_BUSIF">A4F_AXI:A4L_AXI</spirit:value>
         </spirit:parameter>
         <spirit:parameter>
           <spirit:name>ASSOCIATED_RESET</spirit:name>
@@ -354,52 +516,27 @@
       </spirit:parameters>
     </spirit:busInterface>
   </spirit:busInterfaces>
+  <spirit:addressSpaces>
+    <spirit:addressSpace>
+      <spirit:name>A4L_AXI</spirit:name>
+      <spirit:range spirit:format="long" spirit:resolve="dependent" spirit:dependency="pow(2,((spirit:decode(id(&apos;MODELPARAM_VALUE.A4L_addr_width&apos;)) - 1) + 3) - 3 + 1)" spirit:minimum="4096" spirit:rangeType="long">4294967296</spirit:range>
+      <spirit:width spirit:format="long" spirit:resolve="dependent" spirit:dependency="((spirit:decode(id(&apos;MODELPARAM_VALUE.A4L_data_width&apos;)) - 1) + spirit:decode(id(&apos;MODELPARAM_VALUE.A4L_strb_width&apos;))) - spirit:decode(id(&apos;MODELPARAM_VALUE.A4L_strb_width&apos;)) + 1">32</spirit:width>
+    </spirit:addressSpace>
+  </spirit:addressSpaces>
   <spirit:memoryMaps>
     <spirit:memoryMap>
       <spirit:name>A4F_AXI</spirit:name>
       <spirit:addressBlock>
         <spirit:name>reg0</spirit:name>
         <spirit:baseAddress spirit:format="bitString" spirit:resolve="user" spirit:bitStringLength="32">0</spirit:baseAddress>
-        <spirit:range spirit:format="long" spirit:resolve="dependent" spirit:dependency="pow(2,(((spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_addr_width&apos;)) - 1) + spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_id_width&apos;))) + 25) - (spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_id_width&apos;)) + 25) + 1)" spirit:minimum="4096" spirit:rangeType="long">4096</spirit:range>
-        <spirit:width spirit:format="long" spirit:resolve="dependent" spirit:dependency="(((spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_data_width&apos;)) - 1) + spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_strb_width&apos;))) + 1) - (spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_strb_width&apos;)) + 1) + 1">0</spirit:width>
+        <spirit:range spirit:format="long" spirit:resolve="dependent" spirit:dependency="pow(2,(((spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_addr_width&apos;)) - 1) + spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_id_width&apos;))) + 25) - (spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_id_width&apos;)) + 25) + 1)" spirit:minimum="4096" spirit:rangeType="long">16777216T</spirit:range>
+        <spirit:width spirit:format="long" spirit:resolve="dependent" spirit:dependency="(((spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_data_width&apos;)) - 1) + spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_strb_width&apos;))) + 1) - (spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_strb_width&apos;)) + 1) + 1">64</spirit:width>
         <spirit:usage>register</spirit:usage>
       </spirit:addressBlock>
     </spirit:memoryMap>
   </spirit:memoryMaps>
   <spirit:model>
     <spirit:views>
-      <spirit:view>
-        <spirit:name>xilinx_anylanguagesynthesis</spirit:name>
-        <spirit:displayName>Synthesis</spirit:displayName>
-        <spirit:envIdentifier>:vivado.xilinx.com:synthesis</spirit:envIdentifier>
-        <spirit:language>VHDL</spirit:language>
-        <spirit:modelName>PE_Ifc</spirit:modelName>
-        <spirit:fileSetRef>
-          <spirit:localName>xilinx_anylanguagesynthesis_view_fileset</spirit:localName>
-        </spirit:fileSetRef>
-        <spirit:parameters>
-          <spirit:parameter>
-            <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>2c384f99</spirit:value>
-          </spirit:parameter>
-        </spirit:parameters>
-      </spirit:view>
-      <spirit:view>
-        <spirit:name>xilinx_anylanguagebehavioralsimulation</spirit:name>
-        <spirit:displayName>Simulation</spirit:displayName>
-        <spirit:envIdentifier>:vivado.xilinx.com:simulation</spirit:envIdentifier>
-        <spirit:language>VHDL</spirit:language>
-        <spirit:modelName>PE_Ifc</spirit:modelName>
-        <spirit:fileSetRef>
-          <spirit:localName>xilinx_anylanguagebehavioralsimulation_view_fileset</spirit:localName>
-        </spirit:fileSetRef>
-        <spirit:parameters>
-          <spirit:parameter>
-            <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>2c384f99</spirit:value>
-          </spirit:parameter>
-        </spirit:parameters>
-      </spirit:view>
       <spirit:view>
         <spirit:name>xilinx_xpgui</spirit:name>
         <spirit:displayName>UI Layout</spirit:displayName>
@@ -410,7 +547,37 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>1483584c</spirit:value>
+            <spirit:value>34a9b4e6</spirit:value>
+          </spirit:parameter>
+        </spirit:parameters>
+      </spirit:view>
+      <spirit:view>
+        <spirit:name>xilinx_anylanguagesynthesis</spirit:name>
+        <spirit:displayName>Synthesis</spirit:displayName>
+        <spirit:envIdentifier>:vivado.xilinx.com:synthesis</spirit:envIdentifier>
+        <spirit:modelName>PE_Ifc</spirit:modelName>
+        <spirit:fileSetRef>
+          <spirit:localName>xilinx_anylanguagesynthesis_view_fileset</spirit:localName>
+        </spirit:fileSetRef>
+        <spirit:parameters>
+          <spirit:parameter>
+            <spirit:name>viewChecksum</spirit:name>
+            <spirit:value>7c485ed9</spirit:value>
+          </spirit:parameter>
+        </spirit:parameters>
+      </spirit:view>
+      <spirit:view>
+        <spirit:name>xilinx_anylanguagebehavioralsimulation</spirit:name>
+        <spirit:displayName>Simulation</spirit:displayName>
+        <spirit:envIdentifier>:vivado.xilinx.com:simulation</spirit:envIdentifier>
+        <spirit:modelName>PE_Ifc</spirit:modelName>
+        <spirit:fileSetRef>
+          <spirit:localName>xilinx_anylanguagebehavioralsimulation_view_fileset</spirit:localName>
+        </spirit:fileSetRef>
+        <spirit:parameters>
+          <spirit:parameter>
+            <spirit:name>viewChecksum</spirit:name>
+            <spirit:value>7c485ed9</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -482,7 +649,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="((spirit:decode(id(&apos;MODELPARAM_VALUE.A4L_addr_width&apos;)) - 1) + 3)">2</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="((spirit:decode(id(&apos;MODELPARAM_VALUE.A4L_addr_width&apos;)) - 1) + 3)">34</spirit:left>
             <spirit:right spirit:format="long">3</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -545,7 +712,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="((spirit:decode(id(&apos;MODELPARAM_VALUE.A4L_addr_width&apos;)) - 1) + 3)">2</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="((spirit:decode(id(&apos;MODELPARAM_VALUE.A4L_addr_width&apos;)) - 1) + 3)">34</spirit:left>
             <spirit:right spirit:format="long">3</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -604,12 +771,12 @@
         </spirit:wire>
       </spirit:port>
       <spirit:port>
-        <spirit:name>AXI_wdata</spirit:name>
+        <spirit:name>A4L_AXI_wdata</spirit:name>
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="((spirit:decode(id(&apos;MODELPARAM_VALUE.A4L_data_width&apos;)) - 1) + spirit:decode(id(&apos;MODELPARAM_VALUE.A4L_strb_width&apos;)))">0</spirit:left>
-            <spirit:right spirit:format="long" spirit:resolve="dependent" spirit:dependency="spirit:decode(id(&apos;MODELPARAM_VALUE.A4L_strb_width&apos;))">0</spirit:right>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="((spirit:decode(id(&apos;MODELPARAM_VALUE.A4L_data_width&apos;)) - 1) + spirit:decode(id(&apos;MODELPARAM_VALUE.A4L_strb_width&apos;)))">35</spirit:left>
+            <spirit:right spirit:format="long" spirit:resolve="dependent" spirit:dependency="spirit:decode(id(&apos;MODELPARAM_VALUE.A4L_strb_width&apos;))">4</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
             <spirit:wireTypeDef>
@@ -621,11 +788,11 @@
         </spirit:wire>
       </spirit:port>
       <spirit:port>
-        <spirit:name>AXI_wstrb</spirit:name>
+        <spirit:name>A4L_AXI_wstrb</spirit:name>
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.A4L_strb_width&apos;)) - 1)">0</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.A4L_strb_width&apos;)) - 1)">3</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -671,7 +838,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="((spirit:decode(id(&apos;MODELPARAM_VALUE.A4L_data_width&apos;)) - 1) + 2)">1</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="((spirit:decode(id(&apos;MODELPARAM_VALUE.A4L_data_width&apos;)) - 1) + 2)">33</spirit:left>
             <spirit:right spirit:format="long">2</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -789,7 +956,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(((spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_addr_width&apos;)) - 1) + spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_id_width&apos;))) + 25)">24</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(((spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_addr_width&apos;)) - 1) + spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_id_width&apos;))) + 25)">88</spirit:left>
             <spirit:right spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_id_width&apos;)) + 25)">25</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -995,7 +1162,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(((spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_addr_width&apos;)) - 1) + spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_id_width&apos;))) + 25)">24</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(((spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_addr_width&apos;)) - 1) + spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_id_width&apos;))) + 25)">88</spirit:left>
             <spirit:right spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_id_width&apos;)) + 25)">25</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -1201,8 +1368,8 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(((spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_data_width&apos;)) - 1) + spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_strb_width&apos;))) + 1)">0</spirit:left>
-            <spirit:right spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_strb_width&apos;)) + 1)">1</spirit:right>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(((spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_data_width&apos;)) - 1) + spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_strb_width&apos;))) + 1)">72</spirit:left>
+            <spirit:right spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_strb_width&apos;)) + 1)">9</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
             <spirit:wireTypeDef>
@@ -1221,7 +1388,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="((spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_strb_width&apos;)) - 1) + 1)">0</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="((spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_strb_width&apos;)) - 1) + 1)">8</spirit:left>
             <spirit:right spirit:format="long">1</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -1290,7 +1457,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(((spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_data_width&apos;)) - 1) + spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_id_width&apos;))) + 3)">2</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(((spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_data_width&apos;)) - 1) + spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_id_width&apos;))) + 3)">66</spirit:left>
             <spirit:right spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.A4F_id_width&apos;)) + 3)">3</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -1421,7 +1588,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">599</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.DATA_WIDTH&apos;)) - 1)">127</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -1438,7 +1605,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">2</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.CONTROL_WIDTH&apos;)) - 1)">2</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -1455,7 +1622,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">599</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.DATA_WIDTH&apos;)) - 1)">127</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -1472,7 +1639,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">2</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.CONTROL_WIDTH&apos;)) - 1)">2</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -1486,30 +1653,75 @@
       </spirit:port>
     </spirit:ports>
     <spirit:modelParameters>
-      <spirit:modelParameter xsi:type="spirit:nameValueTypeType" spirit:dataType="integer">
+      <spirit:modelParameter xsi:type="spirit:nameValueTypeType" spirit:dataType="std_logic_vector">
+        <spirit:name>address</spirit:name>
+        <spirit:displayName>Address</spirit:displayName>
+        <spirit:value spirit:format="bitString" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.address" spirit:bitStringLength="12">&quot;000000000000&quot;</spirit:value>
+      </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="std_logic_vector">
+        <spirit:name>address_mem</spirit:name>
+        <spirit:displayName>Address Mem</spirit:displayName>
+        <spirit:value spirit:format="bitString" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.address_mem" spirit:bitStringLength="12">&quot;000000000000&quot;</spirit:value>
+      </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="std_logic_vector">
+        <spirit:name>address_arch</spirit:name>
+        <spirit:displayName>Address Arch</spirit:displayName>
+        <spirit:value spirit:format="bitString" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.address_arch" spirit:bitStringLength="12">&quot;000000000000&quot;</spirit:value>
+      </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>DIM_X</spirit:name>
+        <spirit:displayName>Dim X</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.DIM_X">4</spirit:value>
+      </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>DIM_Y</spirit:name>
+        <spirit:displayName>Dim Y</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.DIM_Y">4</spirit:value>
+      </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>DIM_Z</spirit:name>
+        <spirit:displayName>Dim Z</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.DIM_Z">1</spirit:value>
+      </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>ADDR_WIDTH</spirit:name>
+        <spirit:displayName>Addr Width</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.ADDR_WIDTH">5</spirit:value>
+      </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>DATA_WIDTH</spirit:name>
+        <spirit:displayName>Data Width</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.DATA_WIDTH">128</spirit:value>
+      </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>CONTROL_WIDTH</spirit:name>
+        <spirit:displayName>Control Width</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.CONTROL_WIDTH">3</spirit:value>
+      </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>A4L_addr_width</spirit:name>
         <spirit:displayName>A4l Addr Width</spirit:displayName>
-        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.A4L_addr_width">0</spirit:value>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.A4L_addr_width">32</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>A4L_data_width</spirit:name>
         <spirit:displayName>A4l Data Width</spirit:displayName>
-        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.A4L_data_width">0</spirit:value>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.A4L_data_width">32</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>A4L_strb_width</spirit:name>
         <spirit:displayName>A4l Strb Width</spirit:displayName>
-        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.A4L_strb_width">0</spirit:value>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.A4L_strb_width">4</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>A4F_addr_width</spirit:name>
         <spirit:displayName>A4f Addr Width</spirit:displayName>
-        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.A4F_addr_width">0</spirit:value>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.A4F_addr_width">64</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>A4F_data_width</spirit:name>
         <spirit:displayName>A4f Data Width</spirit:displayName>
-        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.A4F_data_width">0</spirit:value>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.A4F_data_width">64</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>A4F_id_width</spirit:name>
@@ -1519,140 +1731,165 @@
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>A4F_strb_width</spirit:name>
         <spirit:displayName>A4f Strb Width</spirit:displayName>
-        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.A4F_strb_width">0</spirit:value>
-      </spirit:modelParameter>
-      <spirit:modelParameter spirit:dataType="std_logic_vector">
-        <spirit:name>NoC_address</spirit:name>
-        <spirit:displayName>Noc Address</spirit:displayName>
-        <spirit:value spirit:format="bitString" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.NoC_address" spirit:bitStringLength="6">&quot;000000&quot;</spirit:value>
-      </spirit:modelParameter>
-      <spirit:modelParameter spirit:dataType="std_logic_vector">
-        <spirit:name>NoC_address_mem</spirit:name>
-        <spirit:displayName>Noc Address Mem</spirit:displayName>
-        <spirit:value spirit:format="bitString" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.NoC_address_mem" spirit:bitStringLength="6">&quot;000000&quot;</spirit:value>
-      </spirit:modelParameter>
-      <spirit:modelParameter spirit:dataType="std_logic_vector">
-        <spirit:name>NoC_address_arch</spirit:name>
-        <spirit:displayName>Noc Address Arch</spirit:displayName>
-        <spirit:value spirit:format="bitString" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.NoC_address_arch" spirit:bitStringLength="6">&quot;000000&quot;</spirit:value>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.A4F_strb_width">8</spirit:value>
       </spirit:modelParameter>
     </spirit:modelParameters>
   </spirit:model>
   <spirit:fileSets>
     <spirit:fileSet>
+      <spirit:name>xilinx_xpgui_view_fileset</spirit:name>
+      <spirit:file>
+        <spirit:name>xgui/arke_noc_pe_ifc_v1_0.tcl</spirit:name>
+        <spirit:fileType>tclSource</spirit:fileType>
+        <spirit:userFileType>CHECKSUM_34a9b4e6</spirit:userFileType>
+        <spirit:userFileType>XGUI_VERSION_2</spirit:userFileType>
+      </spirit:file>
+    </spirit:fileSet>
+    <spirit:fileSet>
       <spirit:name>xilinx_anylanguagesynthesis_view_fileset</spirit:name>
       <spirit:file>
-        <spirit:name>src/work/Arke_pkg.vhd</spirit:name>
+        <spirit:name>../common/src/STD_FIFO.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
-        <spirit:logicalName>work</spirit:logicalName>
-      </spirit:file>
-      <spirit:file>
-        <spirit:name>src/work/NIC_pkg.vhd</spirit:name>
-        <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
-        <spirit:logicalName>work</spirit:logicalName>
-      </spirit:file>
-      <spirit:file>
-        <spirit:name>src/work/AXI4_Full_Slave.vhd</spirit:name>
-        <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
-        <spirit:logicalName>work</spirit:logicalName>
-      </spirit:file>
-      <spirit:file>
-        <spirit:name>src/work/AXI4_Lite_Master.vhd</spirit:name>
-        <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
-        <spirit:logicalName>work</spirit:logicalName>
-      </spirit:file>
-      <spirit:file>
-        <spirit:name>src/work/STD_FIFO.vhd</spirit:name>
-        <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_9307edc1</spirit:userFileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>work</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/PE_Ifc.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_71ec36fc</spirit:userFileType>
+        <spirit:logicalName>work</spirit:logicalName>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>../common/src/AXI4_Full_Slave.vhd</spirit:name>
+        <spirit:fileType>vhdlSource</spirit:fileType>
+        <spirit:logicalName>work</spirit:logicalName>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>../common/src/AXI4_Lite_Master.vhd</spirit:name>
+        <spirit:fileType>vhdlSource</spirit:fileType>
+        <spirit:logicalName>work</spirit:logicalName>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>../common/src/NIC_pkg.vhd</spirit:name>
+        <spirit:fileType>vhdlSource</spirit:fileType>
+        <spirit:logicalName>work</spirit:logicalName>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>../common/src/Arke_pkg.vhd</spirit:name>
+        <spirit:fileType>vhdlSource</spirit:fileType>
+        <spirit:userFileType>CHECKSUM_4e9707f6</spirit:userFileType>
         <spirit:logicalName>work</spirit:logicalName>
       </spirit:file>
     </spirit:fileSet>
     <spirit:fileSet>
       <spirit:name>xilinx_anylanguagebehavioralsimulation_view_fileset</spirit:name>
       <spirit:file>
-        <spirit:name>src/work/Arke_pkg.vhd</spirit:name>
+        <spirit:name>../common/src/STD_FIFO.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
-        <spirit:logicalName>work</spirit:logicalName>
-      </spirit:file>
-      <spirit:file>
-        <spirit:name>src/work/NIC_pkg.vhd</spirit:name>
-        <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
-        <spirit:logicalName>work</spirit:logicalName>
-      </spirit:file>
-      <spirit:file>
-        <spirit:name>src/work/AXI4_Full_Slave.vhd</spirit:name>
-        <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
-        <spirit:logicalName>work</spirit:logicalName>
-      </spirit:file>
-      <spirit:file>
-        <spirit:name>src/work/AXI4_Lite_Master.vhd</spirit:name>
-        <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
-        <spirit:logicalName>work</spirit:logicalName>
-      </spirit:file>
-      <spirit:file>
-        <spirit:name>src/work/STD_FIFO.vhd</spirit:name>
-        <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
+        <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
         <spirit:logicalName>work</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/PE_Ifc.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
+        <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
         <spirit:logicalName>work</spirit:logicalName>
       </spirit:file>
-    </spirit:fileSet>
-    <spirit:fileSet>
-      <spirit:name>xilinx_xpgui_view_fileset</spirit:name>
       <spirit:file>
-        <spirit:name>xgui/arke_noc_pe_ifc_v1_0.tcl</spirit:name>
-        <spirit:fileType>tclSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_1483584c</spirit:userFileType>
-        <spirit:userFileType>XGUI_VERSION_2</spirit:userFileType>
+        <spirit:name>../common/src/AXI4_Full_Slave.vhd</spirit:name>
+        <spirit:fileType>vhdlSource</spirit:fileType>
+        <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
+        <spirit:logicalName>work</spirit:logicalName>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>../common/src/AXI4_Lite_Master.vhd</spirit:name>
+        <spirit:fileType>vhdlSource</spirit:fileType>
+        <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
+        <spirit:logicalName>work</spirit:logicalName>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>../common/src/NIC_pkg.vhd</spirit:name>
+        <spirit:fileType>vhdlSource</spirit:fileType>
+        <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
+        <spirit:logicalName>work</spirit:logicalName>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>../common/src/Arke_pkg.vhd</spirit:name>
+        <spirit:fileType>vhdlSource</spirit:fileType>
+        <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
+        <spirit:logicalName>work</spirit:logicalName>
       </spirit:file>
     </spirit:fileSet>
   </spirit:fileSets>
   <spirit:description>PE Ifc</spirit:description>
   <spirit:parameters>
     <spirit:parameter>
+      <spirit:name>address</spirit:name>
+      <spirit:displayName>Address</spirit:displayName>
+      <spirit:value spirit:format="bitString" spirit:resolve="user" spirit:id="PARAM_VALUE.address" spirit:bitStringLength="12">&quot;000000000000&quot;</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>address_mem</spirit:name>
+      <spirit:displayName>Address Mem</spirit:displayName>
+      <spirit:value spirit:format="bitString" spirit:resolve="user" spirit:id="PARAM_VALUE.address_mem" spirit:bitStringLength="12">&quot;000000000000&quot;</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>address_arch</spirit:name>
+      <spirit:displayName>Address Arch</spirit:displayName>
+      <spirit:value spirit:format="bitString" spirit:resolve="user" spirit:id="PARAM_VALUE.address_arch" spirit:bitStringLength="12">&quot;000000000000&quot;</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>DIM_X</spirit:name>
+      <spirit:displayName>Dim X</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.DIM_X">4</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>DIM_Y</spirit:name>
+      <spirit:displayName>Dim Y</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.DIM_Y">4</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>DIM_Z</spirit:name>
+      <spirit:displayName>Dim Z</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.DIM_Z">1</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>ADDR_WIDTH</spirit:name>
+      <spirit:displayName>Addr Width</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.ADDR_WIDTH">5</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>DATA_WIDTH</spirit:name>
+      <spirit:displayName>Data Width</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.DATA_WIDTH">128</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>CONTROL_WIDTH</spirit:name>
+      <spirit:displayName>Control Width</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.CONTROL_WIDTH">3</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
       <spirit:name>A4L_addr_width</spirit:name>
       <spirit:displayName>A4l Addr Width</spirit:displayName>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.A4L_addr_width">0</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.A4L_addr_width">32</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>A4L_data_width</spirit:name>
       <spirit:displayName>A4l Data Width</spirit:displayName>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.A4L_data_width">0</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.A4L_data_width">32</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>A4L_strb_width</spirit:name>
       <spirit:displayName>A4l Strb Width</spirit:displayName>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.A4L_strb_width">0</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.A4L_strb_width">4</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>A4F_addr_width</spirit:name>
       <spirit:displayName>A4f Addr Width</spirit:displayName>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.A4F_addr_width">0</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.A4F_addr_width">64</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>A4F_data_width</spirit:name>
       <spirit:displayName>A4f Data Width</spirit:displayName>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.A4F_data_width">0</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.A4F_data_width">64</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>A4F_id_width</spirit:name>
@@ -1662,22 +1899,7 @@
     <spirit:parameter>
       <spirit:name>A4F_strb_width</spirit:name>
       <spirit:displayName>A4f Strb Width</spirit:displayName>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.A4F_strb_width">0</spirit:value>
-    </spirit:parameter>
-    <spirit:parameter>
-      <spirit:name>NoC_address</spirit:name>
-      <spirit:displayName>Noc Address</spirit:displayName>
-      <spirit:value spirit:format="bitString" spirit:resolve="user" spirit:id="PARAM_VALUE.NoC_address" spirit:bitStringLength="6">&quot;000000&quot;</spirit:value>
-    </spirit:parameter>
-    <spirit:parameter>
-      <spirit:name>NoC_address_mem</spirit:name>
-      <spirit:displayName>Noc Address Mem</spirit:displayName>
-      <spirit:value spirit:format="bitString" spirit:resolve="user" spirit:id="PARAM_VALUE.NoC_address_mem" spirit:bitStringLength="6">&quot;000000&quot;</spirit:value>
-    </spirit:parameter>
-    <spirit:parameter>
-      <spirit:name>NoC_address_arch</spirit:name>
-      <spirit:displayName>Noc Address Arch</spirit:displayName>
-      <spirit:value spirit:format="bitString" spirit:resolve="user" spirit:id="PARAM_VALUE.NoC_address_arch" spirit:bitStringLength="6">&quot;000000&quot;</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.A4F_strb_width">8</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>Component_Name</spirit:name>
@@ -1703,12 +1925,7 @@
         <xilinx:family xilinx:lifeCycle="Production">azynq</xilinx:family>
         <xilinx:family xilinx:lifeCycle="Production">spartan7</xilinx:family>
         <xilinx:family xilinx:lifeCycle="Production">aspartan7</xilinx:family>
-        <xilinx:family xilinx:lifeCycle="Production">virtexu</xilinx:family>
         <xilinx:family xilinx:lifeCycle="Production">zynquplus</xilinx:family>
-        <xilinx:family xilinx:lifeCycle="Production">virtexuplus</xilinx:family>
-        <xilinx:family xilinx:lifeCycle="Production">virtexuplusHBM</xilinx:family>
-        <xilinx:family xilinx:lifeCycle="Production">kintexuplus</xilinx:family>
-        <xilinx:family xilinx:lifeCycle="Production">kintexu</xilinx:family>
       </xilinx:supportedFamilies>
       <xilinx:taxonomies>
         <xilinx:taxonomy>/UserIP</xilinx:taxonomy>
@@ -1716,30 +1933,32 @@
       <xilinx:displayName>PE Ifc</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:coreRevision>1</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2020-01-29T17:21:44Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2020-02-18T10:38:35Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@30667afe_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@d049cb5_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@2c8b88d_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@290d196e_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@50af931a_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@51a14354_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@48ec2b78_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@4e1e94e7_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@320ea43c_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@5884a6a6_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@6383e731_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@7087ed94_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@592ce886_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@25097195_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@5f5fa98e_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@30a5c5b_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@23e93038_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@70a3d58_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@7d49f603_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@6ebe646d_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@21c784ec_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@10ff8e4f_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@114c805d_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@3b9d6e60_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@69c918c1_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_pe_ifc</xilinx:tag>
       </xilinx:tags>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
       <xilinx:xilinxVersion>2019.1</xilinx:xilinxVersion>
-      <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="ac5ddbcd"/>
-      <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="8cd5d1c9"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="930be1b8"/>
-      <xilinx:checksum xilinx:scope="ports" xilinx:value="c1cb9eb8"/>
-      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="d8bc240d"/>
-      <xilinx:checksum xilinx:scope="parameters" xilinx:value="f79886ad"/>
+      <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="3410efb5"/>
+      <xilinx:checksum xilinx:scope="addressSpaces" xilinx:value="46978bc8"/>
+      <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="96e9406f"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="2ad99c5a"/>
+      <xilinx:checksum xilinx:scope="ports" xilinx:value="47cb7480"/>
+      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="8a5f7a0e"/>
+      <xilinx:checksum xilinx:scope="parameters" xilinx:value="ad73d5d4"/>
     </xilinx:packagingInfo>
   </spirit:vendorExtensions>
 </spirit:component>

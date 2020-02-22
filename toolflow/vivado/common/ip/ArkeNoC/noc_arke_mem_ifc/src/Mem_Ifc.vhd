@@ -4,19 +4,19 @@
 -------------------------------------------------------------------------------
 -- File       : Mem_Ifc.vhd
 -- Author     : Malte Nilges
--- Company    : 
+-- Company    :
 -- Created    : 2019-12-09
 -- Last update: 2019-12-09
--- Platform   : 
+-- Platform   :
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
 -- Description: Memory interface for sending data to and receiving data from
 --              PEs (processing elements).
 --              Data received from AXI4 Full Master is being received by a
---              Slave and converted to appropriate network data format and the 
+--              Slave and converted to appropriate network data format and the
 --              other way round.
 -------------------------------------------------------------------------------
--- Copyright (c) 2019 
+-- Copyright (c) 2019
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -29,20 +29,26 @@ use work.Arke_pkg.all;
 
 entity Mem_Ifc is
     generic (
-        A4F_addr_width  : integer;
-        A4F_data_width  : integer;
-        A4F_id_width    : integer;
-        A4F_strb_width  : integer;
-        NoC_address_width : integer;
-        NoC_address     : std_logic_vector
+        address         : std_logic_vector := "000000000000";
+        DIM_X           : integer := 4;
+        DIM_Y           : integer := 4;
+        DIM_Z           : integer := 1;
+        ADDR_WIDTH      : integer := 12;
+        DATA_WIDTH      : integer := 128;
+        CONTROL_WIDTH   : integer := 3;
+
+        A4F_addr_width  : integer := 64;
+        A4F_data_width  : integer := 64;
+        A4F_id_width    : integer := 0;
+        A4F_strb_width  : integer := 8
     );
     port (
         signal clk              : in  std_logic := '1';
         signal rst              : in  std_logic := '1';
         signal AXI_arvalid      : out std_logic;
         signal AXI_arready      : in  std_logic;
-        signal AXI_araddr       : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + NoC_address_width + 25 downto A4F_id_width + NoC_address_width + 25 );
-        signal AXI_arid         : out std_logic_vector( A4F_id_width + NoC_address_width - 1 + 25 downto 25 );
+        signal AXI_araddr       : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + ADDR_WIDTH + 25 downto A4F_id_width + ADDR_WIDTH + 25 );
+        signal AXI_arid         : out std_logic_vector( A4F_id_width + ADDR_WIDTH - 1 + 25 downto 25 );
         signal AXI_arlen        : out std_logic_vector( 24 downto 17 );
         signal AXI_arsize       : out std_logic_vector( 16 downto 14 );
         signal AXI_arburst      : out std_logic_vector( 13 downto 12 );
@@ -52,8 +58,8 @@ entity Mem_Ifc is
         signal AXI_arqos        : out std_logic_vector(  3 downto 0 );
         signal AXI_awvalid      : out std_logic;
         signal AXI_awready      : in  std_logic;
-        signal AXI_awaddr       : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + NoC_address_width + 25 downto A4F_id_width + NoC_address_width + 25 );
-        signal AXI_awid         : out std_logic_vector( A4F_id_width + NoC_address_width - 1 + 25 downto 25 );
+        signal AXI_awaddr       : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + ADDR_WIDTH + 25 downto A4F_id_width + ADDR_WIDTH + 25 );
+        signal AXI_awid         : out std_logic_vector( A4F_id_width + ADDR_WIDTH - 1 + 25 downto 25 );
         signal AXI_awlen        : out std_logic_vector( 24 downto 17 );
         signal AXI_awsize       : out std_logic_vector( 16 downto 14 );
         signal AXI_awburst      : out std_logic_vector( 13 downto 12 );
@@ -68,13 +74,13 @@ entity Mem_Ifc is
         signal AXI_wlast        : out std_logic_vector(  0 downto 0 );
         signal AXI_rready       : out std_logic;
         signal AXI_rvalid       : in  std_logic;
-        signal AXI_rdata        : in  std_logic_vector( A4F_data_width - 1 + A4F_id_width + NoC_address_width + 3 downto A4F_id_width + NoC_address_width + 3 );
-        signal AXI_rid          : in  std_logic_vector( A4F_id_width + NoC_address_width - 1 + 3 downto 3 );
+        signal AXI_rdata        : in  std_logic_vector( A4F_data_width - 1 + A4F_id_width + ADDR_WIDTH + 3 downto A4F_id_width + ADDR_WIDTH + 3 );
+        signal AXI_rid          : in  std_logic_vector( A4F_id_width + ADDR_WIDTH - 1 + 3 downto 3 );
         signal AXI_rresp        : in  std_logic_vector(  2 downto 1 );
         signal AXI_rlast        : in  std_logic_vector(  0 downto 0 );
         signal AXI_bready       : out std_logic;
         signal AXI_bvalid       : in  std_logic;
-        signal AXI_bid          : in  std_logic_vector( A4F_id_width + NoC_address_width - 1 + 2 downto 2 );
+        signal AXI_bid          : in  std_logic_vector( A4F_id_width + ADDR_WIDTH - 1 + 2 downto 2 );
         signal AXI_bresp        : in  std_logic_vector(  1 downto 0 );
 
         signal dataOut          : out std_logic_vector(    DATA_WIDTH - 1 downto 0 );
@@ -88,18 +94,13 @@ end Mem_Ifc;
 
 architecture Behavioral of Mem_Ifc is
 
-    constant DIM_X_W    : integer := Log2(DIM_X);
-    constant DIM_Y_W    : integer := Log2(DIM_Y);
-    constant DIM_Z_W    : integer := Log2(DIM_Z);
-    constant ADDR_W     : integer := DIM_X_W + DIM_Y_W + DIM_Z_W;
+    constant ZERO       : std_logic_vector(DATA_WIDTH - 1 downto 0) := (others => '0');
 
-    constant A4F_rdrqa_width    : natural := A4F_addr_width + A4F_id_width + ADDR_W + 25;
-    constant A4F_wrrqa_width    : natural := A4F_addr_width + A4F_id_width + ADDR_W + 25;
+    constant A4F_rdrqa_width    : natural := A4F_addr_width + A4F_id_width + ADDR_WIDTH + 25;
+    constant A4F_wrrqa_width    : natural := A4F_addr_width + A4F_id_width + ADDR_WIDTH + 25;
     constant A4F_wrrqd_width    : natural := A4F_data_width + A4F_strb_width + 1;
-    constant A4F_rdrsp_width    : natural := A4F_data_width + A4F_id_width + ADDR_W + 3;
-    constant A4F_wrrsp_width    : natural := A4F_id_width + ADDR_W + 2;
-
-    type ChannelsType is (None, RdRsp, WrRsp, RdRqA, WrRqA, WrRqD);
+    constant A4F_rdrsp_width    : natural := A4F_data_width + A4F_id_width + ADDR_WIDTH + 3;
+    constant A4F_wrrsp_width    : natural := A4F_id_width + ADDR_WIDTH + 2;
 
     signal rdrqA_put_ready : std_logic;
     signal rdrqA_put_en    : std_logic;
@@ -122,6 +123,7 @@ architecture Behavioral of Mem_Ifc is
     signal put_stalled     : std_logic;
     signal state_send      : ChannelsType;
     signal send_stalled    : std_logic;
+    signal read_initiated  : std_logic;
 
     begin
 
@@ -129,7 +131,7 @@ architecture Behavioral of Mem_Ifc is
         generic map (
             A4F_addr_width  => A4F_addr_width,
             A4F_data_width  => A4F_data_width,
-            A4F_id_width    => A4F_id_width + ADDR_W,
+            A4F_id_width    => A4F_id_width + ADDR_WIDTH,
             A4F_strb_width  => A4F_strb_width
         )
         port map (
@@ -196,10 +198,10 @@ architecture Behavioral of Mem_Ifc is
             variable wrrqD_put_data_tmp : std_logic_vector(A4F_wrrqd_width - 1 downto 0);
             variable rdrsp_get_data_tmp : std_logic_vector(A4F_rdrsp_width - 1 downto 0);
             variable wrrsp_get_data_tmp : std_logic_vector(A4F_wrrsp_width - 1 downto 0);
-            
-            variable dest_address       : std_logic_vector(ADDR_W - 1 downto 0);
+
+            variable dest_address       : std_logic_vector(ADDR_WIDTH - 1 downto 0);
             variable dataOutNext        : std_logic_vector(DATA_WIDTH - 1 downto 0);
-            
+
         begin if rising_edge(clk) then
             -----------
             -- RESET --
@@ -220,10 +222,11 @@ architecture Behavioral of Mem_Ifc is
             -- otherwise it changes to the next state to look for valid data.
             -- The network destination is chosen by a address map in conjunction with the AXI address.
             --------------------------------------
-            
+
             -- STATE 0: INIT
             if (state_send = None) then
                 send_stalled    <= '0';
+                read_initiated  <= '0';
                 rdrsp_get_en    <= '1';
                 state_send      <= RdRsp;
 
@@ -231,17 +234,22 @@ architecture Behavioral of Mem_Ifc is
             elsif (state_send = RdRsp) then
 
                 if (rdrsp_get_valid = '1' or send_stalled = '1') then
+                    read_initiated  <= '1';
+
+                    -- buffer AXI packet from PE in case of a stall
                     if(send_stalled = '0') then
                         dest_address    := rdrsp_get_data(AXI_rid'left downto AXI_rid'right + A4F_id_width);
-                        dataOutNext     := '1' & "00" & ZERO(dataOut'left - 3 downto rdrsp_get_data'length + ADDR_W) & rdrsp_get_data & dest_address;
+                        dataOutNext     := P_A4F & C_R & ZERO(dataOut'left - 3 downto rdrsp_get_data'length + ADDR_WIDTH) & rdrsp_get_data & dest_address;
                     end if;
 
+                    -- send buffered packet if receiver gives a go signal
                     if (controlIn(STALL_GO) = '1') then
                         send_stalled    <= '0';
                         dataOut         <= dataOutNext;
                         controlOut(TX)  <= '1';
 
-                        if (dataOutNext(AXI_rlast'right + ADDR_W) = '1') then
+                        -- if last read set eop signal and go to next state
+                        if (dataOutNext(AXI_rlast'right + ADDR_WIDTH) = '1') then
                             rdrsp_get_en    <= '0';
 
                             controlOut(EOP) <= '1';
@@ -249,10 +257,11 @@ architecture Behavioral of Mem_Ifc is
                             state_send      <= WrRsp;
                         else
                             wrrsp_get_en    <= '0';
-                            
+
                             controlOut(EOP) <= '0';
                             rdrsp_get_en    <= '1';
                         end if;
+                    -- else stall and wait before accepting new AXI packets
                     else
                         send_stalled    <= '1';
                         wrrsp_get_en    <= '0';
@@ -260,25 +269,33 @@ architecture Behavioral of Mem_Ifc is
                     end if;
                 else
                     send_stalled    <= '0';
-                    rdrsp_get_en    <= '0';
 
+                    -- unset TX if last packet was received but no new packet is transmitted
                     if (controlIn(STALL_GO) = '1') then
                         controlOut(TX)  <= '0';
                         controlOut(EOP) <= '0';
                     end if;
-                    
-                    wrrsp_get_en    <= '1';
-                    state_send      <= WrRsp;
+
+                    -- if read was initiated but not completed remain in state
+                    if(read_initiated = '1') then
+                        rdrsp_get_en    <= '1';
+                        wrrsp_get_en    <= '0';
+                    else
+                        rdrsp_get_en    <= '0';
+                        wrrsp_get_en    <= '1';
+                        state_send      <= WrRsp;
+                    end if;
                 end if;
 
             -- STATE 2: WRRSP
             elsif (state_send = WrRsp) then
+                read_initiated  <= '0';
                 wrrsp_get_en    <= '0';
 
                 if (wrrsp_get_valid = '1' or send_stalled = '1') then
                     if(send_stalled = '0') then
                         dest_address    := wrrsp_get_data(AXI_bid'left downto AXI_bid'right + A4F_id_width);
-                        dataOutNext     := '1' & "10" & ZERO(dataOut'left - 3 downto wrrsp_get_data'length + ADDR_W) & wrrsp_get_data & dest_address;
+                        dataOutNext     := P_A4F & C_B & ZERO(dataOut'left - 3 downto wrrsp_get_data'length + ADDR_WIDTH) & wrrsp_get_data & dest_address;
                     end if;
 
                     if (controlIn(STALL_GO) = '1') then
@@ -306,7 +323,7 @@ architecture Behavioral of Mem_Ifc is
                 end if;
             end if;
 
-            
+
             -------------------------------------
             -- NETWORK DATA TO A4F R/W REQUEST --
             -------------------------------------
@@ -314,105 +331,92 @@ architecture Behavioral of Mem_Ifc is
             -- attempts are made to hand the data to the receiver until it is ready
             -------------------------------------
 
+            -- stalled data handling
             if (put_stalled = '1') then
+                -- proceed with stalled data only if previous AXI packet could be stored in fifo
                 if ((put_last_state = RdRqA and rdrqA_put_ready = '1') or
                     (put_last_state = WrRqA and wrrqA_put_ready = '1') or
                     (put_last_state = WrRqD and wrrqD_put_ready = '1')) then
-                    if (dataInStalled(dataIn'left - 1 downto dataIn'left - 2) = "10") then
-                        rdrqA_put_en            <= '0';
-                        wrrqD_put_en            <= '0';
-                        wrrqA_put_en            <= '1';
-                        wrrqA_put_data_tmp      := dataInStalled(A4F_wrrqA_width - 1 + ADDR_W downto ADDR_W);
-                        wrrqA_put_data          <= wrrqA_put_data_tmp;
-                        controlOut(STALL_GO)    <= '1';
-                        put_last_state          <= WrRqA;
-                        put_stalled             <= '0';
-                    elsif (dataInStalled(dataIn'left - 1 downto dataIn'left - 2) = "11") then
-                        rdrqA_put_en            <= '0';
-                        wrrqA_put_en            <= '0';
-                        wrrqD_put_en            <= '1';
-                        wrrqD_put_data_tmp      := dataInStalled(A4F_wrrqD_width - 1 + ADDR_W downto ADDR_W);
-                        wrrqD_put_data          <= wrrqD_put_data_tmp;
-                        controlOut(STALL_GO)    <= '1';
-                        put_last_state          <= WrRqD;
-                        put_stalled             <= '0';
-                    elsif (dataInStalled(dataIn'left - 1 downto dataIn'left - 2) = "00") then
+                    if (dataInStalled(dataIn'left - 1 downto dataIn'left - 2) = C_AR) then
                         wrrqA_put_en            <= '0';
                         wrrqD_put_en            <= '0';
                         rdrqA_put_en            <= '1';
-                        rdrqA_put_data_tmp      := dataInStalled(A4F_rdrqA_width - 1 + ADDR_W downto ADDR_W);
+                        rdrqA_put_data_tmp      := dataInStalled(A4F_rdrqA_width - 1 + ADDR_WIDTH downto ADDR_WIDTH);
                         rdrqA_put_data          <= rdrqA_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
                         put_last_state          <= RdRqA;
                         put_stalled             <= '0';
-                    end if;
-                end if;
-            elsif (controlIn(RX) = '1') then
-                if (dataIn(dataIn'left - 1 downto dataIn'left - 2) = "10") then
-                    put_last_state          <= WrRqA;
-                    
-                    if ((put_last_state = WrRqA and wrrqA_put_ready = '1') or
-                        (put_last_state = WrRqD and wrrqD_put_ready = '1') or
-                        (put_last_state = RdRqA and rdrqA_put_ready = '1')) then
+                    elsif (dataInStalled(dataIn'left - 1 downto dataIn'left - 2) = C_AW) then
                         rdrqA_put_en            <= '0';
                         wrrqD_put_en            <= '0';
                         wrrqA_put_en            <= '1';
-                        wrrqA_put_data_tmp      := dataIn(A4F_wrrqA_width - 1 + ADDR_W downto ADDR_W);
+                        wrrqA_put_data_tmp      := dataInStalled(A4F_wrrqA_width - 1 + ADDR_WIDTH downto ADDR_WIDTH);
                         wrrqA_put_data          <= wrrqA_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
-                    else
-                        dataInStalled           <= dataIn;
-                        controlOut(STALL_GO)    <= '0';
-                        put_stalled             <= '1';
-                    end if;
-                elsif (dataIn(dataIn'left - 1 downto dataIn'left - 2) = "11") then
-                    put_last_state          <= WrRqD;
-
-                    if ((put_last_state = WrRqA and wrrqA_put_ready = '1') or
-                        (put_last_state = WrRqD and wrrqD_put_ready = '1') or
-                        (put_last_state = RdRqA and rdrqA_put_ready = '1')) then
+                        put_last_state          <= WrRqA;
+                        put_stalled             <= '0';
+                    elsif (dataInStalled(dataIn'left - 1 downto dataIn'left - 2) = C_W) then
                         rdrqA_put_en            <= '0';
                         wrrqA_put_en            <= '0';
                         wrrqD_put_en            <= '1';
-                        wrrqD_put_data_tmp      := dataIn(A4F_wrrqD_width - 1 + ADDR_W downto ADDR_W);
+                        wrrqD_put_data_tmp      := dataInStalled(A4F_wrrqD_width - 1 + ADDR_WIDTH downto ADDR_WIDTH);
                         wrrqD_put_data          <= wrrqD_put_data_tmp;
                         controlOut(STALL_GO)    <= '1';
-                    else
-                        dataInStalled           <= dataIn;
-                        controlOut(STALL_GO)    <= '0';
-                        put_stalled             <= '1';
-                    end if;
-                elsif (dataIn(dataIn'left - 1 downto dataIn'left - 2) = "00") then
-                    put_last_state          <= RdRqA;
-
-                    if ((put_last_state = WrRqA and wrrqA_put_ready = '1') or
-                        (put_last_state = WrRqD and wrrqD_put_ready = '1') or
-                        (put_last_state = RdRqA and rdrqA_put_ready = '1')) then
-                        wrrqA_put_en            <= '0';
-                        wrrqD_put_en            <= '0';
-                        rdrqA_put_en            <= '1';
-                        rdrqA_put_data_tmp      := dataIn(A4F_rdrqA_width - 1 + ADDR_W downto ADDR_W);
-                        rdrqA_put_data          <= rdrqA_put_data_tmp;
-                        controlOut(STALL_GO)    <= '1';
-                    else
-                        dataInStalled           <= dataIn;
-                        controlOut(STALL_GO)    <= '0';
-                        put_stalled             <= '1';
+                        put_last_state          <= WrRqD;
+                        put_stalled             <= '0';
                     end if;
                 end if;
+            -- normal data handling
+            elsif (controlIn(RX) = '1') then
+                -- set go signal only if previous AXI packet could be stored in fifo
+                if ((put_last_state = RdRqA and rdrqA_put_ready = '1') or
+                    (put_last_state = WrRqA and wrrqA_put_ready = '1') or
+                    (put_last_state = WrRqD and wrrqD_put_ready = '1')) then
+                    if (dataIn(dataIn'left - 1 downto dataIn'left - 2) = C_AR) then
+                        rdrqA_put_en            <= '1';
+                        wrrqA_put_en            <= '0';
+                        wrrqD_put_en            <= '0';
+                        rdrqA_put_data_tmp      := dataIn(A4F_rdrqA_width - 1 + ADDR_WIDTH downto ADDR_WIDTH);
+                        rdrqA_put_data          <= rdrqA_put_data_tmp;
+                        controlOut(STALL_GO)    <= '1';
+                        put_last_state          <= RdRqA;
+                    elsif (dataIn(dataIn'left - 1 downto dataIn'left - 2) = C_AW) then
+                        rdrqA_put_en            <= '0';
+                        wrrqA_put_en            <= '1';
+                        wrrqD_put_en            <= '0';
+                        wrrqA_put_data_tmp      := dataIn(A4F_wrrqA_width - 1 + ADDR_WIDTH downto ADDR_WIDTH);
+                        wrrqA_put_data          <= wrrqA_put_data_tmp;
+                        controlOut(STALL_GO)    <= '1';
+                        put_last_state          <= WrRqA;
+                    elsif (dataIn(dataIn'left - 1 downto dataIn'left - 2) = C_W) then
+                        rdrqA_put_en            <= '0';
+                        wrrqA_put_en            <= '0';
+                        wrrqD_put_en            <= '1';
+                        wrrqD_put_data_tmp      := dataIn(A4F_wrrqD_width - 1 + ADDR_WIDTH downto ADDR_WIDTH);
+                        wrrqD_put_data          <= wrrqD_put_data_tmp;
+                        controlOut(STALL_GO)    <= '1';
+                        put_last_state          <= WrRqD;
+                    end if;
+                -- otherwise stall for the next cycle and store the current incoming data
+                else
+                    dataInStalled           <= dataIn;
+                    controlOut(STALL_GO)    <= '0';
+                    put_stalled             <= '1';
+                end if;
+            -- no data: unset put signals if successfully stored in fifo
             elsif (controlIn(RX) = '0') then
+                if(rdrqA_put_ready = '1') then
+                    rdrqA_put_en    <= '0';
+                end if;
                 if(wrrqA_put_ready = '1') then
                     wrrqA_put_en    <= '0';
                 end if;
                 if(wrrqD_put_ready = '1') then
                     wrrqD_put_en    <= '0';
                 end if;
-                if(rdrqA_put_ready = '1') then
-                    rdrqA_put_en    <= '0';
-                end if;
             end if;
 
-            end if;
+        end if;
         end if;
     end process;
 end architecture;

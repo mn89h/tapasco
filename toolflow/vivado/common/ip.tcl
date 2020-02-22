@@ -110,21 +110,6 @@ namespace eval ::tapasco::ip {
       expr {$param in $param_list ? [regexp {[0-9]+} $line $param] : ""}
     }
 
-    set DIM_X_W [expr {int(ceil(log($DIM_X)/log(2.0)))}]
-    set DIM_Y_W [expr {int(ceil(log($DIM_Y)/log(2.0)))}]
-    set DIM_Z_W [expr {int(ceil(log($DIM_Z)/log(2.0)))}]
-    set ADDRESS_WIDTH [expr {$DIM_X_W + $DIM_Y_W + $DIM_Z_W}]
-
-    set arch::DIM_X $DIM_X
-    set arch::DIM_Y $DIM_Y
-    set arch::DIM_Z $DIM_Z
-    set arch::DIM_X_W $DIM_X_W
-    set arch::DIM_Y_W $DIM_Y_W
-    set arch::DIM_Z_W $DIM_Z_W
-    set arch::ADDRESS_WIDTH $ADDRESS_WIDTH
-    set arch::BUFFER_DEPTH $BUFFER_DEPTH
-    set arch::DATA_WIDTH $DATA_WIDTH
-    set arch::CONTROL_WIDTH $CONTROL_WIDTH
 
     source -notrace "$::env(TAPASCO_HOME_TCL)/common/ip/ArkeNoC/noc_arke_arch_ifc/build_arch_ifc.tcl"
     source -notrace "$::env(TAPASCO_HOME_TCL)/common/ip/ArkeNoC/noc_arke_pe_ifc/build_pe_ifc.tcl"
@@ -137,53 +122,69 @@ namespace eval ::tapasco::ip {
     BuildRouter::build $DATA_WIDTH
 
     update_ip_catalog
-
-    set out [list $DIM_X $DIM_Y $DIM_Z $DIM_X_W $DIM_Y_W $DIM_Z_W $BUFFER_DEPTH $DATA_WIDTH $CONTROL_WIDTH]
-    return out
+    return
   }
 
   # Instantiates an Arke NoC Host Interface.
   # @param name Name of the instance.
   # @return bd_cell of the instance.
-  proc create_noc_arke_arch_ifc {name} {
+  proc create_noc_arke_arch_ifc {name address x y z addr_width data_width control_width a4l_addr_w a4l_data_w a4l_strb_w} {
     variable stdcomps
     puts "Creating Arke NoC Arch Interface $name with ..."
     puts "  VLNV: [dict get $stdcomps noc_arke_arch_ifc vlnv]"
 
     set ai [create_bd_cell -type ip -vlnv [dict get $stdcomps noc_arke_arch_ifc vlnv] $name]
-    #set props [list CONFIG.NUM_SI $no_slaves CONFIG.NUM_MI $no_masters]
-    #set_property -dict $props $ic
+    set_property -dict [list CONFIG.address $address \
+                             CONFIG.DIM_X $x \
+                             CONFIG.DIM_Y $y \
+                             CONFIG.DIM_Z $z \
+                             CONFIG.ADDR_WIDTH $addr_width \
+                             CONFIG.DATA_WIDTH $data_width \
+                             CONFIG.CONTROL_WIDTH $control_width \
+                             CONFIG.A4L_addr_width $a4l_addr_w CONFIG.A4L_data_width $a4l_data_w CONFIG.A4L_strb_width $a4l_strb_w] [get_bd_cells $ai]
     return $ai
   }
   
   # Instantiates an Arke NoC PE Interface.
   # @param name Name of the instance.
   # @return bd_cell of the instance.
-  proc create_noc_arke_pe_ifc {name a4l_addr_w a4l_data_w a4l_strb_w a4f_addr_w a4f_data_w a4f_id_w a4f_strb_w noc_address} {
+  proc create_noc_arke_pe_ifc {name address x y z addr_width data_width control_width a4l_addr_w a4l_data_w a4l_strb_w a4f_addr_w a4f_data_w a4f_id_w a4f_strb_w} {
     variable stdcomps
     puts "Creating Arke NoC PE Interface $name."
     puts "  VLNV: [dict get $stdcomps noc_arke_pe_ifc vlnv]"
 
     set pi [create_bd_cell -type ip -vlnv [dict get $stdcomps noc_arke_pe_ifc vlnv] $name]
-    set_property -dict [list CONFIG.A4L_addr_width $a4l_addr_w CONFIG.A4L_data_width $a4l_data_w CONFIG.A4L_strb_width $a4l_strb_w \
+    set_property -dict [list CONFIG.address $address \
+                             CONFIG.DIM_X $x \
+                             CONFIG.DIM_Y $y \
+                             CONFIG.DIM_Z $z \
+                             CONFIG.ADDR_WIDTH $addr_width \
+                             CONFIG.DATA_WIDTH $data_width \
+                             CONFIG.CONTROL_WIDTH $control_width \
+                             CONFIG.A4L_addr_width $a4l_addr_w CONFIG.A4L_data_width $a4l_data_w CONFIG.A4L_strb_width $a4l_strb_w \
                              CONFIG.A4F_addr_width $a4f_addr_w CONFIG.A4F_data_width $a4f_data_w \
-                             CONFIG.A4F_id_width $a4f_id_w CONFIG.A4F_strb_width $a4f_strb_w \
-                             CONFIG.NoC_address \"$noc_address\"] \
-                             [get_bd_cells $pi]
+                             CONFIG.A4F_id_width $a4f_id_w CONFIG.A4F_strb_width $a4f_strb_w] [get_bd_cells $pi]
     return $pi
   }
 
   # Instantiates an Arke NoC Memory Interface.
   # @param name Name of the instance.
   # @return bd_cell of the instance.
-  proc create_noc_arke_mem_ifc {name noc_address} {
+  proc create_noc_arke_mem_ifc {name address x y z addr_width data_width control_width a4f_addr_w a4f_data_w a4f_id_w a4f_strb_w} {
     variable stdcomps
     puts "Creating Arke NoC Memory Interface $name."
     puts "  VLNV: [dict get $stdcomps noc_arke_mem_ifc vlnv]"
 
     set mi [create_bd_cell -type ip -vlnv [dict get $stdcomps noc_arke_mem_ifc vlnv] $name]
-    set_property -dict [list CONFIG.NoC_address \"$noc_address\"] \
-                             [get_bd_cells $mi]
+    set_property -dict [list CONFIG.address $address \
+                             CONFIG.DIM_X $x \
+                             CONFIG.DIM_Y $y \
+                             CONFIG.DIM_Z $z \
+                             CONFIG.ADDR_WIDTH $addr_width \
+                             CONFIG.DATA_WIDTH $data_width \
+                             CONFIG.CONTROL_WIDTH $control_width \
+                             CONFIG.A4F_addr_width $a4f_addr_w CONFIG.A4F_data_width $a4f_data_w \
+                             CONFIG.A4F_id_width $a4f_id_w CONFIG.A4F_strb_width $a4f_strb_w] [get_bd_cells $mi]
     return $mi
   }
 
@@ -191,13 +192,20 @@ namespace eval ::tapasco::ip {
   # @param name Name of the instance.
   # @param address Address of the instance.
   # @return bd_cell of the instance.
-  proc create_noc_arke_router {name address} {
+  proc create_noc_arke_router {name address x y z ports buffer_depth data_width control_width} {
     variable stdcomps
-    puts "Creating Arke NoC Router $name with ..."
+    puts "Creating Arke NoC Router $name."
     puts "  VLNV: [dict get $stdcomps noc_arke_router vlnv]"
 
     set r [create_bd_cell -type ip -vlnv [dict get $stdcomps noc_arke_router vlnv] $name]
-    set_property -dict [list CONFIG.address $address] [get_bd_cells $name]
+    set_property -dict [list CONFIG.address $address \
+                             CONFIG.DIM_X $x \
+                             CONFIG.DIM_Y $y \
+                             CONFIG.DIM_Z $z \
+                             CONFIG.PORTS $ports \
+                             CONFIG.BUFFER_DEPTH $buffer_depth \
+                             CONFIG.DATA_WIDTH $data_width \
+                             CONFIG.CONTROL_WIDTH $control_width] [get_bd_cells $name]
     return $r
   }
 

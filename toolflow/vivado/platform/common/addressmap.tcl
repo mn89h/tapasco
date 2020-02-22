@@ -117,11 +117,11 @@ namespace eval addressmap {
   }
 
   proc assign_address {address_map master base {stride 0} {range 0} {component ""}} {
-    foreach seg [lsort [get_bd_addr_segs -addressables -of_objects $master]] { ;# e.g. HP0_DDR_LOWOCM
+    foreach seg [lsort [get_bd_addr_segs -addressables -of_objects $master]] {
       puts [format "  $master: $seg -> 0x%08x (range: 0x%08x)" $base $range]
       set sintf [get_bd_intf_pins -of_objects $seg]
       set srange $range
-      if {$range <= 0} { set srange [get_property RANGE $seg] } ;# for pynq HP0_DDR_LOWOCM 0x2000000
+      if {$range <= 0} { set srange [get_property RANGE $seg] }
       set kind [get_property USAGE $seg]
       dict set address_map $sintf "interface $sintf offset $base range $srange kind $kind"
       if {[string compare $component ""] != 0} {
@@ -142,13 +142,7 @@ namespace eval addressmap {
   }
 
   proc construct_address_map {{map ""}} {
-    set arch_ifc [::arch::get_arch_name]
-    #if {$arch_ifc == "axi4mm-noc"} {
-    #  set pe_base 0x00000000
-    #} {
-    #}
-      set pe_base [::platform::get_pe_base_address]
-    if {$map == ""} { set map [::platform::get_address_map $pe_base $arch_ifc] }
+    if {$map == ""} { set map [::platform::get_address_map [::platform::get_pe_base_address] [::arch::get_arch_name]] }
     set map [apply_address_map_mods $map]
     set ignored [::platform::get_ignored_segments]
     set seg_i 0
@@ -174,7 +168,7 @@ namespace eval addressmap {
             puts "  seg: $seg"
             set sintf [get_bd_intf_pins -quiet -of_objects $seg]
             if {[catch {dict get $map $intf}]} {
-              if {[catch {dict get $map $sintf}]} { ;# e.g. noc internal connection from pe to pe_ifc's reg0
+              if {[catch {dict get $map $sintf}]} {
                 puts "    neither $intf nor $sintf were found in address map for $seg: $::errorInfo"
                 puts "    assuming internal connection, setting values as found in segment:"
                 set range  [get_property RANGE $seg]
@@ -200,18 +194,14 @@ namespace eval addressmap {
             }
             puts "    address map info: $me]"
             set range  [expr "max([dict get $me range], 4096)"]
-            if {[expr {[get_property Name $intf] == "A4L_AXI"}]} { ;# axi4mm-noc pe offset
-              set offset [expr "max([dict get $me "offset"], [get_property OFFSET $intf])"] ;# 0
-            } {
-              set offset [expr "max([dict get $me "offset"], [get_property OFFSET $intf])"]
-            }
+            set offset [expr "max([dict get $me "offset"], [get_property OFFSET $intf])"]
             set range  [expr "min($range, [get_property RANGE $intf])"]
             puts "      range: $range"
             puts "      offset: $offset"
             puts "      space: $space"
             puts "      seg: $seg"
             if {[expr "(1 << 64) == $range"]} { set range "16E" }
-            create_bd_addr_seg -quiet \
+            create_bd_addr_seg \
               -offset $offset \
               -range $range \
               $space \
@@ -222,6 +212,5 @@ namespace eval addressmap {
         }
       }
     }
-    #assign_bd_address ;# mapping unmapped target_ips
   }
 }

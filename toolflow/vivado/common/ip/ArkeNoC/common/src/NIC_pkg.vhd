@@ -11,15 +11,12 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.Arke_pkg.all;
 
 package NIC_pkg is
-    
+
     ---------------
     -- Constants --
     ---------------
-
-    constant ZERO : std_logic_vector(DATA_WIDTH - 1 downto 0) := (others => '0');
 
     type ChannelsType is (None, RdRsp, WrRsp, RdRqA, WrRqA, WrRqD);
 
@@ -33,14 +30,6 @@ package NIC_pkg is
 
     constant STD_FIFO_FIFO_DEPTH : integer := 8;
 
-    -- unused
-    type transmission_data is record
-        axi_spec : std_logic_vector ( DATA_WIDTH - 1 downto DATA_WIDTH - 1 ); -- 0 is AXI4Lite, 1 is AXI4Full
-        axi_ch   : std_logic_vector ( DATA_WIDTH - 2 downto DATA_WIDTH - 3 ); -- 00 is ar/r, 10 is aw/b, 11 is w
-        is_first : std_logic_vector ( DATA_WIDTH - 4 downto DATA_WIDTH - 4 ); -- first contains network address
-        data     : std_logic_vector ( DATA_WIDTH - 5 downto 0 );
-    end record;
-
     ---------------------------
     -- Component Declaration --
     ---------------------------
@@ -49,7 +38,7 @@ package NIC_pkg is
         Generic (
             fifo_depth	: positive
         );
-        Port ( 
+        Port (
             clk			: in  std_logic;
             rst			: in  std_logic;
             WrValid_in	: in  std_logic;
@@ -57,7 +46,7 @@ package NIC_pkg is
             WrData_in	: in  std_logic_vector;
             RdReady_in	: in  std_logic;
             RdData_out  : out std_logic_vector;
-            RdValid_out	: out std_logic 
+            RdValid_out	: out std_logic
         );
     end component;
 
@@ -70,7 +59,7 @@ package NIC_pkg is
         );
         Port (
             clk             : in  std_logic;
-            rst             : in  std_logic; 
+            rst             : in  std_logic;
 
             AXI_arready     : in  std_logic;
             AXI_arvalid     : out std_logic;
@@ -85,7 +74,7 @@ package NIC_pkg is
             AXI_arqos       : out std_logic_vector(  3 downto 0 );
 
             AXI_awready     : in  std_logic;
-            AXI_awvalid     : out std_logic;    
+            AXI_awvalid     : out std_logic;
             AXI_awaddr      : out std_logic_vector( A4F_addr_width - 1 + A4F_id_width + 25 downto A4F_id_width + 25 );
             AXI_awid        : out std_logic_vector( A4F_id_width - 1 + 25 downto 25 );
             AXI_awlen       : out std_logic_vector( 24 downto 17 );
@@ -145,7 +134,7 @@ package NIC_pkg is
         );
         Port (
             clk             : in  std_logic;
-            rst             : in  std_logic; 
+            rst             : in  std_logic;
 
             AXI_arready     : out std_logic;
             AXI_arvalid     : in  std_logic;
@@ -160,7 +149,7 @@ package NIC_pkg is
             AXI_arqos       : in  std_logic_vector(  3 downto 0 );
 
             AXI_awready     : out std_logic;
-            AXI_awvalid     : in  std_logic;    
+            AXI_awvalid     : in  std_logic;
             AXI_awaddr      : in  std_logic_vector( A4F_addr_width - 1 + A4F_id_width + 25 downto A4F_id_width + 25 );
             AXI_awid        : in  std_logic_vector( A4F_id_width - 1 + 25 downto 25 );
             AXI_awlen       : in  std_logic_vector( 24 downto 17 );
@@ -210,7 +199,7 @@ package NIC_pkg is
             wrrsp_put_data  : in  std_logic_vector
         );
     end component;
-    
+
     component AXI4_Lite_Master is
         generic (
             A4L_addr_width  : integer;
@@ -219,7 +208,7 @@ package NIC_pkg is
         );
         Port (
             clk             : in  std_logic;
-            rst             : in  std_logic; 
+            rst             : in  std_logic;
 
             AXI_arvalid     : out std_logic;
             AXI_arready     : in  std_logic;
@@ -275,7 +264,7 @@ package NIC_pkg is
         );
         Port (
             clk             : in  std_logic;
-            rst             : in  std_logic; 
+            rst             : in  std_logic;
 
             AXI_arvalid     : in  std_logic;
             AXI_arready     : out std_logic;
@@ -324,3 +313,4 @@ package NIC_pkg is
     end component;
 
 end package NIC_pkg;
+

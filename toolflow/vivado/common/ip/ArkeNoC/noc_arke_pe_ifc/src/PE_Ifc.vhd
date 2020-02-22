@@ -4,10 +4,10 @@
 -------------------------------------------------------------------------------
 -- File       : PE_Ifc.vhd
 -- Author     : Malte Nilges
--- Company    : 
+-- Company    :
 -- Created    : 2019-12-02
 -- Last update: 2019-12-09
--- Platform   : 
+-- Platform   :
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
 -- Description: Network interface for TaPaSCo's processing elements sending
@@ -16,7 +16,7 @@
 --              network data format and the other way round.
 --              Same procedure is applied for data from/to PEs AXI4 Lite Slave.
 -------------------------------------------------------------------------------
--- Copyright (c) 2019 
+-- Copyright (c) 2019
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -29,16 +29,23 @@ use work.Arke_pkg.all;
 
 entity PE_Ifc is
     generic (
-        A4L_addr_width  : integer;
-        A4L_data_width  : integer;
-        A4L_strb_width  : integer;
-        A4F_addr_width  : integer;
-        A4F_data_width  : integer;
-        A4F_id_width    : integer;
-        A4F_strb_width  : integer;
-        NoC_address     : std_logic_vector;
-        NoC_address_mem : std_logic_vector;
-        NoC_address_arch: std_logic_vector
+        address         : std_logic_vector := "000000000000";
+        address_mem     : std_logic_vector := "000000000000";
+        address_arch    : std_logic_vector := "000000000000";
+        DIM_X           : integer := 4;
+        DIM_Y           : integer := 4;
+        DIM_Z           : integer := 1;
+        ADDR_WIDTH      : integer := 12;
+        DATA_WIDTH      : integer := 128;
+        CONTROL_WIDTH   : integer := 3;
+
+        A4L_addr_width  : integer := 32;
+        A4L_data_width  : integer := 32;
+        A4L_strb_width  : integer := 4;
+        A4F_addr_width  : integer := 64;
+        A4F_data_width  : integer := 64;
+        A4F_id_width    : integer := 0;
+        A4F_strb_width  : integer := 8
     );
     port (
         signal clk                  : in  std_logic := '1';
@@ -112,10 +119,11 @@ end PE_Ifc;
 
 architecture Behavioral of PE_Ifc is
 
-    constant DIM_X_W    : integer := Log2(DIM_X);
-    constant DIM_Y_W    : integer := Log2(DIM_Y);
-    constant DIM_Z_W    : integer := Log2(DIM_Z);
-    constant ADDR_W     : integer := DIM_X_W + DIM_Y_W + DIM_Z_W;
+    constant ZERO       : std_logic_vector(DATA_WIDTH - 1 downto 0) := (others => '0');
+
+    constant address_strip      : std_logic_vector(ADDR_WIDTH-1 downto 0) := address(address'length - ADDR_WIDTH to address'length - 1);
+    constant address_arch_strip : std_logic_vector(ADDR_WIDTH-1 downto 0) := address_arch(address'length - ADDR_WIDTH to address'length - 1);
+    constant address_mem_strip  : std_logic_vector(ADDR_WIDTH-1 downto 0) := address_mem(address'length - ADDR_WIDTH to address'length - 1);
 
     constant A4L_rdrqa_width    : natural := A4L_addr_width + 3;
     constant A4L_wrrqa_width    : natural := A4L_addr_width + 3;
@@ -123,13 +131,11 @@ architecture Behavioral of PE_Ifc is
     constant A4L_rdrsp_width    : natural := A4L_data_width + 2;
     constant A4L_wrrsp_width    : natural := 2;
 
-    constant A4F_rdrqa_width    : natural := A4F_addr_width + A4F_id_width + ADDR_W + 25;
-    constant A4F_wrrqa_width    : natural := A4F_addr_width + A4F_id_width + ADDR_W + 25;
+    constant A4F_rdrqa_width    : natural := A4F_addr_width + A4F_id_width + ADDR_WIDTH + 25;
+    constant A4F_wrrqa_width    : natural := A4F_addr_width + A4F_id_width + ADDR_WIDTH + 25;
     constant A4F_wrrqd_width    : natural := A4F_data_width + A4F_strb_width + 1;
-    constant A4F_rdrsp_width    : natural := A4F_data_width + A4F_id_width + ADDR_W + 3;
-    constant A4F_wrrsp_width    : natural := A4F_id_width + ADDR_W + 2;
-
-    type ChannelsType is (None, RdRsp, WrRsp, RdRqA, WrRqA, WrRqD);
+    constant A4F_rdrsp_width    : natural := A4F_data_width + A4F_id_width + ADDR_WIDTH + 3;
+    constant A4F_wrrsp_width    : natural := A4F_id_width + ADDR_WIDTH + 2;
 
     signal A4L_rdrqA_put_ready : std_logic;
     signal A4L_rdrqA_put_en    : std_logic;
@@ -163,10 +169,10 @@ architecture Behavioral of PE_Ifc is
     signal A4F_wrrsp_put_en    : std_logic;
     signal A4F_wrrsp_put_data  : std_logic_vector(A4F_wrrsp_width - 1 downto 0);
 
-    signal A4F_AXI_custom_arid : std_logic_vector(A4F_id_width + ADDR_W - 1 downto 0);
-    signal A4F_AXI_custom_awid : std_logic_vector(A4F_id_width + ADDR_W - 1 downto 0);
-    signal A4F_AXI_custom_rid  : std_logic_vector(A4F_id_width + ADDR_W - 1 downto 0);
-    signal A4F_AXI_custom_bid  : std_logic_vector(A4F_id_width + ADDR_W - 1 downto 0);
+    signal A4F_AXI_custom_arid : std_logic_vector(A4F_id_width + ADDR_WIDTH - 1 downto 0);
+    signal A4F_AXI_custom_awid : std_logic_vector(A4F_id_width + ADDR_WIDTH - 1 downto 0);
+    signal A4F_AXI_custom_rid  : std_logic_vector(A4F_id_width + ADDR_WIDTH - 1 downto 0);
+    signal A4F_AXI_custom_bid  : std_logic_vector(A4F_id_width + ADDR_WIDTH - 1 downto 0);
 
     signal dataInStalled   : std_logic_vector(dataIn'range);
     signal put_last_state  : ChannelsType;
@@ -176,8 +182,8 @@ architecture Behavioral of PE_Ifc is
 
     begin
 
-        A4F_AXI_custom_arid <= NoC_address & A4F_AXI_arid;
-        A4F_AXI_custom_awid <= NoC_address & A4F_AXI_awid;
+        A4F_AXI_custom_arid <= address_strip & A4F_AXI_arid;
+        A4F_AXI_custom_awid <= address_strip & A4F_AXI_awid;
         A4F_AXI_rid         <= A4F_AXI_custom_rid(A4F_id_width - 1 downto 0);
         A4F_AXI_bid         <= A4F_AXI_custom_bid(A4F_id_width - 1 downto 0);
 
@@ -230,7 +236,7 @@ architecture Behavioral of PE_Ifc is
         generic map (
             A4F_addr_width  => A4F_addr_width,
             A4F_data_width  => A4F_data_width,
-            A4F_id_width    => A4F_id_width + ADDR_W,
+            A4F_id_width    => A4F_id_width + ADDR_WIDTH,
             A4F_strb_width  => A4F_strb_width
         )
         port map (
@@ -289,7 +295,7 @@ architecture Behavioral of PE_Ifc is
             wrrsp_put_en    => A4F_wrrsp_put_en,
             wrrsp_put_data  => A4F_wrrsp_put_data
         );
-                    
+
         process(clk)
 
             --todo
@@ -298,8 +304,8 @@ architecture Behavioral of PE_Ifc is
             variable A4L_wrrqD_put_data_tmp : std_logic_vector(A4L_wrrqd_width - 1 downto 0);
             variable A4F_rdrsp_put_data_tmp : std_logic_vector(A4F_rdrsp_width - 1 downto 0);
             variable A4F_wrrsp_put_data_tmp : std_logic_vector(A4F_wrrsp_width - 1 downto 0);
-            
-            variable dest_address       : std_logic_vector(ADDR_W - 1 downto 0);
+
+            variable dest_address       : std_logic_vector(ADDR_WIDTH - 1 downto 0);
             variable dataOutNext        : std_logic_vector(DATA_WIDTH - 1 downto 0);
 
         begin if rising_edge(clk) then
@@ -323,7 +329,7 @@ architecture Behavioral of PE_Ifc is
             -- Same procedure is applied for r/w responses.
             -- The network destination is chosen by a address map in conjunction with the AXI address.
             --------------------------------------------------------
-            
+
             -- STATE 0: INIT
             if (state_send = None) then
                 send_stalled        <= '0';
@@ -338,11 +344,13 @@ architecture Behavioral of PE_Ifc is
                 A4F_wrrqD_get_en    <= '0';
 
                 if (A4L_rdrsp_get_valid = '1' or send_stalled = '1') then
+                    -- buffer AXI packet from PE in case of a stall
                     if(send_stalled = '0') then
-                        dest_address        := NoC_address_arch;
-                        dataOutNext         := '0' & "00" & ZERO(dataOut'left - 3 downto A4L_rdrsp_get_data'length + ADDR_W) & A4L_rdrsp_get_data & dest_address;
+                        dest_address        := address_arch_strip;
+                        dataOutNext         := P_A4L & C_R & ZERO(dataOut'left - 3 downto A4L_rdrsp_get_data'length + ADDR_WIDTH) & A4L_rdrsp_get_data & dest_address;
                     end if;
 
+                    -- send buffered packet if receiver gives a go signal
                     if (controlIn(STALL_GO) = '1') then
                         send_stalled        <= '0';
                         dataOut             <= dataOutNext;
@@ -352,17 +360,20 @@ architecture Behavioral of PE_Ifc is
                         A4L_wrrsp_get_en    <= '1';
                         state_send          <= WrRsp;
                     else
+                    -- else stall and wait before accepting new AXI packets
                         send_stalled        <= '1';
                         A4L_wrrsp_get_en    <= '0';
                     end if;
                 else
                     send_stalled        <= '0';
 
+                    -- unset TX if last packet was received but no new packet is transmitted
                     if (controlIn(STALL_GO) = '1') then
                         controlOut(TX)      <= '0';
                         controlOut(EOP)     <= '0';
                     end if;
 
+                    -- proceed to the next state
                     A4L_wrrsp_get_en    <= '1';
                     state_send          <= WrRsp;
                 end if;
@@ -376,8 +387,8 @@ architecture Behavioral of PE_Ifc is
 
                 if (A4L_wrrsp_get_valid = '1' or send_stalled = '1') then
                     if(send_stalled = '0') then
-                        dest_address        := NoC_address_arch;
-                        dataOutNext         := '0' & "10" & ZERO(dataOut'left - 3 downto A4L_wrrsp_get_data'length + ADDR_W) & A4L_wrrsp_get_data & dest_address;
+                        dest_address        := address_arch_strip;
+                        dataOutNext         := P_A4L & C_B & ZERO(dataOut'left - 3 downto A4L_wrrsp_get_data'length + ADDR_WIDTH) & A4L_wrrsp_get_data & dest_address;
                     end if;
 
                     if (controlIn(STALL_GO) = '1') then
@@ -413,8 +424,8 @@ architecture Behavioral of PE_Ifc is
 
                 if (A4F_rdrqA_get_valid = '1' or send_stalled = '1') then
                     if(send_stalled = '0') then
-                        dest_address        := NoC_address_mem;
-                        dataOutNext         := '1' & "00" & ZERO(dataOut'left - 3 downto A4F_rdrqA_get_data'length + ADDR_W) & A4F_rdrqA_get_data & dest_address;
+                        dest_address        := address_mem_strip;
+                        dataOutNext         := P_A4F & C_AR & ZERO(dataOut'left - 3 downto A4F_rdrqA_get_data'length + ADDR_WIDTH) & A4F_rdrqA_get_data & dest_address;
                     end if;
 
                     if (controlIn(STALL_GO) = '1') then
@@ -446,13 +457,13 @@ architecture Behavioral of PE_Ifc is
                 A4L_wrrsp_get_en        <= '0';
                 A4F_rdrqA_get_en        <= '0';
                 A4F_wrrqA_get_en        <= '0';
-                
+
                 if (A4F_wrrqA_get_valid = '1' or send_stalled = '1') then
                     A4L_rdrsp_get_en        <= '0';
 
                     if(send_stalled = '0') then
-                        dest_address        := NoC_address_mem;
-                        dataOutNext         := '1' & "10" & ZERO(dataOut'left - 3 downto A4F_wrrqA_get_data'length + ADDR_W) & A4F_wrrqA_get_data & dest_address;
+                        dest_address        := address_mem_strip;
+                        dataOutNext         := P_A4F & C_AW & ZERO(dataOut'left - 3 downto A4F_wrrqA_get_data'length + ADDR_WIDTH) & A4F_wrrqA_get_data & dest_address;
                     end if;
 
                     if (controlIn(STALL_GO) = '1') then
@@ -476,6 +487,7 @@ architecture Behavioral of PE_Ifc is
                         controlOut(EOP)     <= '0';
                     end if;
 
+                    -- if no valid WrRqA data go to RdRsp state
                     A4L_rdrsp_get_en    <= '1';
                     state_send          <= RdRsp;
                 end if;
@@ -488,16 +500,17 @@ architecture Behavioral of PE_Ifc is
 
                 if (A4F_wrrqD_get_valid = '1' or send_stalled = '1') then
                     if(send_stalled = '0') then
-                        dest_address        := NoC_address_mem;
-                        dataOutNext         := '1' & "11" & ZERO(dataOut'left - 3 downto A4F_wrrqD_get_data'length + ADDR_W) & A4F_wrrqD_get_data & dest_address;
+                        dest_address        := address_mem_strip;
+                        dataOutNext         := P_A4F & C_W & ZERO(dataOut'left - 3 downto A4F_wrrqD_get_data'length + ADDR_WIDTH) & A4F_wrrqD_get_data & dest_address;
                     end if;
 
                     if (controlIn(STALL_GO) = '1') then
                         send_stalled        <= '0';
                         dataOut             <= dataOutNext;
                         controlOut(TX)      <= '1';
-                        
-                        if (dataOutNext(A4F_AXI_wlast'right + ADDR_W) = '1') then
+
+                        -- if last write set eop signal and go to next state
+                        if (dataOutNext(A4F_AXI_wlast'right + ADDR_WIDTH) = '1') then
                             A4F_wrrqD_get_en    <= '0';
 
                             controlOut(EOP)     <= '1';
@@ -505,7 +518,7 @@ architecture Behavioral of PE_Ifc is
                             state_send          <= RdRsp;
                         else
                             A4L_rdrsp_get_en    <= '0';
-                            
+
                             controlOut(EOP)     <= '0';
                             A4F_wrrqD_get_en    <= '1';
                         end if;
@@ -523,189 +536,159 @@ architecture Behavioral of PE_Ifc is
                         controlOut(EOP)     <= '0';
                     end if;
 
+                    -- remain in state until last write could be sent
                     A4F_wrrqD_get_en    <= '1';
                 end if;
             end if;
 
-            
+
             --------------------------------------
             -- NETWORK DATA TO A4L R/W RESPONSE --
             --------------------------------------
             -- If the network sends data or data transfer is stalled because of the receiver not being ready
             -- attempts are made to hand the data to the receiver until it is ready
             --------------------------------------
-            
+
+            -- stalled data handling
             if (put_stalled = '1') then
-                if ((put_last_state = WrRsp and A4F_wrrsp_put_ready = '1') or
-                    (put_last_state = RdRsp and A4F_rdrsp_put_ready = '1') or
+                -- proceed with stalled data only if previous AXI packet could be stored in fifo
+                if ((put_last_state = RdRsp and A4F_rdrsp_put_ready = '1') or
+                    (put_last_state = WrRsp and A4F_wrrsp_put_ready = '1') or
+                    (put_last_state = RdRqA and A4L_rdrqA_put_ready = '1') or
                     (put_last_state = WrRqA and A4L_wrrqA_put_ready = '1') or
-                    (put_last_state = WrRqD and A4L_wrrqD_put_ready = '1') or
-                    (put_last_state = RdRqA and A4L_rdrqA_put_ready = '1')) then
-                    if (dataInStalled(dataIn'left downto dataIn'left - 2) = "110") then
-                        A4F_wrrsp_put_en            <= '1';
-                        A4F_rdrsp_put_en            <= '0';
-                        A4L_rdrqA_put_en            <= '0';
-                        A4L_wrrqA_put_en            <= '0';
-                        A4L_wrrqD_put_en            <= '0';
-                        A4F_wrrsp_put_data_tmp      := dataInStalled(ADDR_W + A4F_wrrsp_width - 1 downto ADDR_W);
-                        A4F_wrrsp_put_data          <= A4F_wrrsp_put_data_tmp;
-                        controlOut(STALL_GO)    <= '1';
-                        put_last_state          <= WrRsp;
-                        put_stalled             <= '0';
-                    elsif (dataInStalled(dataIn'left downto dataIn'left - 2) = "100") then
-                        A4F_wrrsp_put_en            <= '0';
+                    (put_last_state = WrRqD and A4L_wrrqD_put_ready = '1')) then
+                    if (dataInStalled(dataIn'left downto dataIn'left - 2) = P_A4F & C_R) then
                         A4F_rdrsp_put_en            <= '1';
+                        A4F_wrrsp_put_en            <= '0';
                         A4L_rdrqA_put_en            <= '0';
                         A4L_wrrqA_put_en            <= '0';
                         A4L_wrrqD_put_en            <= '0';
-                        A4F_rdrsp_put_data_tmp      := dataInStalled(ADDR_W + A4F_rdrsp_width - 1 downto ADDR_W);
+                        A4F_rdrsp_put_data_tmp      := dataInStalled(ADDR_WIDTH + A4F_rdrsp_width - 1 downto ADDR_WIDTH);
                         A4F_rdrsp_put_data          <= A4F_rdrsp_put_data_tmp;
-                        controlOut(STALL_GO)    <= '1';
-                        put_last_state          <= RdRsp;
-                        put_stalled             <= '0';
-                    elsif (dataInStalled(dataIn'left downto dataIn'left - 2) = "010") then
-                        A4F_wrrsp_put_en            <= '0';
+                        controlOut(STALL_GO)        <= '1';
+                        put_last_state              <= RdRsp;
+                        put_stalled                 <= '0';
+                    elsif (dataInStalled(dataIn'left downto dataIn'left - 2) = P_A4F & C_B) then
                         A4F_rdrsp_put_en            <= '0';
-                        A4L_rdrqA_put_en            <= '0';
-                        A4L_wrrqA_put_en            <= '1';
-                        A4L_wrrqD_put_en            <= '0';
-                        A4L_wrrqA_put_data_tmp      := dataIn(ADDR_W + A4L_wrrqA_width - 1 downto ADDR_W);
-                        A4L_wrrqA_put_data          <= A4L_wrrqA_put_data_tmp;
-                        controlOut(STALL_GO)    <= '1';
-                        put_last_state          <= WrRqA;
-                        put_stalled             <= '0';
-                    elsif (dataInStalled(dataIn'left downto dataIn'left - 2) = "011") then
-                        A4F_wrrsp_put_en            <= '0';
-                        A4F_rdrsp_put_en            <= '0';
+                        A4F_wrrsp_put_en            <= '1';
                         A4L_rdrqA_put_en            <= '0';
                         A4L_wrrqA_put_en            <= '0';
-                        A4L_wrrqD_put_en            <= '1';
-                        A4L_wrrqD_put_data_tmp      := dataIn(ADDR_W + A4L_wrrqD_width - 1 downto ADDR_W);
-                        A4L_wrrqD_put_data          <= A4L_wrrqD_put_data_tmp;
-                        controlOut(STALL_GO)    <= '1';
-                        put_last_state          <= WrRqD;
-                        put_stalled             <= '0';
-                    elsif (dataInStalled(dataIn'left downto dataIn'left - 2) = "000") then
+                        A4L_wrrqD_put_en            <= '0';
+                        A4F_wrrsp_put_data_tmp      := dataInStalled(ADDR_WIDTH + A4F_wrrsp_width - 1 downto ADDR_WIDTH);
+                        A4F_wrrsp_put_data          <= A4F_wrrsp_put_data_tmp;
+                        controlOut(STALL_GO)        <= '1';
+                        put_last_state              <= WrRsp;
+                        put_stalled                 <= '0';
+                    elsif (dataInStalled(dataIn'left downto dataIn'left - 2) = P_A4L & C_AR) then
                         A4F_wrrsp_put_en            <= '0';
                         A4F_rdrsp_put_en            <= '0';
                         A4L_rdrqA_put_en            <= '1';
                         A4L_wrrqA_put_en            <= '0';
                         A4L_wrrqD_put_en            <= '0';
-                        A4L_rdrqA_put_data_tmp      := dataIn(ADDR_W + A4L_rdrqA_width - 1 downto ADDR_W);
+                        A4L_rdrqA_put_data_tmp      := dataInStalled(ADDR_WIDTH + A4L_rdrqA_width - 1 downto ADDR_WIDTH);
                         A4L_rdrqA_put_data          <= A4L_rdrqA_put_data_tmp;
-                        controlOut(STALL_GO)    <= '1';
-                        put_last_state          <= RdRqA;
-                        put_stalled             <= '0';
+                        controlOut(STALL_GO)        <= '1';
+                        put_last_state              <= RdRqA;
+                        put_stalled                 <= '0';
+                    elsif (dataInStalled(dataIn'left downto dataIn'left - 2) = P_A4L & C_AW) then
+                        A4F_wrrsp_put_en            <= '0';
+                        A4F_rdrsp_put_en            <= '0';
+                        A4L_rdrqA_put_en            <= '0';
+                        A4L_wrrqA_put_en            <= '1';
+                        A4L_wrrqD_put_en            <= '0';
+                        A4L_wrrqA_put_data_tmp      := dataInStalled(ADDR_WIDTH + A4L_wrrqA_width - 1 downto ADDR_WIDTH);
+                        A4L_wrrqA_put_data          <= A4L_wrrqA_put_data_tmp;
+                        controlOut(STALL_GO)        <= '1';
+                        put_last_state              <= WrRqA;
+                        put_stalled                 <= '0';
+                    elsif (dataInStalled(dataIn'left downto dataIn'left - 2) = P_A4L & C_W) then
+                        A4F_wrrsp_put_en            <= '0';
+                        A4F_rdrsp_put_en            <= '0';
+                        A4L_rdrqA_put_en            <= '0';
+                        A4L_wrrqA_put_en            <= '0';
+                        A4L_wrrqD_put_en            <= '1';
+                        A4L_wrrqD_put_data_tmp      := dataInStalled(ADDR_WIDTH + A4L_wrrqD_width - 1 downto ADDR_WIDTH);
+                        A4L_wrrqD_put_data          <= A4L_wrrqD_put_data_tmp;
+                        controlOut(STALL_GO)        <= '1';
+                        put_last_state              <= WrRqD;
+                        put_stalled                 <= '0';
                     end if;
                 end if;
+            -- normal data handling
             elsif (controlIn(RX) = '1') then
-                if (dataIn(dataIn'left downto dataIn'left - 2) = "110") then
-                    put_last_state          <= WrRsp;
-                    if ((put_last_state = WrRsp and A4F_wrrsp_put_ready = '1') or
-                        (put_last_state = RdRsp and A4F_rdrsp_put_ready = '1') or
-                        (put_last_state = WrRqA and A4L_wrrqA_put_ready = '1') or
-                        (put_last_state = WrRqD and A4L_wrrqD_put_ready = '1') or
-                        (put_last_state = RdRqA and A4L_rdrqA_put_ready = '1')) then
-                        A4F_wrrsp_put_en            <= '1';
-                        A4F_rdrsp_put_en            <= '0';
-                        A4L_rdrqA_put_en            <= '0';
-                        A4L_wrrqA_put_en            <= '0';
-                        A4L_wrrqD_put_en            <= '0';
-                        A4F_wrrsp_put_data_tmp      := dataIn(ADDR_W + A4F_wrrsp_width - 1 downto ADDR_W);
-                        A4F_wrrsp_put_data          <= A4F_wrrsp_put_data_tmp;
-                        controlOut(STALL_GO)    <= '1';
-                    else
-                        dataInStalled           <= dataIn;
-                        controlOut(STALL_GO)    <= '0';
-                        put_stalled             <= '1';
-                    end if;
-                elsif (dataIn(dataIn'left downto dataIn'left - 2) = "100") then
-                    put_last_state          <= RdRsp;
-                    if ((put_last_state = WrRsp and A4F_wrrsp_put_ready = '1') or
-                        (put_last_state = RdRsp and A4F_rdrsp_put_ready = '1') or
-                        (put_last_state = WrRqA and A4L_wrrqA_put_ready = '1') or
-                        (put_last_state = WrRqD and A4L_wrrqD_put_ready = '1') or
-                        (put_last_state = RdRqA and A4L_rdrqA_put_ready = '1')) then
-                        A4F_wrrsp_put_en            <= '0';
+                -- set go signal only if previous AXI packet could be stored in fifo
+                if ((put_last_state = RdRsp and A4F_rdrsp_put_ready = '1') or
+                    (put_last_state = WrRsp and A4F_wrrsp_put_ready = '1') or
+                    (put_last_state = RdRqA and A4L_rdrqA_put_ready = '1') or
+                    (put_last_state = WrRqA and A4L_wrrqA_put_ready = '1') or
+                    (put_last_state = WrRqD and A4L_wrrqD_put_ready = '1')) then
+                    if (dataIn(dataIn'left downto dataIn'left - 2) = P_A4F & C_R) then
                         A4F_rdrsp_put_en            <= '1';
+                        A4F_wrrsp_put_en            <= '0';
                         A4L_rdrqA_put_en            <= '0';
                         A4L_wrrqA_put_en            <= '0';
                         A4L_wrrqD_put_en            <= '0';
-                        A4F_rdrsp_put_data_tmp      := dataIn(ADDR_W + A4F_rdrsp_width - 1 downto ADDR_W);
+                        A4F_rdrsp_put_data_tmp      := dataIn(ADDR_WIDTH + A4F_rdrsp_width - 1 downto ADDR_WIDTH);
                         A4F_rdrsp_put_data          <= A4F_rdrsp_put_data_tmp;
-                        controlOut(STALL_GO)    <= '1';
-                    else
-                        dataInStalled           <= dataIn;
-                        controlOut(STALL_GO)    <= '0';
-                        put_stalled             <= '1';
-                    end if;
-                elsif (dataIn(dataIn'left downto dataIn'left - 2) = "010") then
-                    put_last_state          <= WrRqA;
-                    if ((put_last_state = WrRsp and A4F_wrrsp_put_ready = '1') or
-                        (put_last_state = RdRsp and A4F_rdrsp_put_ready = '1') or
-                        (put_last_state = WrRqA and A4L_wrrqA_put_ready = '1') or
-                        (put_last_state = WrRqD and A4L_wrrqD_put_ready = '1') or
-                        (put_last_state = RdRqA and A4L_rdrqA_put_ready = '1')) then
-                        A4F_wrrsp_put_en            <= '0';
+                        controlOut(STALL_GO)        <= '1';
+                        put_last_state              <= RdRsp;
+                    elsif (dataIn(dataIn'left downto dataIn'left - 2) = P_A4F & C_B) then
                         A4F_rdrsp_put_en            <= '0';
-                        A4L_rdrqA_put_en            <= '0';
-                        A4L_wrrqA_put_en            <= '1';
-                        A4L_wrrqD_put_en            <= '0';
-                        A4L_wrrqA_put_data_tmp      := dataIn(ADDR_W + A4L_wrrqA_width - 1 downto ADDR_W);
-                        A4L_wrrqA_put_data          <= A4L_wrrqA_put_data_tmp;
-                        controlOut(STALL_GO)    <= '1';
-                    else
-                        dataInStalled           <= dataIn;
-                        controlOut(STALL_GO)    <= '0';
-                        put_stalled             <= '1';
-                    end if;
-                elsif (dataIn(dataIn'left downto dataIn'left - 2) = "011") then
-                    put_last_state          <= WrRqD;
-                    if ((put_last_state = WrRsp and A4F_wrrsp_put_ready = '1') or
-                        (put_last_state = RdRsp and A4F_rdrsp_put_ready = '1') or
-                        (put_last_state = WrRqA and A4L_wrrqA_put_ready = '1') or
-                        (put_last_state = WrRqD and A4L_wrrqD_put_ready = '1') or
-                        (put_last_state = RdRqA and A4L_rdrqA_put_ready = '1')) then
-                        A4F_wrrsp_put_en            <= '0';
-                        A4F_rdrsp_put_en            <= '0';
+                        A4F_wrrsp_put_en            <= '1';
                         A4L_rdrqA_put_en            <= '0';
                         A4L_wrrqA_put_en            <= '0';
-                        A4L_wrrqD_put_en            <= '1';
-                        A4L_wrrqD_put_data_tmp      := dataIn(ADDR_W + A4L_wrrqD_width - 1 downto ADDR_W);
-                        A4L_wrrqD_put_data          <= A4L_wrrqD_put_data_tmp;
-                        controlOut(STALL_GO)    <= '1';
-                    else
-                        dataInStalled           <= dataIn;
-                        controlOut(STALL_GO)    <= '0';
-                        put_stalled             <= '1';
-                    end if;
-                elsif (dataIn(dataIn'left downto dataIn'left - 2) = "000") then
-                    put_last_state          <= RdRqA;
-                    if ((put_last_state = WrRsp and A4F_wrrsp_put_ready = '1') or
-                        (put_last_state = RdRsp and A4F_rdrsp_put_ready = '1') or
-                        (put_last_state = WrRqA and A4L_wrrqA_put_ready = '1') or
-                        (put_last_state = WrRqD and A4L_wrrqD_put_ready = '1') or
-                        (put_last_state = RdRqA and A4L_rdrqA_put_ready = '1')) then
+                        A4L_wrrqD_put_en            <= '0';
+                        A4F_wrrsp_put_data_tmp      := dataIn(ADDR_WIDTH + A4F_wrrsp_width - 1 downto ADDR_WIDTH);
+                        A4F_wrrsp_put_data          <= A4F_wrrsp_put_data_tmp;
+                        controlOut(STALL_GO)        <= '1';
+                        put_last_state              <= WrRsp;
+                    elsif (dataIn(dataIn'left downto dataIn'left - 2) = P_A4L & C_AR) then
                         A4F_wrrsp_put_en            <= '0';
                         A4F_rdrsp_put_en            <= '0';
                         A4L_rdrqA_put_en            <= '1';
                         A4L_wrrqA_put_en            <= '0';
                         A4L_wrrqD_put_en            <= '0';
-                        A4L_rdrqA_put_data_tmp      := dataIn(ADDR_W + A4L_rdrqA_width - 1 downto ADDR_W);
+                        A4L_rdrqA_put_data_tmp      := dataIn(ADDR_WIDTH + A4L_rdrqA_width - 1 downto ADDR_WIDTH);
                         A4L_rdrqA_put_data          <= A4L_rdrqA_put_data_tmp;
-                        controlOut(STALL_GO)    <= '1';
-                    else
-                        dataInStalled           <= dataIn;
-                        controlOut(STALL_GO)    <= '0';
-                        put_stalled             <= '1';
+                        controlOut(STALL_GO)        <= '1';
+                        put_last_state              <= RdRqA;
+                    elsif (dataIn(dataIn'left downto dataIn'left - 2) = P_A4L & C_AW) then
+                        A4F_wrrsp_put_en            <= '0';
+                        A4F_rdrsp_put_en            <= '0';
+                        A4L_rdrqA_put_en            <= '0';
+                        A4L_wrrqA_put_en            <= '1';
+                        A4L_wrrqD_put_en            <= '0';
+                        A4L_wrrqA_put_data_tmp      := dataIn(ADDR_WIDTH + A4L_wrrqA_width - 1 downto ADDR_WIDTH);
+                        A4L_wrrqA_put_data          <= A4L_wrrqA_put_data_tmp;
+                        controlOut(STALL_GO)        <= '1';
+                        put_last_state              <= WrRqA;
+                    elsif (dataIn(dataIn'left downto dataIn'left - 2) = P_A4L & C_W) then
+                        A4F_wrrsp_put_en            <= '0';
+                        A4F_rdrsp_put_en            <= '0';
+                        A4L_rdrqA_put_en            <= '0';
+                        A4L_wrrqA_put_en            <= '0';
+                        A4L_wrrqD_put_en            <= '1';
+                        A4L_wrrqD_put_data_tmp      := dataIn(ADDR_WIDTH + A4L_wrrqD_width - 1 downto ADDR_WIDTH);
+                        A4L_wrrqD_put_data          <= A4L_wrrqD_put_data_tmp;
+                        controlOut(STALL_GO)        <= '1';
+                        put_last_state              <= WrRqD;
                     end if;
+                -- otherwise stall for the next cycle and store the current incoming data
+                else
+                    dataInStalled           <= dataIn;
+                    controlOut(STALL_GO)    <= '0';
+                    put_stalled             <= '1';
                 end if;
+            -- no data: unset put signals if successfully stored in fifo
             elsif (controlIn(RX) = '0') then
+                if(A4F_rdrsp_put_ready = '1') then
+                    A4F_rdrsp_put_en    <= '0';
+                end if;
                 if(A4F_wrrsp_put_ready = '1') then
                     A4F_wrrsp_put_en    <= '0';
                 end if;
-                if(A4F_rdrsp_put_ready = '1') then
-                    A4F_rdrsp_put_en    <= '0';
+                if(A4L_rdrqA_put_ready = '1') then
+                    A4L_rdrqA_put_en    <= '0';
                 end if;
                 if(A4L_wrrqA_put_ready = '1') then
                     A4L_wrrqA_put_en    <= '0';
@@ -713,10 +696,8 @@ architecture Behavioral of PE_Ifc is
                 if(A4L_wrrqD_put_ready = '1') then
                     A4L_wrrqD_put_en    <= '0';
                 end if;
-                if(A4L_rdrqA_put_ready = '1') then
-                    A4L_rdrqA_put_en    <= '0';
-                end if;
             end if;
+
         end if;
         end if;
     end process;

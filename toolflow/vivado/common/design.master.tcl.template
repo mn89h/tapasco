@@ -34,7 +34,6 @@ source -notrace "$::env(TAPASCO_HOME_TCL)/common/common.tcl"
 tapasco::call_plugins "pre-header"
 
 # source common procs
-puts "HEADER: @@HEADER@@"
 @@HEADER@@
 
 # source architecture-specific Tcl scripts
@@ -88,6 +87,7 @@ tapasco::add_capabilities_flag "PLATFORM_CAP0_DYNAMIC_ADDRESS_MAP"
 
 # event: post-init
 tapasco::call_plugins "pre-arch"
+
 # instantiate architecture
 arch::create
 

@@ -24,7 +24,7 @@ namespace eval BuildRouter {
     }
   }
 
-  proc package_project {} {
+  proc package_proj {} {
     variable arke_dir
     ipx::package_project -root_dir $arke_dir/noc_arke_router -vendor user.org -library user -taxonomy /UserIP -import_files -set_current false
     ipx::unload_core $arke_dir/noc_arke_router/component.xml
@@ -34,6 +34,7 @@ namespace eval BuildRouter {
   proc open_ip {} {
     variable arke_dir
     ipx::open_ipxact_file $arke_dir/noc_arke_router/component.xml
+    ipx::merge_project_changes hdl_parameters [ipx::current_core]
   }
 
   proc set_infos {} {
@@ -95,7 +96,7 @@ namespace eval BuildRouter {
     set_property library_name work [ipx::get_files src/Router.vhd -of_objects [ipx::get_file_groups xilinx_anylanguagebehavioralsimulation -of_objects [ipx::current_core]]]
   }
 
-  proc set_default_driver_values {address_width} {
+  proc set_user_parameters {{address_width 15}} {
     set default_address [format {%0*s} $address_width 0]
     set_property widget {hexEdit} [ipgui::get_guiparamspec -name "address" -component [ipx::current_core] ]
     set_property value \"$default_address\" [ipx::get_user_parameters address -of_objects [ipx::current_core]]
@@ -104,7 +105,31 @@ namespace eval BuildRouter {
     set_property value_bit_string_length $address_width [ipx::get_hdl_parameters address -of_objects [ipx::current_core]]
     set_property value_format bitString [ipx::get_user_parameters address -of_objects [ipx::current_core]]
     set_property value_format bitString [ipx::get_hdl_parameters address -of_objects [ipx::current_core]]
+    set_property widget {textEdit} [ipgui::get_guiparamspec -name "DIM_X" -component [ipx::current_core] ]
+    set_property value 4 [ipx::get_user_parameters DIM_X -of_objects [ipx::current_core]]
+    set_property value 4 [ipx::get_hdl_parameters DIM_X -of_objects [ipx::current_core]]
+    set_property widget {textEdit} [ipgui::get_guiparamspec -name "DIM_Y" -component [ipx::current_core] ]
+    set_property value 4 [ipx::get_user_parameters DIM_Y -of_objects [ipx::current_core]]
+    set_property value 4 [ipx::get_hdl_parameters DIM_Y -of_objects [ipx::current_core]]
+    set_property widget {textEdit} [ipgui::get_guiparamspec -name "DIM_Z" -component [ipx::current_core] ]
+    set_property value 1 [ipx::get_user_parameters DIM_Z -of_objects [ipx::current_core]]
+    set_property value 1 [ipx::get_hdl_parameters DIM_Z -of_objects [ipx::current_core]]
+    set_property widget {textEdit} [ipgui::get_guiparamspec -name "PORTS" -component [ipx::current_core] ]
+    set_property value 5 [ipx::get_user_parameters PORTS -of_objects [ipx::current_core]]
+    set_property value 5 [ipx::get_hdl_parameters PORTS -of_objects [ipx::current_core]]
+    set_property widget {textEdit} [ipgui::get_guiparamspec -name "BUFFER_DEPTH" -component [ipx::current_core] ]
+    set_property value 4 [ipx::get_user_parameters BUFFER_DEPTH -of_objects [ipx::current_core]]
+    set_property value 4 [ipx::get_hdl_parameters BUFFER_DEPTH -of_objects [ipx::current_core]]
+    set_property widget {textEdit} [ipgui::get_guiparamspec -name "DATA_WIDTH" -component [ipx::current_core] ]
+    set_property value 128 [ipx::get_user_parameters DATA_WIDTH -of_objects [ipx::current_core]]
+    set_property value 128 [ipx::get_hdl_parameters DATA_WIDTH -of_objects [ipx::current_core]]
+    set_property widget {textEdit} [ipgui::get_guiparamspec -name "CONTROL_WIDTH" -component [ipx::current_core] ]
+    set_property value 3 [ipx::get_user_parameters CONTROL_WIDTH -of_objects [ipx::current_core]]
+    set_property value 3 [ipx::get_hdl_parameters CONTROL_WIDTH -of_objects [ipx::current_core]]
+  }
 
+
+  proc set_default_driver_values {} {
     set_property driver_value 0 [ipx::get_ports data_in_local -of_objects [ipx::current_core]]
     set_property driver_value 0 [ipx::get_ports data_in_east -of_objects [ipx::current_core]]
     set_property driver_value 0 [ipx::get_ports data_in_south -of_objects [ipx::current_core]]
@@ -202,6 +227,13 @@ namespace eval BuildRouter {
     ipgui::move_param -component [ipx::current_core] -order 5 [ipgui::get_guiparamspec -name "use_control_out_up" -component [ipx::current_core]] -parent [ipgui::get_groupspec -name "Control_Out" -component [ipx::current_core]]
     ipgui::move_param -component [ipx::current_core] -order 6 [ipgui::get_guiparamspec -name "use_control_out_down" -component [ipx::current_core]] -parent [ipgui::get_groupspec -name "Control_Out" -component [ipx::current_core]]
     ipgui::move_param -component [ipx::current_core] -order 0 [ipgui::get_guiparamspec -name "address" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 1 [ipgui::get_guiparamspec -name "BUFFER_DEPTH" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 2 [ipgui::get_guiparamspec -name "CONTROL_WIDTH" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 3 [ipgui::get_guiparamspec -name "DATA_WIDTH" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 4 [ipgui::get_guiparamspec -name "DIM_X" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 5 [ipgui::get_guiparamspec -name "DIM_Y" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 6 [ipgui::get_guiparamspec -name "DIM_Z" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 7 [ipgui::get_guiparamspec -name "PORTS" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
   }
   
   proc save_and_exit {} {
@@ -213,24 +245,26 @@ namespace eval BuildRouter {
     ipx::unload_core $arke_dir/noc_arke_router/component.xml
   }
 
-  proc close_proj {} {
+  proc purge_proj {} {
+    variable arke_dir
     close_project -delete
-    close_project
+    close_project -delete
+    file delete $arke_dir/project_router
   }
 
-  proc build {address_width} {
+  proc build {} {
     create_proj
     open_proj
-    package_project
+    package_proj
     open_ip
-    ipx::merge_project_changes hdl_parameters [ipx::current_core]
     set_infos
     add_synthesis_files
     add_simulation_files
-    set_default_driver_values $address_width
+    set_user_parameters
+    set_default_driver_values
     set_port_dependencies
     build_gui
     save_and_exit
-    close_proj
+    purge_proj
   }
 }

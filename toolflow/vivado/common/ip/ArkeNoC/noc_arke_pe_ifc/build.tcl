@@ -24,7 +24,7 @@ namespace eval BuildPEIfc {
     }
   }
 
-  proc package_project {} {
+  proc package_proj {} {
     variable arke_dir
     ipx::package_project -root_dir $arke_dir/noc_arke_pe_ifc -vendor user.org -library user -taxonomy /UserIP -import_files -set_current false
     ipx::unload_core $arke_dir/noc_arke_pe_ifc/component.xml
@@ -34,6 +34,7 @@ namespace eval BuildPEIfc {
   proc open_ip {} {
     variable arke_dir
     ipx::open_ipxact_file $arke_dir/noc_arke_pe_ifc/component.xml
+    ipx::merge_project_changes hdl_parameters [ipx::current_core]
   }
 
   proc set_infos {} {
@@ -95,50 +96,68 @@ namespace eval BuildPEIfc {
     set_property library_name work [ipx::get_files ../common/src/Arke_pkg.vhd -of_objects [ipx::get_file_groups xilinx_anylanguagebehavioralsimulation -of_objects [ipx::current_core]]]
   }
 
-  proc import_parameters {} {
-    variable arke_dir
-    ipx::remove_all_hdl_parameter -remove_inferred_params [ipx::current_core]
-    ipx::add_model_parameters_from_hdl [ipx::current_core] -top_level_hdl_file $arke_dir/noc_arke_pe_ifc/src/PE_Ifc.vhd -top_module_name PE_Ifc
-    ipx::infer_user_parameters [ipx::current_core]
-    ipgui::add_param -name {A4L_addr_width} -component [ipx::current_core] -display_name {A4L_addr_width}
-    ipgui::add_param -name {A4L_data_width} -component [ipx::current_core] -display_name {A4L_data_width}
-    ipgui::add_param -name {A4L_strb_width} -component [ipx::current_core] -display_name {A4L_strb_width}
-    ipgui::add_param -name {A4F_addr_width} -component [ipx::current_core] -display_name {A4F_addr_width}
-    ipgui::add_param -name {A4F_data_width} -component [ipx::current_core] -display_name {A4F_data_width}
-    ipgui::add_param -name {A4F_id_width} -component [ipx::current_core] -display_name {A4F_id_width}
-    ipgui::add_param -name {A4F_strb_width} -component [ipx::current_core] -display_name {A4F_strb_width}
-    ipgui::add_param -name {NoC_address} -component [ipx::current_core] -display_name {NoC_address}
-    ipgui::add_param -name {NoC_address_mem} -component [ipx::current_core] -display_name {NoC_address_mem}
-    ipgui::add_param -name {NoC_address_arch} -component [ipx::current_core] -display_name {NoC_address_arch}
-  }
-
-  proc set_user_parameters {address_width} {
+  proc set_user_parameters {{address_width 12}} {
     set default_address [format {%0*s} $address_width 0]
-    set_property widget {hexEdit} [ipgui::get_guiparamspec -name "NoC_address" -component [ipx::current_core] ]
-    set_property value \"$default_address\" [ipx::get_user_parameters NoC_address -of_objects [ipx::current_core]]
-    set_property value \"$default_address\" [ipx::get_hdl_parameters NoC_address -of_objects [ipx::current_core]]
-    set_property value_bit_string_length $address_width [ipx::get_user_parameters NoC_address -of_objects [ipx::current_core]]
-    set_property value_bit_string_length $address_width [ipx::get_hdl_parameters NoC_address -of_objects [ipx::current_core]]
-    set_property value_format bitString [ipx::get_user_parameters NoC_address -of_objects [ipx::current_core]]
-    set_property value_format bitString [ipx::get_hdl_parameters NoC_address -of_objects [ipx::current_core]]
-    set_property widget {hexEdit} [ipgui::get_guiparamspec -name "NoC_address_mem" -component [ipx::current_core] ]
-    set_property value \"$default_address\" [ipx::get_user_parameters NoC_address_mem -of_objects [ipx::current_core]]
-    set_property value \"$default_address\" [ipx::get_hdl_parameters NoC_address_mem -of_objects [ipx::current_core]]
-    set_property value_bit_string_length $address_width [ipx::get_user_parameters NoC_address_mem -of_objects [ipx::current_core]]
-    set_property value_bit_string_length $address_width [ipx::get_hdl_parameters NoC_address_mem -of_objects [ipx::current_core]]
-    set_property value_format bitString [ipx::get_user_parameters NoC_address_mem -of_objects [ipx::current_core]]
-    set_property value_format bitString [ipx::get_hdl_parameters NoC_address_mem -of_objects [ipx::current_core]]
-    set_property widget {hexEdit} [ipgui::get_guiparamspec -name "NoC_address_arch" -component [ipx::current_core] ]
-    set_property value \"$default_address\" [ipx::get_user_parameters NoC_address_arch -of_objects [ipx::current_core]]
-    set_property value \"$default_address\" [ipx::get_hdl_parameters NoC_address_arch -of_objects [ipx::current_core]]
-    set_property value_bit_string_length $address_width [ipx::get_user_parameters NoC_address_arch -of_objects [ipx::current_core]]
-    set_property value_bit_string_length $address_width [ipx::get_hdl_parameters NoC_address_arch -of_objects [ipx::current_core]]
-    set_property value_format bitString [ipx::get_user_parameters NoC_address_arch -of_objects [ipx::current_core]]
-    set_property value_format bitString [ipx::get_hdl_parameters NoC_address_arch -of_objects [ipx::current_core]]
+    set_property widget {hexEdit} [ipgui::get_guiparamspec -name "address" -component [ipx::current_core] ]
+    set_property value \"$default_address\" [ipx::get_user_parameters address -of_objects [ipx::current_core]]
+    set_property value \"$default_address\" [ipx::get_hdl_parameters address -of_objects [ipx::current_core]]
+    set_property value_bit_string_length $address_width [ipx::get_user_parameters address -of_objects [ipx::current_core]]
+    set_property value_bit_string_length $address_width [ipx::get_hdl_parameters address -of_objects [ipx::current_core]]
+    set_property value_format bitString [ipx::get_user_parameters address -of_objects [ipx::current_core]]
+    set_property value_format bitString [ipx::get_hdl_parameters address -of_objects [ipx::current_core]]
+    set_property widget {hexEdit} [ipgui::get_guiparamspec -name "address_mem" -component [ipx::current_core] ]
+    set_property value \"$default_address\" [ipx::get_user_parameters address_mem -of_objects [ipx::current_core]]
+    set_property value \"$default_address\" [ipx::get_hdl_parameters address_mem -of_objects [ipx::current_core]]
+    set_property value_bit_string_length $address_width [ipx::get_user_parameters address_mem -of_objects [ipx::current_core]]
+    set_property value_bit_string_length $address_width [ipx::get_hdl_parameters address_mem -of_objects [ipx::current_core]]
+    set_property value_format bitString [ipx::get_user_parameters address_mem -of_objects [ipx::current_core]]
+    set_property value_format bitString [ipx::get_hdl_parameters address_mem -of_objects [ipx::current_core]]
+    set_property widget {hexEdit} [ipgui::get_guiparamspec -name "address_arch" -component [ipx::current_core] ]
+    set_property value \"$default_address\" [ipx::get_user_parameters address_arch -of_objects [ipx::current_core]]
+    set_property value \"$default_address\" [ipx::get_hdl_parameters address_arch -of_objects [ipx::current_core]]
+    set_property value_bit_string_length $address_width [ipx::get_user_parameters address_arch -of_objects [ipx::current_core]]
+    set_property value_bit_string_length $address_width [ipx::get_hdl_parameters address_arch -of_objects [ipx::current_core]]
+    set_property value_format bitString [ipx::get_user_parameters address_arch -of_objects [ipx::current_core]]
+    set_property value_format bitString [ipx::get_hdl_parameters address_arch -of_objects [ipx::current_core]]
+    set_property widget {textEdit} [ipgui::get_guiparamspec -name "DIM_X" -component [ipx::current_core] ]
+    set_property value 4 [ipx::get_user_parameters DIM_X -of_objects [ipx::current_core]]
+    set_property value 4 [ipx::get_hdl_parameters DIM_X -of_objects [ipx::current_core]]
+    set_property widget {textEdit} [ipgui::get_guiparamspec -name "DIM_Y" -component [ipx::current_core] ]
+    set_property value 4 [ipx::get_user_parameters DIM_Y -of_objects [ipx::current_core]]
+    set_property value 4 [ipx::get_hdl_parameters DIM_Y -of_objects [ipx::current_core]]
+    set_property widget {textEdit} [ipgui::get_guiparamspec -name "DIM_Z" -component [ipx::current_core] ]
+    set_property value 1 [ipx::get_user_parameters DIM_Z -of_objects [ipx::current_core]]
+    set_property value 1 [ipx::get_hdl_parameters DIM_Z -of_objects [ipx::current_core]]
+    set_property widget {textEdit} [ipgui::get_guiparamspec -name "ADDR_WIDTH" -component [ipx::current_core] ]
+    set_property value 5 [ipx::get_user_parameters ADDR_WIDTH -of_objects [ipx::current_core]]
+    set_property value 5 [ipx::get_hdl_parameters ADDR_WIDTH -of_objects [ipx::current_core]]
+    set_property widget {textEdit} [ipgui::get_guiparamspec -name "DATA_WIDTH" -component [ipx::current_core] ]
+    set_property value 128 [ipx::get_user_parameters DATA_WIDTH -of_objects [ipx::current_core]]
+    set_property value 128 [ipx::get_hdl_parameters DATA_WIDTH -of_objects [ipx::current_core]]
+    set_property widget {textEdit} [ipgui::get_guiparamspec -name "CONTROL_WIDTH" -component [ipx::current_core] ]
+    set_property value 3 [ipx::get_user_parameters CONTROL_WIDTH -of_objects [ipx::current_core]]
+    set_property value 3 [ipx::get_hdl_parameters CONTROL_WIDTH -of_objects [ipx::current_core]]
   }
   
-  #axi memory map editing?
-
+  proc build_gui {} {
+    ipgui::move_param -component [ipx::current_core] -order 0 [ipgui::get_guiparamspec -name "address" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 1 [ipgui::get_guiparamspec -name "address_arch" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 2 [ipgui::get_guiparamspec -name "address_mem" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 3 [ipgui::get_guiparamspec -name "ADDR_WIDTH" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 4 [ipgui::get_guiparamspec -name "CONTROL_WIDTH" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 5 [ipgui::get_guiparamspec -name "DATA_WIDTH" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 6 [ipgui::get_guiparamspec -name "DIM_X" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 7 [ipgui::get_guiparamspec -name "DIM_Y" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 8 [ipgui::get_guiparamspec -name "DIM_Z" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 9 [ipgui::get_guiparamspec -name "A4L_addr_width" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 10 [ipgui::get_guiparamspec -name "A4L_data_width" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 11 [ipgui::get_guiparamspec -name "A4L_strb_width" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 12 [ipgui::get_guiparamspec -name "A4F_addr_width" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 13 [ipgui::get_guiparamspec -name "A4F_data_width" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 14 [ipgui::get_guiparamspec -name "A4F_strb_width" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+    ipgui::move_param -component [ipx::current_core] -order 15 [ipgui::get_guiparamspec -name "A4F_id_width" -component [ipx::current_core]] -parent [ipgui::get_pagespec -name "Page 0" -component [ipx::current_core]]
+  }
+  
   proc save_and_exit {} {
     variable arke_dir
     set_property core_revision 1 [ipx::current_core]
@@ -149,22 +168,24 @@ namespace eval BuildPEIfc {
     ipx::unload_core $arke_dir/noc_arke_pe_ifc/component.xml
   }
 
-  proc close_proj {} {
+  proc purge_proj {} {
+    variable arke_dir
     close_project -delete
-    close_project
+    close_project -delete
+    file delete $arke_dir/project_pe_ifc
   }
 
-  proc build {address_width} {
+  proc build {} {
     create_proj
     open_proj
-    package_project
+    package_proj
     open_ip
-    ipx::merge_project_changes hdl_parameters [ipx::current_core]
     set_infos
-    set_user_parameters $address_width
-
-    #ipx::remove_address_block reg0 [ipx::get_memory_maps A4F_AXI -of_objects [ipx::current_core]]
+    add_synthesis_files
+    add_simulation_files
+    set_user_parameters
+    build_gui
     save_and_exit
-    close_proj
+    purge_proj
   }
 }

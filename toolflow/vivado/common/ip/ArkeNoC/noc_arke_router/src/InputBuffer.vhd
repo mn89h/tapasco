@@ -2,6 +2,7 @@
 -- DESIGN UNIT  : InputBuffer                                                       --
 -- DESCRIPTION  :                                                                   --
 -- AUTHOR       : Everton Alceu Carara, Iaçanã Ianiski Weber & Michel Duarte        --
+-- MODIFIED BY  : Malte Nilges                                                      --
 -- CREATED      : Apr 8th, 2015                                                     --
 -- VERSION      : 1.0                                                               --
 -- HISTORY      : Version 0.1 - May 13th, 2015                                      --
@@ -14,6 +15,13 @@ use IEEE.numeric_std.all;
 use work.Arke_pkg.all;
 
 entity InputBuffer is
+    generic(
+        -- Input buffers depth 
+        BUFFER_DEPTH    : integer; -- Buffer depth must be greater than 1 and a power of 2
+        -- Data and control buses 
+        DATA_WIDTH      : integer;
+        CONTROL_WIDTH   : integer
+    );
     port(
         clk             : in std_logic;
         rst             : in std_logic;
@@ -33,6 +41,9 @@ end InputBuffer;
 
 -- This architecture implies a 4 cycles pipeline router due to the register used to store the routingRequest output
 architecture pipeline_4_cycles of InputBuffer is
+
+    -- Buffer to store flits instantiated at port (InputBuffer.vhd)
+    type DataBuff is array(0 to BUFFER_DEPTH-1) of std_logic_vector(DATA_WIDTH-1 downto 0);
 
     type state is (IDLE, WAITING_ACK, TRANSMITTING);
     signal currentState : state;
@@ -147,6 +158,9 @@ end architecture;
 
 -- This architecture implies a 3 cycles pipeline router since the routingRequest output is generates combinatorially
 architecture pipeline_3_cycles of InputBuffer is
+
+    -- Buffer to store flits instantiated at port (InputBuffer.vhd)
+    type DataBuff is array(0 to BUFFER_DEPTH-1) of std_logic_vector(DATA_WIDTH-1 downto 0);
 
     type state is (IDLE, TRANSMITTING);
     signal currentState : state;

@@ -16,9 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
-# @file    axi4mm.tcl
-# @brief  AXI4 memory mapped master/slave interface based Architectures.
+# @file    axi4mm-arkenoc.tcl
+# @brief  Arke NoC w/ AXI4 memory mapped master/slave interface based Architectures.
 # @author  J. Korinth, TU Darmstadt (jk@esa.tu-darmstadt.de)
+# @author  M. Nilges, TU Darmstadt
 #
 namespace eval arch {
   namespace export get_arch_name
@@ -37,34 +38,39 @@ namespace eval arch {
   set arch_pe_routers [list]
   set arch_mem_routers [list]
 
-  variable DIM_X 2
-  variable DIM_Y 2
-  variable DIM_Z 1
-  variable BUFFER_DEPTH 8
-  variable DATA_WIDTH 128
-  variable CONTROL_WIDTH 3
+  variable ADDR_PARAM_WIDTH 12
 
-  variable DIM_X_W 2
-  variable DIM_Y_W 2
-  variable DIM_Z_W 0
-  variable ADDRESS_WIDTH 4
+  variable DIM_X
+  variable DIM_Y
+  variable DIM_Z
+  variable PORTS
+  variable BUFFER_DEPTH
+  variable DATA_WIDTH
+  variable CONTROL_WIDTH
+
+  variable DIM_X_W
+  variable DIM_Y_W
+  variable DIM_Z_W
+  variable ADDRESS_WIDTH
 
   variable A4L_ADDR_W 32
   variable A4L_DATA_W 32
+  variable A4L_STRB_W 4
   variable A4F_ADDR_W 32
   variable A4F_DATA_W 32
+  variable A4F_STRB_W 4
   variable A4F_ID_W 0
 
 
 
   proc dec2bin i {
-      set res {} 
-      while {$i>0} {
-          set res [expr {$i%2}]$res
-          set i [expr {$i/2}]
-      }
-      if {$res == {}} {set res 0}
-      return $res
+    set res {}
+    while {$i>0} {
+        set res [expr {$i%2}]$res
+        set i [expr {$i/2}]
+    }
+    if {$res == {}} {set res 0}
+    return $res
   }
   proc splitline {string countChar} {
     set rc [llength [split $string $countChar]]
@@ -72,14 +78,26 @@ namespace eval arch {
     return $rc
   }
 
+  proc findmax { items } {
+    set max 0
+    foreach i $items {
+      foreach j $i {
+        if { $j > $max } {
+          set max $j
+        }
+      }
+    }
+    return $max
+  }
+
   # scan plugin directory
-  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME_TCL)/arch/axi4mm/plugins" "*.tcl"] {
+  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME_TCL)/arch/axi4mm-arkenoc/plugins" "*.tcl"] {
     source -notrace $f
   }
 
   # Return arch name
   proc get_arch_name {} {
-    return "axi4mm-noc"
+    return "axi4mm-arkenoc"
   }
 
   # Returns a list of the bd_cells of slave interfaces of the threadpool.
@@ -170,88 +188,49 @@ namespace eval arch {
   }
 
 
+  proc get_master_interface_count {composition outs} {
+    set no_kinds [llength [dict keys $composition]]
+    set ic_m 0
+    set m_total 0
+    set mirlist [list]
 
+    # determine number of masters from composition
+    for {set i 0} {$i < $no_kinds} {incr i} {
+      set no_inst [dict get $composition $i count]
+      set example [get_bd_cells [format "target_ip_%02d_000" $i]]
+      set masters [tapasco::get_aximm_interfaces $example]
+      puts $masters
+      set masters [expr [llength $masters] >= 1 ? 1 : 0]
+      set ic_m [expr "$ic_m + [llength $masters] * $no_inst"]
 
-
-
-  # Instantiates the host interconnect hierarchy.
-  proc arch_create_arke_noc_arch_interface {composition {no_slaves 1}} {
-    variable DIM_X
-    variable DIM_Y
-    variable DIM_Z
-
-    variable DIM_X_W 
-    variable DIM_Y_W 
-    variable DIM_Z_W
-    variable DATA_WIDTH
-
-
-    set out_port [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_ARCH"]
-    
-    ##TODO: pass parameters
-    set ai [tapasco::ip::create_noc_arke_arch_ifc [format "arke_noc_arch_ifc"]]
-    connect_bd_intf_net $out_port [get_bd_intf_pins -of_objects $ai -filter {NAME == "AXI"}]
-
-    set x 0
-    set y 0
-    set z 0
-    set xyz ""
-    append xyz [format {%0*s} $DIM_X_W [dec2bin $x]]
-    append xyz [format {%0*s} $DIM_Y_W [dec2bin $y]]
-    if {$DIM_Z_W != 0} {append xyz [format {%0*s} $DIM_Z_W [dec2bin $z]]}
-    set xyz 0b[format {%0*s} $DATA_WIDTH $xyz]
-    set r [tapasco::ip::create_noc_arke_router "arke_noc_router_$x\_$y\_$z" $xyz]
-
-    connect_bd_net [get_bd_pins -filter {NAME == "dataIn"} -of_objects $ai] \
-                   [get_bd_pins -filter {NAME == "data_out_local"} -of_objects $r]
-    connect_bd_net [get_bd_pins -filter {NAME == "controlIn"} -of_objects $ai] \
-                   [get_bd_pins -filter {NAME == "control_out_local"} -of_objects $r]
-    connect_bd_net [get_bd_pins -filter {NAME == "dataOut"} -of_objects $ai] \
-                   [get_bd_pins -filter {NAME == "data_in_local"} -of_objects $r]
-    connect_bd_net [get_bd_pins -filter {NAME == "controlOut"} -of_objects $ai] \
-                   [get_bd_pins -filter {NAME == "control_in_local"} -of_objects $r]
-
-    set airlist [list [list $x $y $z]]
-    
-    return $airlist
-  }
-
-  proc findmax { items } {
-    set max 0
-    foreach i $items { 
-      foreach j $i {
-        if { $j > $max } {
-          set max $j
-        }
-      }
+      set m_total [expr "$m_total + [llength $masters] * $no_inst"]
     }
-    return $max
+    puts "  Found a total of $m_total PEs with one or more masters in composition."
+    set no_masters $m_total
+    puts "  no_masters : $no_masters"
+
+    # compare composition masters with memory interfaces
+    set no_mis [expr {[llength $outs] <= $no_masters ? [llength $outs] : $no_masters}]
+
+    return $no_mis
   }
 
-  # Instantiates the pe interconnect hierarchy.
-  proc arch_create_arke_noc_pe_interfaces {composition insts routerlist} {
-    variable DIM_X
-    variable DIM_Y
-    variable DIM_Z
-
-    variable DIM_X_W 
-    variable DIM_Y_W 
-    variable DIM_Z_W
-    variable DATA_WIDTH
-
+  # Write AXI parameters for NoC components based on given kernels
+  proc write_axi_parameters {insts} {
     variable A4L_ADDR_W
     variable A4L_DATA_W
     variable A4L_STRB_W
     variable A4F_ADDR_W
     variable A4F_DATA_W
+    variable A4F_STRB_W
     variable A4F_ID_W
-    
-    set no_pes [llength $insts]
-    set no_kinds [llength [dict keys $composition]]
-    set perlist [list]
+
+    lappend a4l_addr_ws $A4L_ADDR_W
+    lappend a4l_data_ws $A4L_DATA_W
+    lappend a4f_addr_ws $A4F_ADDR_W
+    lappend a4f_data_ws $A4F_DATA_W
 
     ## get all address widths
-
     foreach pe $insts {
       set intpe $pe
       if {[get_bd_cells -filter {Name=~"internal*"} -of_objects $pe] != ""} {
@@ -270,11 +249,185 @@ namespace eval arch {
     set A4L_STRB_W [expr $A4L_DATA_W / 8]
     set A4F_ADDR_W [findmax $a4f_addr_ws]
     set A4F_DATA_W [findmax $a4f_data_ws]
-    set A4F_ID_W [findmax $a4f_id_ws]
     set A4F_STRB_W [expr $A4F_DATA_W / 8]
+    set A4F_ID_W [findmax $a4f_id_ws]
+  }
 
-    #set A4F_ID_W 4
-          
+  # Write NoC parameters based on users configuration or default values
+  proc write_noc_parameters {no_pes no_mis} {
+    variable DIM_X
+    variable DIM_Y
+    variable DIM_Z
+    variable PORTS
+    variable BUFFER_DEPTH
+    variable DATA_WIDTH
+    variable CONTROL_WIDTH
+
+    variable DIM_X_W
+    variable DIM_Y_W
+    variable DIM_Z_W
+    variable ADDRESS_WIDTH
+
+    variable A4F_ADDR_W
+    variable A4F_DATA_W
+    variable A4F_STRB_W
+    variable A4F_ID_W
+
+    # determine default dimensions
+    set no_routers [expr 1 + $no_pes + $no_mis]
+    set x_def 2
+    set y_def 2
+    set s 0
+    while {[expr $x_def * $y_def] < $no_routers} {
+      if {$s} {
+        incr x_def
+        set s 0
+      } {
+        incr y_def
+        set s 1
+      }
+    }
+    set PORTS 5
+    set x_def_w [expr {int(ceil(log($x_def)/log(2.0)))}]
+    set y_def_w [expr {int(ceil(log($y_def)/log(2.0)))}]
+    set addr_w_def [expr {$x_def_w + $y_def_w}]
+    puts "Default Network Configuration:"
+    puts "  Dimensions: X=$x_def, Y=$y_def, Z=1"
+    puts "  Address Width: $addr_w_def"
+
+    # determine default data width
+    set default_dw [expr 3 + $addr_w_def] ;# data_width reserved for protocol and channel spec and addressing bits
+    lappend dws [expr $A4F_ADDR_W + $A4F_ID_W + $addr_w_def + 25]
+    lappend dws [expr $A4F_DATA_W + $A4F_STRB_W + 1]
+    lappend dws [expr $A4F_DATA_W + $A4F_ID_W + $addr_w_def + 1]
+    incr default_dw [findmax $dws]
+    puts "  Data Width: $default_dw"
+    puts "  Control Width: 3"
+    puts "  Buffer Depth: 4"
+
+    # set dimensions
+    set DIM_X [tapasco::get_feature_option "arke_cfg" "x" $x_def]
+    set DIM_Y [tapasco::get_feature_option "arke_cfg" "y" $y_def]
+    set DIM_Z [tapasco::get_feature_option "arke_cfg" "z" 1]
+    if {$DIM_Z > 1} {
+      set PORTS 7
+    }
+    set DIM_X_W [expr {int(ceil(log($DIM_X)/log(2.0)))}]
+    set DIM_Y_W [expr {int(ceil(log($DIM_Y)/log(2.0)))}]
+    set DIM_Z_W [expr {int(ceil(log($DIM_Z)/log(2.0)))}]
+    set ADDRESS_WIDTH [expr {$DIM_X_W + $DIM_Y_W + $DIM_Z_W}]
+    puts "Actual Network Configuration:"
+    puts "  Dimensions: X=$DIM_X, Y=$DIM_Y, Z=$DIM_Z"
+    puts "  Address Width: $ADDRESS_WIDTH"
+
+    # set widths
+    set BUFFER_DEPTH [tapasco::get_feature_option "arke_cfg" "buffer_depth" 4]
+    set DATA_WIDTH [tapasco::get_feature_option "arke_cfg" "data_width" $default_dw]
+    set CONTROL_WIDTH 3
+    puts "  Data Width: $DATA_WIDTH"
+    puts "  Control Width: $CONTROL_WIDTH"
+    puts "  Buffer Depth: $BUFFER_DEPTH"
+
+    # feasibility checks
+    if {$DATA_WIDTH < $default_dw} {
+      puts "ERROR: Configured Data Width is smaller than the minimum required. Minimum: $default_dw, Configured: $DATA_WIDTH."
+      puts "Resolve by adjusting the Data Width in order to fit the largest AXI packages plus the width of the internal signals (dependant on the Address Width)."
+      exit 1
+    }
+
+    if {[expr $DIM_X * $DIM_Y * $DIM_Z] < $no_routers} {
+      puts "ERROR: Configured Data Width is smaller than the minimum required. Minimum: $no_routers, Configured: [expr $DIM_X * $DIM_Y * $DIM_Z]."
+      puts "Resolve by adjusting the Dimensions of the network (don't forget to include additional margin for arch (1) and memory ($no_mis) interfaces)."
+      exit 1
+    }
+  }
+
+  # Instantiates the Arch Interface along with its router
+  proc arch_create_arke_noc_arch_interface {composition {no_slaves 1}} {
+    variable DIM_X
+    variable DIM_Y
+    variable DIM_Z
+    variable PORTS
+    variable BUFFER_DEPTH
+    variable DATA_WIDTH
+    variable CONTROL_WIDTH
+
+    variable DIM_X_W
+    variable DIM_Y_W
+    variable DIM_Z_W
+    variable ADDRESS_WIDTH
+
+    variable ADDR_PARAM_WIDTH
+
+    variable A4L_ADDR_W
+    variable A4L_DATA_W
+    variable A4L_STRB_W
+
+    ## create arch ifc and router
+    puts "Creating Arch Interface and Router."
+    ## create hierarchy interface
+    set out_port [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_ARCH"]
+
+    set x 0
+    set y 0
+    set z 0
+    set xyz ""
+    append xyz [format {%0*s} $DIM_X_W [dec2bin $x]]
+    append xyz [format {%0*s} $DIM_Y_W [dec2bin $y]]
+    if {$DIM_Z_W != 0} {append xyz [format {%0*s} $DIM_Z_W [dec2bin $z]]}
+    set xyz 0b[format {%0*s} $ADDR_PARAM_WIDTH $xyz]
+
+    ## create arch ifc
+    set ai [tapasco::ip::create_noc_arke_arch_ifc [format "arke_noc_arch_ifc"] $xyz $DIM_X $DIM_Y $DIM_Z $ADDRESS_WIDTH $DATA_WIDTH $CONTROL_WIDTH $A4L_ADDR_W $A4L_DATA_W $A4L_STRB_W]
+    connect_bd_intf_net $out_port [get_bd_intf_pins -of_objects $ai -filter {NAME == "AXI"}]
+
+    ## create router
+    set r [tapasco::ip::create_noc_arke_router "arke_noc_router_$x\_$y\_$z" $xyz $DIM_X $DIM_Y $DIM_Z $PORTS $BUFFER_DEPTH $DATA_WIDTH $CONTROL_WIDTH]
+
+    ## connect arch ifc to router
+    connect_bd_net [get_bd_pins -filter {NAME == "dataIn"} -of_objects $ai] \
+                   [get_bd_pins -filter {NAME == "data_out_local"} -of_objects $r]
+    connect_bd_net [get_bd_pins -filter {NAME == "controlIn"} -of_objects $ai] \
+                   [get_bd_pins -filter {NAME == "control_out_local"} -of_objects $r]
+    connect_bd_net [get_bd_pins -filter {NAME == "dataOut"} -of_objects $ai] \
+                   [get_bd_pins -filter {NAME == "data_in_local"} -of_objects $r]
+    connect_bd_net [get_bd_pins -filter {NAME == "controlOut"} -of_objects $ai] \
+                   [get_bd_pins -filter {NAME == "control_in_local"} -of_objects $r]
+
+    set airlist [list [list $x $y $z]]
+
+    return $airlist
+  }
+
+  # Instantiates the PE Interfaces along with their routers
+  proc arch_create_arke_noc_pe_interfaces {composition insts routerlist} {
+    variable DIM_X
+    variable DIM_Y
+    variable DIM_Z
+    variable PORTS
+    variable BUFFER_DEPTH
+    variable DATA_WIDTH
+    variable CONTROL_WIDTH
+
+    variable DIM_X_W
+    variable DIM_Y_W
+    variable DIM_Z_W
+    variable ADDRESS_WIDTH
+
+    variable ADDR_PARAM_WIDTH
+
+    variable A4L_ADDR_W
+    variable A4L_DATA_W
+    variable A4L_STRB_W
+    variable A4F_ADDR_W
+    variable A4F_DATA_W
+    variable A4F_STRB_W
+    variable A4F_ID_W
+
+    set no_pes [llength $insts]
+    set no_kinds [llength [dict keys $composition]]
+    set perlist [list]
+
     ## create pe ifcs, interconnects and router
     puts "Creating $no_pes PE Interfaces and Routers."
     set ik 0
@@ -297,9 +450,15 @@ namespace eval arch {
             append xyz [format {%0*s} $DIM_X_W [dec2bin $x]]
             append xyz [format {%0*s} $DIM_Y_W [dec2bin $y]]
             if {$DIM_Z_W != 0} {append xyz [format {%0*s} $DIM_Z_W [dec2bin $z]]}
+            set xyz 0b[format {%0*s} $ADDR_PARAM_WIDTH $xyz]
+
+            ## create container
+            set c [tapasco::subsystem::create [current_bd_instance .]/[format "container_%02d_%03d" $ik $ii]]
+            move_bd_cells $c $pe
+            current_bd_instance $c
 
             ## create pe ifc
-            set pi [tapasco::ip::create_noc_arke_pe_ifc [format "arke_noc_pe_ifc_%02d_%03d" $ik $ii] 32 $A4L_DATA_W $A4L_STRB_W $A4F_ADDR_W $A4F_DATA_W $A4F_ID_W $A4F_STRB_W $xyz]
+            set pi [tapasco::ip::create_noc_arke_pe_ifc [format "arke_noc_pe_ifc_%02d_%03d" $ik $ii] $xyz $DIM_X $DIM_Y $DIM_Z $ADDRESS_WIDTH $DATA_WIDTH $CONTROL_WIDTH $A4L_ADDR_W $A4L_DATA_W $A4L_STRB_W $A4F_ADDR_W $A4F_DATA_W $A4F_ID_W $A4F_STRB_W]
 
             ## create and configure pe slaves interconnect
             set pepins [get_bd_intf_pins -filter {MODE == Slave && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $pe]
@@ -309,16 +468,13 @@ namespace eval arch {
             # connect pe to ic
             set icpins [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $ic]
             set i 0
-            save_bd_design
             foreach icpin $icpins {
               connect_bd_intf_net $icpin [lindex $pepins $i]
               incr i
             }
-            save_bd_design
             # connect ic to pe ifc
             connect_bd_intf_net [get_bd_intf_pins -filter {MODE == Slave && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $ic] \
                                 [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $pi]
-            save_bd_design
 
             ## create and configure pe masters interconnect
             set pepins [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $pe]
@@ -335,11 +491,14 @@ namespace eval arch {
             # connect ic to pe ifc
             connect_bd_intf_net [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $ic] \
                                 [get_bd_intf_pins -filter {MODE == Slave && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $pi]
-            
+
+            ## connect clk and rst to container pins
+            arch_connect_clocks
+            arch_connect_resets
+            current_bd_instance ..
 
             ## connect pe ifc to router
-            set xyz 0b[format {%0*s} $DATA_WIDTH $xyz]
-            set r [tapasco::ip::create_noc_arke_router "arke_noc_router_$x\_$y\_$z" $xyz]
+            set r [tapasco::ip::create_noc_arke_router "arke_noc_router_$x\_$y\_$z" $xyz $DIM_X $DIM_Y $DIM_Z $PORTS $BUFFER_DEPTH $DATA_WIDTH $CONTROL_WIDTH]
             lappend perlist [list $x $y $z]
 
             connect_bd_net [get_bd_pins -filter {NAME == "dataIn"} -of_objects $pi] \
@@ -369,42 +528,33 @@ namespace eval arch {
     }
     return $perlist
   }
-  
 
-  # Instantiates the memory interconnect hierarchy.
-  proc arch_create_arke_noc_mem_interfaces {composition outs routerlist} {
+  # Instantiates the Memory Interfaces along with their routers
+  proc arch_create_arke_noc_mem_interfaces {no_mis routerlist} {
     variable arch_mem_ports
-    
+
     variable DIM_X
     variable DIM_Y
     variable DIM_Z
-
-    variable DIM_X_W 
-    variable DIM_Y_W 
-    variable DIM_Z_W
+    variable PORTS
+    variable BUFFER_DEPTH
     variable DATA_WIDTH
-    
-    set no_kinds [llength [dict keys $composition]]
-    set ic_m 0
-    set m_total 0
+    variable CONTROL_WIDTH
+
+    variable DIM_X_W
+    variable DIM_Y_W
+    variable DIM_Z_W
+    variable ADDRESS_WIDTH
+
+    variable ADDR_PARAM_WIDTH
+
+    variable A4F_ADDR_W
+    variable A4F_DATA_W
+    variable A4F_STRB_W
+    variable A4F_ID_W
+
     set mirlist [list]
 
-    # determine number of masters from composition
-    for {set i 0} {$i < $no_kinds} {incr i} {
-      set no_inst [dict get $composition $i count]
-      set example [get_bd_cells [format "target_ip_%02d_000" $i]]
-      set masters [tapasco::get_aximm_interfaces $example]
-      set ic_m [expr "$ic_m + [llength $masters] * $no_inst"]
-
-      set m_total [expr "$m_total + [llength $masters] * $no_inst"]
-    }
-    puts "  Found a total of $m_total masters in composition."
-    set no_masters $m_total
-    puts "  no_masters : $no_masters"
-
-    # compare composition masters with memory interfaces
-    set no_mis [expr {[llength $outs] <= $no_masters ? [llength $outs] : $no_masters}]
-    
     puts "Creating $no_mis Mem Interfaces and Routers."
     # create ports and interconnect trees together with arke_noc_mem_ifcs and their routers
     set ic_ports [list]
@@ -416,8 +566,6 @@ namespace eval arch {
     for {set z 0} {$z < $DIM_Z} {incr z} {
       for {set y 0} {$y < $DIM_Y} {incr y} {
         for {set x 0} {$x < $DIM_X} {incr x} {
-          puts "PE ROUTERLIST:"
-          puts [lindex $routerlist end]
           if {[lindex $routerlist end 0] == $x && [lindex $routerlist end 1] == $y && [lindex $routerlist end 2] == $z} {
             set start 1
             continue
@@ -426,18 +574,18 @@ namespace eval arch {
             lappend ic_ports [create_bd_intf_pin -mode Master -vlnv "xilinx.com:interface:aximm_rtl:1.0" [format "M_MEM_%d" $mii]]
             lappend mdist 1 ;# MemIfc count for every ic_port is initialized to 1
 
-            
+
             set xyz ""
             append xyz [format {%0*s} $DIM_X_W [dec2bin $x]]
             append xyz [format {%0*s} $DIM_Y_W [dec2bin $y]]
             if {$DIM_Z_W != 0} {append xyz [format {%0*s} $DIM_Z_W [dec2bin $z]]}
+            set xyz 0b[format {%0*s} $ADDR_PARAM_WIDTH $xyz]
 
-            set mi [tapasco::ip::create_noc_arke_mem_ifc [format "arke_noc_mem_ifc_%d" $mii] $xyz]
+            set mi [tapasco::ip::create_noc_arke_mem_ifc [format "arke_noc_mem_ifc_%d" $mii] $xyz $DIM_X $DIM_Y $DIM_Z $ADDRESS_WIDTH $DATA_WIDTH $CONTROL_WIDTH $A4F_ADDR_W $A4F_DATA_W $A4F_ID_W $A4F_STRB_W]
             lappend mis $mi
             puts $mi
-            
-            set xyz 0b[format {%0*s} $DATA_WIDTH $xyz]
-            set r [tapasco::ip::create_noc_arke_router "arke_noc_router_$x\_$y\_$z" $xyz]
+
+            set r [tapasco::ip::create_noc_arke_router "arke_noc_router_$x\_$y\_$z" $xyz $DIM_X $DIM_Y $DIM_Z $PORTS $BUFFER_DEPTH $DATA_WIDTH $CONTROL_WIDTH]
             lappend mirlist [list $x $y $z]
 
             connect_bd_net [get_bd_pins -filter {NAME == "dataIn"} -of_objects $mi] \
@@ -450,7 +598,7 @@ namespace eval arch {
                            [get_bd_pins -filter {NAME == "control_in_local"} -of_objects $r]
 
             incr mii
-            if {$mii == [llength $outs] || $mii == $no_masters} {
+            if {$mii == $no_mis} {
               set done 1
               break
             }
@@ -470,24 +618,28 @@ namespace eval arch {
     }
 
     set arch_mem_ports $ic_ports
-    
+
     return $mirlist
   }
 
+  # Connects the routers of the network and creates adjunct routers if needed.
   proc arch_connect_routers {routerlist} {
-
     variable DIM_X
     variable DIM_Y
     variable DIM_Z
-
-    variable DIM_X_W 
-    variable DIM_Y_W 
-    variable DIM_Z_W
+    variable PORTS
+    variable BUFFER_DEPTH
     variable DATA_WIDTH
+    variable CONTROL_WIDTH
+
+    variable DIM_X_W
+    variable DIM_Y_W
+    variable DIM_Z_W
+    variable ADDR_PARAM_WIDTH
 
     set rlist routerlist
 
-    # create adjunct routers for proper routing
+    ## Create adjunct routers for proper routing.
     set done 0
     set start 0
 
@@ -508,8 +660,8 @@ namespace eval arch {
 
 
             puts "Creating adjunct Router $x $y $z."
-            set xyz 0b[format {%0*s} $DATA_WIDTH $xyz]
-            set r [tapasco::ip::create_noc_arke_router "arke_noc_router_$x\_$y\_$z" $xyz]
+            set xyz 0b[format {%0*s} $ADDR_PARAM_WIDTH $xyz]
+            set r [tapasco::ip::create_noc_arke_router "arke_noc_router_$x\_$y\_$z" $xyz $DIM_X $DIM_Y $DIM_Z $PORTS $BUFFER_DEPTH $DATA_WIDTH $CONTROL_WIDTH]
             lappend rlist [list $x $y $z]
 
             puts "  removing local ports"
@@ -520,12 +672,12 @@ namespace eval arch {
       if {$done} {break}
     }
 
-    # configure and connect all routers
+    ## Configure and connect all routers.
     set done 0
     for {set z 0} {$z < $DIM_Z} {incr z} {
       for {set y 0} {$y < $DIM_Y} {incr y} {
         for {set x 0} {$x < $DIM_X} {incr x} {
-          
+
           puts "Connecting and configuring Router $x $y $z."
 
           set r /arch/arke_noc_router_$x\_$y\_$z
@@ -589,7 +741,7 @@ namespace eval arch {
             puts "  removing down ports"
             set_property -dict [list CONFIG.use_data_in_down {false} CONFIG.use_control_in_down {false} CONFIG.use_data_out_down {false} CONFIG.use_control_out_down {false}] [get_bd_cells $r]
           }
-          
+
           # break after last router
           if {[lindex $rlist end 0] == $x && [lindex $rlist end 1] == $y && [lindex $rlist end 2] == $z} {
             set done 1
@@ -602,34 +754,21 @@ namespace eval arch {
     }
   }
 
-
-
-  proc hex2bin {hex} {
-    binary scan [binary format H* $hex] B* bin
-    return $bin
-  }
-
+  # Set AXI address map parameters for Arch Ifc and Memory Ifc parameter for PE Ifc.
   proc arch_set_noc_parameters {perlist} {
-    variable DIM_X_W 
-    variable DIM_Y_W 
+    variable DIM_X_W
+    variable DIM_Y_W
     variable DIM_Z_W
-    
-    variable A4L_ADDR_W
-    variable A4L_DATA_W
-    variable A4L_STRB_W
-    variable A4F_ADDR_W
-    variable A4F_DATA_W
-    variable A4F_ID_W
-    
-    
+
+    ## Setup ArchIfc
     set ais [get_bd_cells -filter {VLNV == "esa.informatik.tu-darmstadt.de:user:arke_noc_arch_ifc:1.0"}]
-    set pis [get_bd_cells -filter {VLNV == "esa.informatik.tu-darmstadt.de:user:arke_noc_pe_ifc:1.0"}]
+    set pis [get_bd_cells -of_objects [get_bd_cells container*] -filter {VLNV == "esa.informatik.tu-darmstadt.de:user:arke_noc_pe_ifc:1.0"}]
     set mis [get_bd_cells -filter {VLNV == "esa.informatik.tu-darmstadt.de:user:arke_noc_mem_ifc:1.0"}]
     set pes [get_processing_elements]
     set pe_map [get_address_map [::platform::get_pe_base_address]]
-    set rveclength 800
+    set rveclength 1000
 
-    # Setup ArchIfc
+    ## Get AXI offsets and ranges
     dict for {pe data} $pe_map {
       lappend interfaces_t [get_bd_cells -of_objects [get_bd_intf_pins [dict get $data "interface"]]]
       lappend offsets_t [dict get $data "offset"]
@@ -637,6 +776,7 @@ namespace eval arch {
     }
     set range_no [llength $ranges_t]
 
+    ## Build rangelist and targetlist
     set targetlist ""
     set rangelist ""
     set ri 0
@@ -653,7 +793,7 @@ namespace eval arch {
 
 
       # append interfaces corresponding pe address to targetlist
-      set x [lindex $perlist $ri 0] 
+      set x [lindex $perlist $ri 0]
       set y [lindex $perlist $ri 1]
       set z [lindex $perlist $ri 2]
 
@@ -664,6 +804,7 @@ namespace eval arch {
 
       append targetlist $xyz
 
+      # increase router index only if next interface is from a different PE
       if {[lindex $interfaces_t $i] != [lindex $interfaces_t [expr $i + 1]]} {
         incr ri
       }
@@ -673,221 +814,24 @@ namespace eval arch {
     set rangelist 0b[format %-0*s $rveclength $rangelist]
     set targetlist 0b[format %-0*s $rveclength $targetlist]
 
+    ## Write parameters including rangelist and targetlist
     foreach ai $ais {
-      set_property -dict [list CONFIG.A4L_addr_width 32 \
-                               CONFIG.A4L_data_width $A4L_DATA_W \
-                               CONFIG.A4L_strb_width $A4L_STRB_W \
-                               CONFIG.AXI_base_addr $base_address \
+      set_property -dict [list CONFIG.AXI_base_addr $base_address \
                                CONFIG.AXI_ranges $rangelist \
                                CONFIG.AXI_ranges_cnt $range_no \
                                CONFIG.NoC_targets $targetlist] $ai
     }
 
-    # Setup PEIfc
+    ## Setup PEIfc
     set i 0
     foreach pi $pis {
-      set mi [lindex $mis $i]
-      set mia [get_property CONFIG.NoC_address $mi]
+      set mia [get_property CONFIG.address [lindex $mis $i]]
 
-      set_property -dict [list CONFIG.NoC_address_mem $mia] $pi
+      set_property -dict [list CONFIG.address_mem $mia] $pi
       incr i
       if {$i == [llength $mis]} {
         set i 0
       }
-    }
-
-    # Setup MemIfc
-    foreach mi $mis {
-      set_property -dict [list CONFIG.A4F_addr_width $A4F_ADDR_W \
-                               CONFIG.A4F_data_width $A4F_DATA_W \
-                               CONFIG.A4F_id_width $A4F_ID_W \
-                               CONFIG.A4F_strb_width [expr {$A4F_DATA_W / 8}] \
-                               CONFIG.NoC_address_width [expr {$DIM_X_W + $DIM_Y_W + $DIM_Z_W}]] $mi
-    }
-  }
-
-
-
-
-
-
-
-
-
-
-  # Instantiates the memory interconnect hierarchy.
-  proc arch_create_mem_interconnects {composition outs} {
-    variable arch_mem_ports
-    set no_kinds [llength [dict keys $composition]]
-    set ic_m 0
-    set m_total 0
-
-    # determine number of masters from composition
-    for {set i 0} {$i < $no_kinds} {incr i} {
-      set no_inst [dict get $composition $i count]
-      set example [get_bd_cells [format "target_ip_%02d_000" $i]]
-      set masters [tapasco::get_aximm_interfaces $example]
-      set ic_m [expr "$ic_m + [llength $masters] * $no_inst"]
-
-      set m_total [expr "$m_total + [llength $masters] * $no_inst"]
-    }
-
-    puts "  Found a total of $m_total masters."
-    set no_masters $m_total
-    puts "  no_masters : $no_masters"
-
-    # check if all masters can be connected with the outs config
-    set total_ports [expr [join $outs +]]
-    if {$total_ports < $no_masters} {
-      error "  ERROR: can only connect up to $total_ports masters"
-    } {
-      puts "  total available ports: $total_ports"
-    }
-
-    # create ports and interconnect trees
-    set ic_ports [list]
-    set mdist [list]
-    for {set i 0} {$i < [llength $outs] && $i < $no_masters} {incr i} {
-      lappend ic_ports [create_bd_intf_pin -mode Master -vlnv "xilinx.com:interface:aximm_rtl:1.0" [format "M_MEM_%d" $i]]
-      lappend mdist 0
-    }
-
-    # distribute masters round-robin on all output ports: mdist holds
-    # number of masters for each port
-    set j 0
-    for {set i 0} {$i < $no_masters} {incr i} {
-      lset mdist $j [expr "[lindex $mdist $j] + 1"]
-      incr j
-      if {$j >= [llength $mdist]} { set j 0 }
-      if {$i + 1 < $no_masters} {
-        # find new port with capacity
-        while {[lindex $mdist $j] == [lindex $outs $j]} {
-          incr j
-          if {$j >= [llength $mdist]} { set j 0 }
-        }
-      }
-    }
-
-    # generate output trees
-    for {set i 0} {$i < [llength $mdist]} {incr i} {
-      puts "  mdist[$i] = [lindex $mdist $i]"
-      set out [tapasco::create_interconnect_tree "out_$i" [lindex $mdist $i]]
-      connect_bd_intf_net [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $out] [lindex $ic_ports $i]
-    }
-
-    set arch_mem_ports $ic_ports
-  }
-
-  # Instantiates the host interconnect hierarchy.
-  proc arch_create_host_interconnects {composition {no_slaves 1}} {
-    set no_kinds [llength [dict keys $composition]]
-    set ic_s 0
-
-    # compute number of pe slaves
-    for {set i 0} {$i < $no_kinds} {incr i} {
-      set no_inst [dict get $composition $i count]
-      set example [get_bd_cells [format "target_ip_%02d_000" $i]]
-      set slaves  [get_bd_intf_pins -of $example -filter { MODE == "Slave" && VLNV == "xilinx.com:interface:aximm_rtl:1.0" }]
-      set ic_s [expr "$ic_s + [llength $slaves] * $no_inst"]
-    }
-
-    set out_port [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_ARCH"]
-
-    if {$ic_s == 1} {
-      puts "Connecting one slave to host"
-      return $out_port
-    } {
-      set in1 [tapasco::create_interconnect_tree "in1" $ic_s false]
-
-      puts "Creating interconnects toward peripherals ..."
-      puts "  $ic_s slaves to connect to host"
-
-      connect_bd_intf_net $out_port [get_bd_intf_pins -of_objects $in1 -filter {NAME == "S000_AXI"}]
-    }
-
-    return $in1
-  }
-
-  # Connects the host interconnects to the threadpool.
-  proc arch_connect_host {periph_ics ips} {
-    puts "Connecting PS to peripherals ..."
-    puts "  periph_ics = $periph_ics"
-    puts "  ips = $ips"
-
-    set pic 0
-    set ic [lindex $periph_ics $pic]
-    set conn 0
-
-    set ms [get_bd_intf_pins -of_objects $periph_ics -filter {MODE == "Master" && VLNV == "xilinx.com:interface:aximm_rtl:1.0"}]
-    if {[llength $ms] == 0 && [get_property CLASS $periph_ics] == "bd_intf_pin"} {
-      set ms $periph_ics
-    }
-    set ss [get_bd_intf_pins -of_objects $ips -filter {MODE == "Slave" && VLNV == "xilinx.com:interface:aximm_rtl:1.0"}]
-
-    puts "  ms = $ms"
-    puts "  ss = $ss"
-
-    if {[llength $ms] != [llength $ss]} {
-      error "master slave count mismatch ([llength $ms]/[llength $ss])"
-    }
-
-    for {set i 0} {$i < [llength $ms]} {incr i} {
-      connect_bd_intf_net [lindex $ms $i] [lindex $ss $i]
-    }
-    return
-
-    foreach ip $ips {
-      # connect target IP slaves
-      set slaves [get_bd_intf_pins -of $ip -filter { MODE == "Slave" && VLNV == "xilinx.com:interface:aximm_rtl:1.0"}]
-      foreach slave $slaves {
-        set m_name [format "axi_periph_ic_$pic/M%02d_AXI" $conn]
-        connect_bd_intf_net [get_bd_intf_pins $m_name] -boundary_type upper $slave
-        incr conn
-      }
-      if {$conn == 16} { incr pic; set ic [lindex $periph_ics $pic]; set conn 0 }
-    }
-  }
-
-  # Connects the threadpool to memory interconnects.
-  proc arch_connect_mem {mem_ics ips} {
-    # get PE masters
-    set masters [lsort -dictionary [tapasco::get_aximm_interfaces $ips]]
-    # interleave slaves of out ic trees
-    set outs [get_bd_cells -filter {NAME =~ "out_*"}]
-    set sc [llength [tapasco::get_aximm_interfaces $outs "Slave"]]
-    set tmp [list]
-    foreach out $outs { lappend tmp [tapasco::get_aximm_interfaces $out "Slave"] }
-    set outs $tmp
-    set slaves [list]
-    set j 0
-    for {set i 0} {$i < $sc} {incr i} {
-      # skip outs without slaves
-      while {[llength [lindex $outs $j]] == 0} {
-        incr j
-        set j [expr "$j % [llength $outs]"]
-      }
-      # remove slave from current out
-      set slave [lindex [lindex $outs $j] end]
-      set outs [lreplace $outs $j $j [lreplace [lindex $outs $j] end end]]
-      lappend slaves $slave
-      # next out
-      incr j
-      set j [expr "$j % [llength $outs]"]
-    }
-
-    puts "Connecting memory interconnect topology ... "
-    puts "  Number of masters: [llength $masters]"
-    puts "  Masters in order : $masters"
-    puts "  Number of slaves: [llength $slaves]"
-    puts "  Slaves in order : $slaves"
-
-    if {[llength $masters] != [llength $slaves]} {
-      error "  ERROR: Mismatch between #slaves and #masters - probably a BUG"
-    }
-
-    # simply connect masters to output slaves
-    for {set i 0} {$i < [llength $masters]} {incr i} {
-      connect_bd_intf_net [lindex $masters $i] [lindex $slaves $i]
     }
   }
 
@@ -968,27 +912,20 @@ namespace eval arch {
     connect_bd_net -quiet [tapasco::subsystem::get_port "design" "rst" "interconnect"] \
       [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == rst && NAME =~ *interconnect_aresetn && DIR == I"] \
       [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == rst && NAME =~ ARESETN && DIR == I"]
-    save_bd_design
-    connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
+    connect_bd_net -quiet [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
       [get_bd_pins -of_objects [get_bd_cells -of_objects [current_bd_instance .]] -filter "TYPE == rst && NAME =~ *peripheral_aresetn && DIR == I"] \
       [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == rst && NAME =~ *_ARESETN && DIR == I"] \
       [get_bd_pins -filter { TYPE == rst && DIR == I && CONFIG.POLARITY != ACTIVE_HIGH } -of_objects [get_bd_cells -filter {NAME =~ "target_ip*"}]]
-    save_bd_design
-    connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "reset"] \
+    connect_bd_net -quiet [tapasco::subsystem::get_port "design" "rst" "peripheral" "reset"] \
       [get_bd_pins -of_objects [get_bd_cells -of_objects [current_bd_instance .]] -filter "TYPE == rst && NAME =~ rst && DIR == I"]
     set active_high_resets [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == rst && DIR == I && CONFIG.POLARITY == ACTIVE_HIGH"]
-    save_bd_design
     if {[llength $active_high_resets] > 0} {
-      connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "reset"] $active_high_resets
+      connect_bd_net -quiet [tapasco::subsystem::get_port "design" "rst" "peripheral" "reset"] $active_high_resets
     }
   }
 
   # Instantiates the architecture.
   proc create {{mgroups 0}} {
-    variable arch_mem_ics
-    variable arch_host_ics
-
-
 
     if {$mgroups == 0} {
       set mgroups [platform::max_masters]
@@ -1007,24 +944,21 @@ namespace eval arch {
     for {set i 0} {$i < [llength [dict keys $kernels]]} {incr i} { set no_inst [expr "$no_inst + [dict get $kernels $i count]"] }
     arch_connect_interrupts $insts
 
+    write_axi_parameters $insts
+
+    set no_mis [get_master_interface_count $kernels $mgroups]
+    write_noc_parameters [llength $insts] $no_mis
+
     arch_check_instance_count $kernels
 
-    tapasco::ip::build_arke_noc_ips
-    update_ip_catalog 
-    update_ip_catalog
-    report_ip_status
-    upgrade_ip [get_ips *]
 
     set arch_host_routers [arch_create_arke_noc_arch_interface $kernels 1]
     set arch_pe_routers [arch_create_arke_noc_pe_interfaces $kernels $insts $arch_host_routers]
-    set arch_mem_routers [arch_create_arke_noc_mem_interfaces $kernels $mgroups $arch_pe_routers]
+    set arch_mem_routers [arch_create_arke_noc_mem_interfaces $no_mis $arch_pe_routers]
 
     arch_connect_routers $arch_mem_routers
 
     arch_set_noc_parameters $arch_pe_routers
-
-    report_ip_status
-    upgrade_ip [get_ips *]
 
     arch_connect_clocks
     arch_connect_resets

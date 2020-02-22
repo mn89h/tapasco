@@ -344,7 +344,6 @@ namespace eval platform {
   # End of write_mig_file_design_1_mig_7series_0_0()
     namespace eval vc709 {
         namespace export set_pblocks
-        namespace export set_pblocks_router
 
         proc set_pblocks {args} {
             startgroup
@@ -352,11 +351,11 @@ namespace eval platform {
             resize_pblock pblock_mig -add {SLICE_X156Y425:SLICE_X221Y499 DSP48_X13Y170:DSP48_X17Y199 RAMB18_X10Y170:RAMB18_X14Y199 RAMB36_X10Y85:RAMB36_X14Y99}
             add_cells_to_pblock pblock_mig [get_cells [list system_i/memory/mig]]
             endgroup
-            #startgroup
-            #create_pblock pblock_dma
-            #resize_pblock pblock_dma -add {SLICE_X168Y301:SLICE_X221Y424 DSP48_X15Y122:DSP48_X17Y169 RAMB18_X11Y122:RAMB18_X14Y169 RAMB36_X11Y61:RAMB36_X14Y84}
-            #add_cells_to_pblock pblock_dma [get_cells [list system_i/memory/dma]]
-            #endgroup
+            startgroup
+            create_pblock pblock_dma
+            resize_pblock pblock_dma -add {SLICE_X168Y301:SLICE_X221Y424 DSP48_X15Y122:DSP48_X17Y169 RAMB18_X11Y122:RAMB18_X14Y169 RAMB36_X11Y61:RAMB36_X14Y84}
+            add_cells_to_pblock pblock_dma [get_cells [list system_i/memory/dma]]
+            endgroup
             startgroup
             create_pblock pblock_axi_pcie3_0
             resize_pblock pblock_axi_pcie3_0 -add {SLICE_X170Y200:SLICE_X221Y299 DSP48_X15Y80:DSP48_X17Y119 RAMB18_X11Y80:RAMB18_X14Y119 RAMB36_X11Y40:RAMB36_X14Y59}
@@ -364,112 +363,8 @@ namespace eval platform {
             endgroup
             return $args
         }
-
-        proc set_pblocks_router {args} {
-            set routercs [get_cells -hierarchical "arke_noc_router*"]
-            set rno [llength $routercs]
-            if {$rno > 0} {
-              #pattern variant 0: |x---x| --not quite functioning
-              #pattern variant 1: |-x--x-|
-              #pattern variant 2: |-x-x-|
-              #pattern variant 3: |-x-x-|
-              #pattern variant 4: |x--x|
-              #pattern variant 5: |xx|
-              set variant 5
-              set xsl_no [expr {[lindex [regexp -all -inline {(X)(\d+)} [lindex [get_sites -filter { NAME =~  "*Y0*" && SITE_TYPE == "SLICEL" }] end]] 2] + 1}]
-              set ysl_no [expr {[lindex [regexp -all -inline {(Y)(\d+)} [lindex [get_sites -filter { NAME =~  "*X0*" && SITE_TYPE == "SLICEL" }] 0]] 2] + 1}]
-
-              set xyz [regexp -all -inline {\d+} [lindex $routercs end]]
-              set x_no [expr [lindex $xyz 0] + 1]
-              set y_no [expr [lindex $xyz 1] + 1]
-              set z_no [expr [lindex $xyz 2] + 1]
-
-              if {$variant == 0} {
-                set xw [expr {$xsl_no / (4 * $x_no)}] 
-                set yw [expr {$ysl_no / (4 * $y_no)}]
-              } elseif {$variant == 1} {
-                set xw [expr {$xsl_no / (3 * $x_no)}] 
-                set yw [expr {$ysl_no / (3 * $y_no)}]
-              } elseif {$variant == 2} {
-                set xw [expr {$xsl_no / (3 * $x_no + 2)}] 
-                set yw [expr {$ysl_no / (3 * $y_no + 2)}]
-              } elseif {$variant == 3} {
-                set xw [expr {$xsl_no / (2 * $x_no + 1)}] 
-                set yw [expr {$ysl_no / (2 * $y_no + 1)}]
-              } elseif {$variant == 4} {
-                set xw [expr {$xsl_no / (2 * $x_no - 1)}] 
-                set yw [expr {$ysl_no / (2 * $y_no - 1)}]
-              } elseif {$variant == 5} {
-                set xw [expr {$xsl_no / ($x_no)}] 
-                set yw [expr {$ysl_no / ($y_no)}]
-              }
-
-              set i 0
-              for {set z 0} {$z < $z_no} {incr z} {
-                  for {set y 0} {$y < $y_no} {incr y} {
-                      for {set x 0} {$x < $x_no} {incr x} {
-                          set pb [create_pblock "plock_$i"]
-                          
-                          if {$variant == 0} {
-                            # no space to border version
-                            set x0 [expr {(5*$x) * $xw}]
-                            set y0 [expr {(5*$y) * $yw}]
-                            set x1 [expr {(5*$x+1) * $xw - 1}]
-                            set y1 [expr {(5*$y+1) * $yw - 1}]
-                          } elseif {$variant == 1} {
-                            ## small space to border version
-                            set x0 [expr {(3*$x+1) * $xw}]
-                            set y0 [expr {(3*$y+1) * $yw}]
-                            set x1 [expr {(3*$x+2) * $xw - 1}]
-                            set y1 [expr {(3*$y+2) * $yw - 1}]
-                          } elseif {$variant == 2} {
-                            ## equidistant space to border version
-                            set x0 [expr {(3*$x+2) * $xw}]
-                            set y0 [expr {(3*$y+2) * $yw}]
-                            set x1 [expr {(3*$x+3) * $xw - 1}]
-                            set y1 [expr {(3*$y+3) * $yw - 1}]
-                          } elseif {$variant == 3} {
-                            ## equidistant space to border version
-                            set x0 [expr {(2*$x+1) * $xw}]
-                            set y0 [expr {(2*$y+1) * $yw}]
-                            set x1 [expr {(2*$x+2) * $xw - 1}]
-                            set y1 [expr {(2*$y+2) * $yw - 1}]
-                          } elseif {$variant == 4} {
-                            ## equidistant space to border version
-                            set x0 [expr {(2*$x) * $xw}]
-                            set y0 [expr {(2*$y) * $yw}]
-                            set x1 [expr {(2*$x+1) * $xw - 1}]
-                            set y1 [expr {(2*$y+1) * $yw - 1}]
-                          } elseif {$variant == 5} {
-                            ## no distance
-                            set x0 [expr {($x) * $xw}]
-                            set y0 [expr {($y) * $yw}]
-                            set x1 [expr {($x+1) * $xw - 1}]
-                            set y1 [expr {($y+1) * $yw - 1}]
-                          }
-
-                          while {[get_sites "SLICE_X$x0\Y$y0"] == ""} {
-                            incr x0 3
-                          }
-                          while {[get_sites "SLICE_X$x1\Y$y1"] == ""} {
-                            incr x1 3
-                          }
-
-                          #for zyx:
-                          resize_pblock $pb -add [get_sites -range "SLICE_X$x0\Y$y0 SLICE_X$x1\Y$y1"]
-                          #for "correct" xyz:
-                          add_cells_to_pblock plock_$i [get_cells [list system_i/arch/arke_noc_router_$x\_$y\_$z]] -clear_locs
-                          #add_cells_to_pblock plock_$i [lindex $routercs $i] -clear_locs
-                          incr i
-                      }
-                  }
-              }
-            }
-            return $args
-        }
     }
 
 
     tapasco::register_plugin "platform::vc709::set_pblocks" "post-synth"
-    tapasco::register_plugin "platform::vc709::set_pblocks_router" "post-synth"
 }

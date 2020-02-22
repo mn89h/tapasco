@@ -57,7 +57,12 @@
       switch -glob [get_property NAME $m] {
         "M_TAPASCO" { foreach {base stride range comp} [list 0x00B0000000 0       0 "PLATFORM_COMPONENT_STATUS"] {} }
         "M_INTC"    { foreach {base stride range comp} [list 0x00B0010000 0x10000 0 "PLATFORM_COMPONENT_INTC0"] {} }
-        "M_ARCH"    { if {$arch == "axi4mm-noc"} {foreach {base stride range comp} [list $pe_base 0 0 ""] {}} {set base "skip"} }
+        "M_ARCH"    { if {$arch == "axi4mm-arkenoc"} {
+                          foreach {base stride range comp} [list $pe_base 0 0 ""] {}
+                        } else {
+                          set base "skip"
+                        }
+                    }
         default     { foreach {base stride range comp} [list 0 0 0 ""] {} }
       }
       if {$base != "skip"} { set peam [addressmap::assign_address $peam $m $base $stride $range $comp] }

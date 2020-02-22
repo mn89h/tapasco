@@ -76,7 +76,12 @@
         "M_TAPASCO" { foreach {base stride range comp} [list 0x00000000 0x10000 0      "PLATFORM_COMPONENT_STATUS"] {} }
         "M_HOST"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
         "M_MEM_0"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
-        "M_ARCH"    { if {$arch == "axi4mm-noc"} {foreach {base stride range comp} [list $pe_base 0 0x2000000 ""] {}} {set base "skip"} }
+        "M_ARCH"    { if {$arch == "axi4mm-arkenoc"} {
+                          foreach {base stride range comp} [list $pe_base 0 0x2000000 ""] {}
+                        } else {
+                          set base "skip"
+                        }
+                    }
         default     { if { [dict exists $extra_masters [get_property NAME $m]] } {
                           set l [dict get $extra_masters [get_property NAME $m]]
                           set base [lindex $l 0]

@@ -4,15 +4,15 @@
 -------------------------------------------------------------------------------
 -- File       : STD_FIFO.vhd
 -- Author     : Malte Nilges
--- Company    : 
+-- Company    :
 -- Created    : 2019-11-19
 -- Last update: 2019-12-09
--- Platform   : 
+-- Platform   :
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
 -- Description: FIFO conforming AXI handshaking specification
 -------------------------------------------------------------------------------
--- Copyright (c) 2019 
+-- Copyright (c) 2019
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -24,7 +24,7 @@ entity STD_FIFO is
 	Generic (
 		fifo_depth	: positive := STD_FIFO_FIFO_DEPTH
 	);
-	Port ( 
+	Port (
 		clk			: in  std_logic;
 		rst			: in  std_logic;
 		WrValid_in	: in  std_logic;
@@ -32,17 +32,17 @@ entity STD_FIFO is
 		WrData_in	: in  std_logic_vector;
 		RdReady_in	: in  std_logic;
 		RdData_out	: out std_logic_vector;
-		RdValid_out	: out std_logic 
+		RdValid_out	: out std_logic
 	);
 end STD_FIFO;
 
 architecture Behavioral of STD_FIFO is
 		type fifo_memory is array (0 to fifo_depth - 1) of std_logic_vector(WrData_in'length - 1 downto 0);
 		signal Memory : fifo_memory := (others => (others => '0'));
-		
+
 		signal wr_pointer : natural range 0 to fifo_depth - 1 := 0;
 		signal rd_pointer : natural range 0 to fifo_depth - 1 := 0;
-		
+
 		signal count : natural range 0 to fifo_depth := 0;
 
 begin
@@ -54,17 +54,17 @@ begin
 		if (rst = '1') then
 			wr_pointer <= 0;
 			rd_pointer <= 0;
-			
+
 			count <= 0;
-			
+
 			WrReady_out  <= '1';
 			RdValid_out <= '0';
 			Memory <= (others => (others => '0'));
-		
+
 		else
 			-- SET CONTROL SIGNALS AND UPDATE COUNT
 			-- for exclusive wr
-			if ((WrValid_in = '1' and RdReady_in = '0' and count /= fifo_depth) or 
+			if ((WrValid_in = '1' and RdReady_in = '0' and count /= fifo_depth) or
 				(WrValid_in = '1' and RdReady_in = '1' and count = 0)) then
 				count <= count + 1;
 				RdValid_out <= '1';
@@ -99,7 +99,7 @@ begin
 					WrReady_out <= '1';
 				end if;
 			end if;
-	
+
 
 			--WRITE DATA AND SET WR_POINTER
 			if (WrValid_in = '1' and count /= fifo_depth) then
@@ -110,7 +110,7 @@ begin
 					wr_pointer <= wr_pointer + 1;
 				end if;
 			end if;
-	
+
 
 			--READ DATA AND SET RD_POINTER
 
@@ -130,7 +130,7 @@ begin
 						else
 							RdData_out <= Memory(0);
 						end if;
-					
+
 					else
 						rd_pointer <= rd_pointer + 1;
 
@@ -146,9 +146,9 @@ begin
 				-- 	   RdData_out <= Memory(rd_pointer);
 				end if;
 			end if;
-			   
+
 		end if;
 		end if;
 	end process;
-		
+
 end Behavioral;

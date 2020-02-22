@@ -56,7 +56,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>f8e10f7d</spirit:value>
+            <spirit:value>db6c8a63</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -71,7 +71,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>d6c02b78</spirit:value>
+            <spirit:value>f98da03e</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -86,7 +86,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>d6c02b78</spirit:value>
+            <spirit:value>f98da03e</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -123,7 +123,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">599</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.DATA_WIDTH&apos;)) - 1)">127</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -150,7 +150,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">599</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.DATA_WIDTH&apos;)) - 1)">127</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -177,7 +177,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">599</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.DATA_WIDTH&apos;)) - 1)">127</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -204,7 +204,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">599</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.DATA_WIDTH&apos;)) - 1)">127</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -231,7 +231,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">599</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.DATA_WIDTH&apos;)) - 1)">127</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -258,7 +258,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">599</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.DATA_WIDTH&apos;)) - 1)">127</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -285,7 +285,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">599</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.DATA_WIDTH&apos;)) - 1)">127</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -312,7 +312,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">2</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.CONTROL_WIDTH&apos;)) - 1)">2</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -339,7 +339,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">2</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.CONTROL_WIDTH&apos;)) - 1)">2</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -366,7 +366,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">2</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.CONTROL_WIDTH&apos;)) - 1)">2</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -393,7 +393,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">2</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.CONTROL_WIDTH&apos;)) - 1)">2</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -420,7 +420,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">2</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.CONTROL_WIDTH&apos;)) - 1)">2</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -447,7 +447,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">2</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.CONTROL_WIDTH&apos;)) - 1)">2</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -474,7 +474,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">2</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.CONTROL_WIDTH&apos;)) - 1)">2</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -501,7 +501,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">599</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.DATA_WIDTH&apos;)) - 1)">127</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -528,7 +528,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">599</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.DATA_WIDTH&apos;)) - 1)">127</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -555,7 +555,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">599</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.DATA_WIDTH&apos;)) - 1)">127</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -582,7 +582,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">599</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.DATA_WIDTH&apos;)) - 1)">127</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -609,7 +609,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">599</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.DATA_WIDTH&apos;)) - 1)">127</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -636,7 +636,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">599</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.DATA_WIDTH&apos;)) - 1)">127</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -663,7 +663,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">599</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.DATA_WIDTH&apos;)) - 1)">127</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -690,7 +690,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">2</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.CONTROL_WIDTH&apos;)) - 1)">2</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -717,7 +717,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">2</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.CONTROL_WIDTH&apos;)) - 1)">2</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -744,7 +744,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">2</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.CONTROL_WIDTH&apos;)) - 1)">2</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -771,7 +771,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">2</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.CONTROL_WIDTH&apos;)) - 1)">2</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -798,7 +798,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">2</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.CONTROL_WIDTH&apos;)) - 1)">2</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -825,7 +825,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">2</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.CONTROL_WIDTH&apos;)) - 1)">2</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -852,7 +852,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">2</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.CONTROL_WIDTH&apos;)) - 1)">2</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -879,8 +879,42 @@
       <spirit:modelParameter xsi:type="spirit:nameValueTypeType" spirit:dataType="std_logic_vector">
         <spirit:name>address</spirit:name>
         <spirit:displayName>Address</spirit:displayName>
-        <spirit:value spirit:format="bitString" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.address" spirit:bitStringLength="600">&quot;0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000&quot;</spirit:value>
+        <spirit:value spirit:format="bitString" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.address" spirit:bitStringLength="15">&quot;000000000000000&quot;</spirit:value>
+      </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>DIM_X</spirit:name>
+        <spirit:displayName>Dim X</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.DIM_X">4</spirit:value>
+      </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>DIM_Y</spirit:name>
+        <spirit:displayName>Dim Y</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.DIM_Y">4</spirit:value>
+      </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>DIM_Z</spirit:name>
+        <spirit:displayName>Dim Z</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.DIM_Z">1</spirit:value>
+      </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>PORTS</spirit:name>
+        <spirit:displayName>Ports</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.PORTS">5</spirit:value>
+      </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>BUFFER_DEPTH</spirit:name>
+        <spirit:displayName>Buffer Depth</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.BUFFER_DEPTH">4</spirit:value>
+      </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>DATA_WIDTH</spirit:name>
+        <spirit:displayName>Data Width</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.DATA_WIDTH">128</spirit:value>
+      </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>CONTROL_WIDTH</spirit:name>
+        <spirit:displayName>Control Width</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.CONTROL_WIDTH">3</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="boolean">
         <spirit:name>use_data_in_local</spirit:name>
@@ -1030,7 +1064,7 @@
       <spirit:file>
         <spirit:name>xgui/arke_noc_router_v1_0.tcl</spirit:name>
         <spirit:fileType>tclSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_f8e10f7d</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_db6c8a63</spirit:userFileType>
         <spirit:userFileType>XGUI_VERSION_2</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
@@ -1064,7 +1098,7 @@
       <spirit:file>
         <spirit:name>src/Router.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_f0c6b3cb</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_d6a5e383</spirit:userFileType>
         <spirit:logicalName>work</spirit:logicalName>
       </spirit:file>
     </spirit:fileSet>
@@ -1113,8 +1147,42 @@
     <spirit:parameter>
       <spirit:name>address</spirit:name>
       <spirit:displayName>Address</spirit:displayName>
-      <spirit:value spirit:format="bitString" spirit:resolve="user" spirit:id="PARAM_VALUE.address" spirit:bitStringLength="600">&quot;0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000&quot;</spirit:value>
+      <spirit:value spirit:format="bitString" spirit:resolve="user" spirit:id="PARAM_VALUE.address" spirit:bitStringLength="15">&quot;000000000000000&quot;</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>DIM_X</spirit:name>
+      <spirit:displayName>Dim X</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.DIM_X">4</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>DIM_Y</spirit:name>
+      <spirit:displayName>Dim Y</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.DIM_Y">4</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>DIM_Z</spirit:name>
+      <spirit:displayName>Dim Z</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.DIM_Z">1</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>PORTS</spirit:name>
+      <spirit:displayName>Ports</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.PORTS">5</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>BUFFER_DEPTH</spirit:name>
+      <spirit:displayName>Buffer Depth</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.BUFFER_DEPTH">4</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>DATA_WIDTH</spirit:name>
+      <spirit:displayName>Data Width</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.DATA_WIDTH">128</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>CONTROL_WIDTH</spirit:name>
+      <spirit:displayName>Control Width</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.CONTROL_WIDTH">3</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>use_data_in_local</spirit:name>
@@ -1280,12 +1348,7 @@
         <xilinx:family xilinx:lifeCycle="Production">azynq</xilinx:family>
         <xilinx:family xilinx:lifeCycle="Production">spartan7</xilinx:family>
         <xilinx:family xilinx:lifeCycle="Production">aspartan7</xilinx:family>
-        <xilinx:family xilinx:lifeCycle="Production">virtexu</xilinx:family>
         <xilinx:family xilinx:lifeCycle="Production">zynquplus</xilinx:family>
-        <xilinx:family xilinx:lifeCycle="Production">virtexuplus</xilinx:family>
-        <xilinx:family xilinx:lifeCycle="Production">virtexuplusHBM</xilinx:family>
-        <xilinx:family xilinx:lifeCycle="Production">kintexuplus</xilinx:family>
-        <xilinx:family xilinx:lifeCycle="Production">kintexu</xilinx:family>
       </xilinx:supportedFamilies>
       <xilinx:taxonomies>
         <xilinx:taxonomy>/UserIP</xilinx:taxonomy>
@@ -1293,29 +1356,30 @@
       <xilinx:displayName>Arke Router</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:coreRevision>1</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2020-01-29T17:23:00Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2020-02-18T11:59:15Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@1d0d0f32_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@73728213_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@374ff768_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@71ec8cb6_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@1e35d0b3_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@66e07f9a_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@4c7daa1d_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@3afb34e6_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@4754bb8f_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@3a7ddea3_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@12f0225d_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.dd@3a55d568_ARCHIVE_LOCATION">/home/stud/mn89heha/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@5561de33_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@5a02f2c6_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@f682c71_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@29f1765f_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@3a7ccf73_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@2b1bbbf4_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@4e575cc5_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@5b7fb61b_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@3f0309e9_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@3cfadb0_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@1a3d40ef_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@53d7f021_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.dd@49096d72_ARCHIVE_LOCATION">/home/malte/tapasco/toolflow/vivado/common/ip/ArkeNoC/noc_arke_router</xilinx:tag>
       </xilinx:tags>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
       <xilinx:xilinxVersion>2019.1</xilinx:xilinxVersion>
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="25031715"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="f28b07ac"/>
-      <xilinx:checksum xilinx:scope="ports" xilinx:value="ea1f5e85"/>
-      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="43a29dea"/>
-      <xilinx:checksum xilinx:scope="parameters" xilinx:value="d5f54b98"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="c8ee3565"/>
+      <xilinx:checksum xilinx:scope="ports" xilinx:value="9a53de45"/>
+      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="c40a8d5e"/>
+      <xilinx:checksum xilinx:scope="parameters" xilinx:value="9e965379"/>
     </xilinx:packagingInfo>
   </spirit:vendorExtensions>
 </spirit:component>
